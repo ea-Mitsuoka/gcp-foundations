@@ -1,0 +1,7 @@
+.terraform/
+.terraform.lock.hcl
+.terraform-version
+*.tfstate
+*.tfstate.*
+
+docs/first_env_setup.md
