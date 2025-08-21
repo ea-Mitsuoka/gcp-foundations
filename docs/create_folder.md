@@ -42,23 +42,20 @@ GUI（グラフィカル・ユーザー・インターフェース）を使っ�
     ```bash
     # 以前のステップで設定した環境変数が有効なことを確認
     echo ${ORGANIZATION_ID}
-
-    # まずフォルダ作成者の権限を付与する
-    gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
-    --member="user:$(gcloud config get-value account)" \
-    --role="roles/resourcemanager.folderCreator"
+    echo ${SA_EMAIL}
 
     # "Production" という名前のフォルダを作成する例
     gcloud resource-manager folders create \
       --display-name="Production" \
-      --organization=${ORGANIZATION_ID}
+      --organization=${ORGANIZATION_ID} \
+      --impersonate-service-account=${SA_EMAIL}
     ```
 
 2. **実行結果の確認**
 
       * コマンドが成功すると、作成されたフォルダの名前とID（`folders/12345...`）が出力されます。このフォルダIDは、Terraformなどでリソースを管理する際に利用できます。
 
-> **ポイント1**: この方法は自動化しやすいですが、インフラの状態（State）を管理する仕組みがないため、Terraformのように「現在のインフラがどうあるべきか」をコードで管理することはできません。</br> **ポイント2**: 実際の運用では、組織管理者は少数の信頼できる者に限定して組織管理者と別の担当者に分けるのがベストプラクティスです。</br> **ポイント3**: コンソールで操作をすると組織管理者が実行すればエラーになりませんが、gcloudコマンドだとフォルダ作成者の権限を付与せずにフォルダ作成をすると権限エラーとなることがあります。必要に応じてフォルダ作成者の権限を付与してください。
+> **ポイント**: この方法は自動化しやすいですが、インフラの状態（State）を管理する仕組みがないため、Terraformのように「現在のインフラがどうあるべきか」をコードで管理することはできません。
 
 -----
 
@@ -90,7 +87,36 @@ terraform {
 }
 ```
 
-### **ステップ3: `main.tf` にリソースを定義**
+### **ステップ3: `provider.tf` を定義**
+
+この設定により、Terraform実行時に自動でSAを借用します
+
+```hcl
+provider "google" {
+  impersonate_service_account = var.terraform_service_account_email
+}
+```
+
+### **ステップ4: `versions.tf` を定義**
+
+TerraformとGoogle Providerのバージョンを定義します。
+
+```hcl
+# versions.tf
+terraform {
+    # "~>" を使い、意図しないメジャー/マイナーアップデートを防ぎます
+    required_version = "~> 1.12.2"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+```
+
+### **ステップ5: `main.tf` にリソースを定義**
 
 `google_folder`リソースを使って、作成したいフォルダを定義します。
 
@@ -110,7 +136,7 @@ resource "google_folder" "development" {
 }
 ```
 
-### **ステップ4: `variables.tf` を作成**
+### **ステップ6: `variables.tf` を作成**
 
 `main.tf`で使っている変数を定義します。
 
@@ -121,26 +147,35 @@ variable "organization_id" {
   type        = string
   description = "フォルダを作成する親となるGCP組織ID。"
 }
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
+}
 ```
 
-### **ステップ5: 環境変数でTerraformに変数を渡す**
+### **ステップ7: 環境変数でTerraformに変数を渡す**
 
 `terraform.tfvars`ファイルは作成しません。代わりに、ターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
 
 ```bash
-# 以前のステップで設定したORGANIZATION_IDの環境変数を
 # Terraformが読み取れる形式の環境変数に設定します。
-export TF_VAR_organization_id=${ORGANIZATION_ID}
+export TF_VAR_organization_id=$ORGANIZATION_ID
+export TF_VAR_terraform_service_account_email=$SA_EMAIL
 
 # 設定されたか確認
 echo $TF_VAR_organization_id
+echo $TF_VAR_terraform_service_account_email
 ```
 
-### **ステップ6: Terraformを実行**
+### **ステップ8: Terraformを実行**
 
 1. **初期化**: 新しいディレクトリで作業を始めたので、再度`init`が必要です。
 
     ```bash
+    # まずサービスアカウントを借用する
+    gcloud auth application-default login --impersonate-service-account=${SA_EMAIL}
+
     terraform init -backend-config="bucket=${BUCKET_NAME}"
 
     # -reconfigureオプションは、設定変更時に役立ちます
@@ -156,4 +191,4 @@ echo $TF_VAR_organization_id
     terraform apply
     ```
 
-> **ポイント1**: この方法で作成・管理することで、「インフラがコードで定義されている」状態になります。Gitで変更履歴を管理でき、誰がいつ何を変更したかが明確になり、インフラの再現性と信頼性が飛躍的に向上します。
+> **ポイント**: この方法で作成・管理することで、「インフラがコードで定義されている」状態になります。Gitで変更履歴を管理でき、誰がいつ何を変更したかが明確になり、インフラの再現性と信頼性が飛躍的に向上します。

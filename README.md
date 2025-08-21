@@ -26,17 +26,20 @@ gcp-foundations/
     ├── 1_organization/           # 【責務①】組織全体の設定
     │   ├── backend.tf
     │   ├── main.tf               # 組織ポリシー、組織レベルのIAMなどを定義
+    │   ├── versions.tf           # バージョンを固定
     │   └── variables.tf
     │
     ├── 2_folders/                # 【責務②】基本となるフォルダ構造
     │   ├── backend.tf
     │   ├── main.tf               # 'development', 'staging', 'production'などのフォルダを定義
+    │   ├── versions.tf           # バージョンを固定
     │   └── variables.tf
     │
     └── 3_projects/               # 【責務③】プロジェクトの作成（Project Factory）
-        └── example_project/            # アプリケーション'my_app'用のプロジェクト群
+        └── example_project/      # アプリケーション'my_app'用のプロジェクト群
             ├── backend.tf
             ├── main.tf           # プロジェクト作成モジュールを呼び出す
+            ├── versions.tf       # バージョンを固定
             ├── variables.tf
             ├── dev.tfvars        # 開発環境用プロジェクトの設定値
             ├── stag.tfvars       # ステージング環境用プロジェクトの設定値
