@@ -4,4 +4,5 @@
 *.tfstate
 *.tfstate.*
 
-docs/first_env_setup.md
+env
+memo*
