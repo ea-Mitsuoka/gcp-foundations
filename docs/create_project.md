@@ -38,7 +38,7 @@ CLI（コマンドラインインターフェース）を使い、コマンド�
     ```bash
     # `gcloud resource-manager folders list (--organization=ORG_ID または、--folder=FOLDER_ID)` などで事前にIDを調べておく
     export FOLDER_ID="YOUR_FOLDER_ID"
-    export BILLING_ACCOUNT_ID="YOUR_BILLING_ACCOUNT_ID"
+    export BILLING_ACCOUNT_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1)
     ```
 
 2. **プロジェクトを作成**
@@ -50,10 +50,9 @@ CLI（コマンドラインインターフェース）を使い、コマンド�
 
     # プロジェクトIDはグローバルで一意である必要があります
     # ===== パラメータ（環境変数や引数でもOK） =====
-    export ORG_NAME=$(gcloud organizations list --format="value(displayName)" --limit=1)
+    export ORG_NAME=$(gcloud organizations list --format="value(displayName)" --limit=1 | tr '.' '-')
     export ENV="dev"
     export APP="myapp"
-    export FOLDER_ID="123456789012"
 
     # ===== ランダム4桁の16進数を生成 =====
     export SUFFIX=$(openssl rand -hex 2)   # Terraformの random_id.byte_length=2 と同じ
@@ -63,8 +62,8 @@ CLI（コマンドラインインターフェース）を使い、コマンド�
     export PROJECT_ID="${ORG_NAME}-${ENV}-${APP}-${SUFFIX}"
 
     # ===== プロジェクト作成 =====
-    gcloud projects create "${PROJECT_ID}" \
-      --name="${APP} (${ENV})" \
+    gcloud projects create ${PROJECT_ID} \
+      --name=${APP}-${ENV} \
       --folder="${FOLDER_ID}" \
       --impersonate-service-account=${SA_EMAIL}
     ```
@@ -79,12 +78,22 @@ CLI（コマンドラインインターフェース）を使い、コマンド�
 
       * 作成したプロジェクトを請求先アカウントにリンクします。
 
-    <!-- end list -->
-
     ```bash
+    # 組織レベルで請求先アカウント管理者権限を付与
+    gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
+      --member=user:$(gcloud config get-value account) \
+      --role=roles/billing.admin
+
+    # プロジェクトに課金アカウントをリンク
     gcloud billing projects link ${PROJECT_ID} \
       --billing-account=${BILLING_ACCOUNT_ID}
     ```
+
+    * 上記は、組織管理者が組織レベルで請求先アカウント管理者となり、プロジェクトに対して課金アカウントをリンクさせているが、ベストプラクティスとしては以下の三者で役割分担をする
+      * 組織管理者
+      * 組織レベルの請求先アカウント管理者
+      * プロジェクトに対して課金アカウントをリンクさせるプロジェクトオーナー
+        * （課金アカウントに対する請求先アカウント管理者およびプロジェクトに対するオーナー）
 
 -----
 

@@ -76,12 +76,12 @@
     ```bash
     # 組織ベルでログ閲覧者ロールを付与
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
-      --member="user:$(gcloud config get-value account)" \
+      --member=user:$(gcloud config get-value account) \
       --role="roles/logging.viewer"
 
     # 組織ポリシー管理者ロールを付与
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
-      --member="user:$(gcloud config get-value account)" \
+      --member=user:$(gcloud config get-value account) \
       --role="roles/orgpolicy.policyAdmin"
     ```
 
@@ -111,6 +111,8 @@ Terraformの実行拠点となるプロジェクトを作成し、APIを有効�
     gcloud billing projects link ${PROJECT_ID} \
       --billing-account=${BILLING_ACCOUNT_ID}
     ```
+
+    * 失敗した場合、プロジェクトに対してオーナー権限と課金アカウントに対して請求先アカウント管理者権限を付与する
 
 3. **プロジェクトで必要なAPIを有効化**
     （少し時間がかかる場合があります）
@@ -194,7 +196,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
 
     ```bash
     gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
-      --member="user:$(gcloud config get-value account)" \
+      --member=user:$(gcloud config get-value account) \
       --role="roles/iam.serviceAccountTokenCreator" \
       --project=${PROJECT_ID}
     ```
@@ -206,7 +208,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     ```bash
     # サービスアカウントにGCSバケットへのIAMロールを付与
     gcloud storage buckets add-iam-policy-binding gs://${BUCKET_NAME} \
-      --member="serviceAccount:${SA_EMAIL}" \
+      --member=serviceAccount:${SA_EMAIL} \
       --role="roles/storage.objectAdmin"
     ```
 
