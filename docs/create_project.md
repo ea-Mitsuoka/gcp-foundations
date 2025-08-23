@@ -1,4 +1,4 @@
-Google Cloudのプロジェクトを作成する3つの方法について、あなたのリポジトリ構成 (`gcp-foundations`) を前提として、具体的な手順を解説します。
+# プロジェクト成方法
 
 -----
 
@@ -113,12 +113,14 @@ cd gcp-foundations/terraform/3_projects/example_project
 
 各ファイルに、プロジェクトを作成するためのコードを記述します。
 
-#### **`versions.tf`** (必要に応じて作成)
+#### **`versions.tf`**
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/versions.tf
 terraform {
-  required_version = "~> 1.8.0"
+    # "~>" を使い、意図しないメジャー/マイナーアップデートを防ぎます
+    required_version = "~> 1.12.2"
+
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -136,9 +138,19 @@ terraform {
 # gcp-foundations/terraform/3_projects/example_project/backend.tf
 terraform {
   backend "gcs" {
-    bucket = "tfstate-your-admin-project-id" # 0_bootstrapで作成したバケット名
-    prefix = "projects/example_project/dev"
+    # このディレクトリ用のtfstateの保存場所を区別するためのprefix
+    prefix = "projects/dev"
   }
+}
+```
+
+#### **`provider.tf`**
+
+この設定により、Terraform実行時に自動でSAを借用します
+
+```hcl
+provider "google" {
+  impersonate_service_account = var.terraform_service_account_email
 }
 ```
 
@@ -148,19 +160,25 @@ terraform {
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/variables.tf
-variable "project_id" {
+variable "organization_name" {
   type        = string
-  description = "作成するGCPプロジェクトの一意のID。"
+  description = "組織の名前（project_id 生成用に正規化する）。"
 }
 
-variable "project_name" {
+variable "organization_id" {
   type        = string
-  description = "GCPプロジェクトの表示名。"
+  description = "作成するGCPプロジェクトが属する組織のID。"
 }
 
-variable "folder_id" {
+variable "terraform_service_account_email" {
   type        = string
-  description = "親となるフォルダのID。"
+  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
+}
+
+variable "folder_path" {
+  type        = string
+  default     = ""
+  description = "プロジェクトを作成するフォルダのパス。空文字なら組織直下"
 }
 
 variable "billing_account_id" {
@@ -187,12 +205,29 @@ variable "labels" {
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/main.tf
+module "string_utils" {
+  source            = "gitea.mtskykhd.tokyo/admin/terraform-modules.git"
+  organization_name = var.organization_name
+  env               = var.labels.env
+  app               = var.labels.app
+}
+
+resource "random_id" "project_suffix" {
+  byte_length = 2
+}
+
+locals {
+  folder_id = var.folder_path != "" ? var.folder_path : null
+}
+
 resource "google_project" "main" {
-  project_id      = var.project_id
-  name            = var.project_name
-  folder_id       = var.folder_id
+  project_id      = "${module.string_utils.sanitized_org_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}-${random_id.project_suffix.hex}"
+  name            = "${var.labels.app}-${var.labels.env}"
   billing_account = var.billing_account_id
   labels          = var.labels
+
+  org_id    = local.folder_id == null ? var.organization_id : null
+  folder_id = local.folder_id # folder_id が null なら無視され、組織直下に作成される
 }
 
 resource "google_project_service" "apis" {
@@ -210,10 +245,8 @@ resource "google_project_service" "apis" {
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/dev.tfvars
-project_id         = "my-app-dev-20250821"
-project_name       = "My App (Dev)"
-folder_id          = "folders/YOUR_DEV_FOLDER_ID" # 以前作成したDevelopmentフォルダのID
-billing_account_id = "YOUR_BILLING_ACCOUNT_ID"
+organization_name = "myorg"
+app               = "myapp"
 
 project_apis = [
   "compute.googleapis.com",
@@ -222,12 +255,33 @@ project_apis = [
 ]
 
 labels = {
-  env       = "dev"
+  env        = "dev"
   managed-by = "terraform"
 }
 ```
 
-### **ステップ3：Terraformを実行**
+TODO: 書き直す
+### **ステップ3: 環境変数でTerraformに変数を渡す**
+
+`terraform.tfvars`ファイルの他に秘匿情報はターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
+
+```bash
+# Terraformが読み取れる形式の環境変数に設定します。
+export TF_VAR_organization_id=$ORGANIZATION_ID
+export TF_VAR_terraform_service_account_email=$SA_EMAIL
+export TF_VAR_billing_account_id=$BILLING_ACCOUNT_ID
+
+# 設定されたか確認
+echo $TF_VAR_organization_id
+echo $TF_VAR_terraform_service_account_email
+echo $TF_VAR_billing_account_id
+
+# プロジェクトをフォルダ配下に作る場合のみ定義
+export TF_VAR_folder_path=$FOLDER_ID
+echo $TF_VAR_folder_path
+```
+
+### **ステップ4：Terraformを実行**
 
 1. **初期化**:
 
