@@ -285,7 +285,8 @@ echo $TF_VAR_folder_path
 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
     ```bash
-    gcloud auth application-default login --impersonate-service-account="$SERVICE_ACCOUNT_EMAIL"
+    cd ~/mtskykhd/terraform/3_projects/example_project
+    gcloud auth application-default login --impersonate-service-account=$SA_EMAIL
     ```
 
 2. **初期化**:

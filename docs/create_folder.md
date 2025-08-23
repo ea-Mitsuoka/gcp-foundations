@@ -177,6 +177,7 @@ echo $TF_VAR_terraform_service_account_email
 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
     ```bash
+    cd ~/mtskykhd/terraform/2_folders
     gcloud auth application-default login --impersonate-service-account=${SA_EMAIL}
     ```
 
