@@ -1,5 +1,5 @@
 module "string_utils" {
-  source            = "git::https://gitea.mtskykhd.tokyo/admin/terraform-modules.git//string_utils"
+  source            = "git::https://gitea.mtskykhd.tokyo/admin/terraform-modules.git//string_utils?ref=1f2baf4468"
   organization_name = var.organization_name
   env               = var.labels.env
   app               = var.labels.app
