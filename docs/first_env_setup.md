@@ -74,7 +74,7 @@
 4. **今後必要なIAM権限を付与する** #省略可
 
     ```bash
-    # 組織ベルでログ閲覧者ロールを付与
+    # 組織レベルでログ閲覧者ロールを付与
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member=user:$(gcloud config get-value account) \
       --role="roles/logging.viewer"
