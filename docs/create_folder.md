@@ -174,12 +174,15 @@ echo $TF_VAR_terraform_service_account_email
 
 ### **ステップ4: Terraformを実行**
 
-1. **初期化**: 新しいディレクトリで作業を始めたので、再度`init`が必要です。
+1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
     ```bash
-    # まずサービスアカウントを借用する
     gcloud auth application-default login --impersonate-service-account=${SA_EMAIL}
+    ```
 
+2. **初期化**: 新しいディレクトリで作業を始めたので、再度`init`が必要です。
+
+    ```bash
     terraform init -backend-config="bucket=${BUCKET_NAME}"
 
     # -reconfigureオプションは、設定変更時に役立ちます
@@ -188,7 +191,7 @@ echo $TF_VAR_terraform_service_account_email
       -backend-config="bucket=${BUCKET_NAME}"
     ```
 
-2. **適用**: `plan`で内容を確認し、問題なければ`apply`を実行します。
+3. **適用**: `plan`で内容を確認し、問題なければ`apply`を実行します。
 
     ```bash
     terraform plan

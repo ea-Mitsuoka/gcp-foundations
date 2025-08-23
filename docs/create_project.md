@@ -283,13 +283,24 @@ echo $TF_VAR_folder_path
 
 ### **ステップ4：Terraformを実行**
 
-1. **初期化**:
+1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
     ```bash
-    terraform init
+    gcloud auth application-default login --impersonate-service-account="$SERVICE_ACCOUNT_EMAIL"
     ```
 
-2. **プラン確認と適用**: `-var-file`フラグを使って、`dev`環境用の設定ファイルを指定します。
+2. **初期化**:
+
+    ```bash
+    terraform init -backend-config="bucket=${BUCKET_NAME}"
+
+    # -reconfigureオプションは、設定変更時に役立ちます
+    terraform init \
+      -reconfigure \
+      -backend-config="bucket=${BUCKET_NAME}"
+    ```
+
+3. **プラン確認と適用**: `-var-file`フラグを使って、`dev`環境用の設定ファイルを指定します。
 
     ```bash
     terraform plan -var-file="dev.tfvars"
