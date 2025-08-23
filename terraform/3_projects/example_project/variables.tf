@@ -3,6 +3,11 @@ variable "organization_name" {
   description = "組織の名前（project_id 生成用に正規化する）。"
 }
 
+variable "app" {
+  description = "Application name"
+  type        = string
+}
+
 variable "organization_id" {
   type        = string
   description = "作成するGCPプロジェクトが属する組織のID。"
