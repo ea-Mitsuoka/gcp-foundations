@@ -14,13 +14,14 @@ locals {
 }
 
 resource "google_project" "main" {
-  project_id      = "${module.string_utils.sanitized_org_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}-${random_id.project_suffix.hex}"
-  name            = "${var.labels.app}-${var.labels.env}"
-  billing_account = var.billing_account_id
-  labels          = var.labels
+  project_id = "${module.string_utils.sanitized_org_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}-${random_id.project_suffix.hex}"
+  name       = "${var.labels.app}-${var.labels.env}"
+  labels     = var.labels
+  org_id     = local.folder_id == null ? var.organization_id : null
+  folder_id  = local.folder_id # folder_id が null なら無視され、組織直下に作成される
 
-  org_id    = local.folder_id == null ? var.organization_id : null
-  folder_id = local.folder_id # folder_id が null なら無視され、組織直下に作成される
+  # 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
+  # billing_account = var.billing_account_id
 }
 
 resource "google_project_service" "apis" {

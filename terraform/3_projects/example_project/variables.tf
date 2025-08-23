@@ -19,10 +19,11 @@ variable "folder_path" {
   description = "プロジェクトを作成するフォルダのパス。空文字なら組織直下"
 }
 
-variable "billing_account_id" {
-  type        = string
-  description = "紐付ける請求先アカウントのID。"
-}
+# 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
+# variable "billing_account_id" {
+#   type        = string
+#   description = "紐付ける請求先アカウントのID。"
+# }
 
 variable "project_apis" {
   type        = set(string)
