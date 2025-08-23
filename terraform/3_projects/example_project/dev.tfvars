@@ -1,5 +1,4 @@
 organization_name = "myorg"
-app               = "myapp"
 
 project_apis = [
   "compute.googleapis.com",
@@ -9,5 +8,6 @@ project_apis = [
 
 labels = {
   env        = "dev"
+  app        = "myapp"
   managed-by = "terraform"
 }
