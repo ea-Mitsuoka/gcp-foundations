@@ -8,3 +8,4 @@ env
 memo*
 TODO.md
 .DS_Store
+.netrc
