@@ -79,6 +79,9 @@ CLI（コマンドラインインターフェース）を使い、コマンド�
       * 作成したプロジェクトを請求先アカウントにリンクします。
 
     ```bash
+    # 課金アカウントIDを取得
+    export BILLING_ACCOUNT_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1)
+
     # 組織レベルで請求先アカウント管理者権限を付与
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member=user:$(gcloud config get-value account) \
@@ -248,8 +251,8 @@ resource "google_project_service" "apis" {
 organization_name = "myorg"
 app               = "myapp"
 
+# 課金の有効化されていることが前提のAPIは有効化できない(例:compute.googleapis.com)
 project_apis = [
-  "compute.googleapis.com",
   "storage.googleapis.com",
   "iam.googleapis.com",
 ]
@@ -268,12 +271,10 @@ labels = {
 # Terraformが読み取れる形式の環境変数に設定します。
 export TF_VAR_organization_id=$ORGANIZATION_ID
 export TF_VAR_terraform_service_account_email=$SA_EMAIL
-export TF_VAR_billing_account_id=$BILLING_ACCOUNT_ID
 
 # 設定されたか確認
 echo $TF_VAR_organization_id
 echo $TF_VAR_terraform_service_account_email
-echo $TF_VAR_billing_account_id
 
 # プロジェクトをフォルダ配下に作る場合のみ定義
 export TF_VAR_folder_path=$FOLDER_ID
@@ -302,9 +303,19 @@ echo $TF_VAR_folder_path
 
 3. **プラン確認と適用**: `-var-file`フラグを使って、`dev`環境用の設定ファイルを指定します。
 
+    ステージング環境や本番環境のプロジェクトを作成する際は、`stag.tfvars`や`prod.tfvars`を編集し、同じ手順を繰り返す
+
     ```bash
     terraform plan -var-file="dev.tfvars"
     terraform apply -var-file="dev.tfvars"
     ```
 
-これで、コードとしてバージョン管理された、再現可能な形でプロジェクトが作成されます。ステージング環境や本番環境のプロジェクトを作成する際は、`stag.tfvars`や`prod.tfvars`を編集し、同じ手順を繰り返すだけです。
+### **ステップ5：課金を有効化**
+
+```bash
+gcloud auth application-default revoke
+gcloud auth application-default login
+export PROJECT_ID=$(terraform show | grep 'project_id' | awk -F'"' '{print $2}')
+```
+
+続いて[2.gcloudコマンドで作成する方法]の3.の手順に同じ
