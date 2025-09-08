@@ -30,48 +30,59 @@
 
 まず、作業に必要な情報を取得し、後のコマンドで使いやすいように環境変数に設定します。
 
+1. **domain.envを定義**
+
+    ```bash
+    git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
+    cd gcp-foundations
+    cat > domain.env << 'EOF'
+    domain="my-domain.com"
+    EOF
+    ```
+
 1. **組織IDを取得して設定**
 
     ```bash
-    gcloud organizations list
-    # 表示された組織ID（例: 123456789012）をコピー
-
-    export ORGANIZATION_ID="YOUR_ORGANIZATION_ID" # "123456789012" のように設定
+    source ./domain.env
+    export ORGANIZATION_ID=$(gcloud organizations list --filter="displayName=\"$domain\"" --format="value(ID)")
+    echo $ORGANIZATION_ID
     ```
 
-2. **請求先アカウントIDを取得して設定**
+1. **請求先アカウントIDを取得して設定**
     1. Google Cloudコンソールの課金の画面で課金アカウントを作成する
 
     ```bash
     gcloud billing accounts list
-    # 表示された請求先アカウントID（例: 01A2B3-C4D5E6-F7G8H9）をコピー
-
-    export BILLING_ACCOUNT_ID="YOUR_BILLING_ACCOUNT_ID" # "01A2B3-C4D5E6-F7G8H9" のように設定
+    export BILLING_ACCOUNT_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1)
+    echo $BILLING_ACCOUNT_ID
     ```
 
-3. **作成するプロジェクトIDとバケット名を決めて設定**
+1. **作成するプロジェクトIDとバケット名を決めて設定**
     1. Google Cloudのリソース管理画面でプロジェクトを作成をクリック
        1. これから作成するのは最初のtfstateファイルを管理する専用のプロジェクトで、おすすめの命名規則は以下の通り
           1. myorg-tf-admin(Terraformの管理者用プロジェクトであることが明確)
           2. myorg-iac-admin(Terraformだけでなく、IaC全般の管理者用プロジェクトという広い意味を持つ)
           3. myorg-tf-mgmt(adminの代わりにmgmt (management) を使うパターン)
-    2. 希望のプロジェクト名を入力すると自動で一意のproject_idが下部に提案されるため、それをコピー
+    2. 希望のプロジェクト名を入力すると自動で一意のproject_idが下部に提案されるため、それをコピーするか、以下のコマンドで一意になるように生成する
 
     ```bash
     # プロジェクトIDはグローバルで一意である必要があります
-    # メモ: export PROJECT_ID="your-tf-admin-project-$(gcloud projects list --format="value(PROJECT_ID)" | wc -l)"
-    export PROJECT_ID="your-project_id"
+    export SUFFIX=$(openssl rand -hex 2) 
+    export ORG_NAME=$(echo "$domain" | tr '.' '-')
+    export PROJECT_ID="${ORG_NAME}-tf-admin-${SUFFIX}"
+    export PROJECT_NAME="${ORG_NAME}-tf-admin"
 
-    # バケット名もグローバルで一意である必要があります
-    export BUCKET_NAME="tfstate-${PROJECT_ID}"
+    # バケット名を生成するshellファイルを実行
+    bash ./generate-backend-config.sh
+    # 生成されたファイルからバケット名を取得
+    export BUCKET_NAME="$(grep "bucket" ./terraform/common.tfbackend | cut -d '"' -f 2)"
 
+    echo "作成するプロジェクト名: ${PROJECT_NAME}"
     echo "作成するプロジェクトID: ${PROJECT_ID}"
     echo "作成するGCSバケット名: ${BUCKET_NAME}"
     ```
 
-    > **Note**: 上記の`PROJECT_ID`の例では、既存のプロジェクト数を使って簡易的に一意性を高めています。任意で好きなIDに変更してください。
-
-4. **今後必要なIAM権限を付与する** #省略可
+1. **今後必要なIAM権限を付与する** #省略可
 
     ```bash
     # 組織レベルでログ閲覧者ロールを付与
@@ -95,10 +106,11 @@ Terraformの実行拠点となるプロジェクトを作成し、APIを有効�
 
     ```bash
     gcloud projects create ${PROJECT_ID} \
+      --name=${PROJECT_NAME} \
       --organization=${ORGANIZATION_ID}
     ```
 
-   1. コマンドでプロジェクトを作成すると`gcloud projects lsit`コマンドでプロジェクトが作成されているのを確認できるのに、Google Cloudのダッシュボードにアクセスしてもプロジェクトが表示されないことがある。
+   1. コマンドでプロジェクトを作成すると`gcloud projects list`コマンドでプロジェクトが作成されているのを確認できるのに、Google Cloudのダッシュボードにアクセスしてもプロジェクトが表示されないことがある。
       1. 上記のような場合以下のURLにブラウザでアクセスする
 
       ```text
@@ -163,7 +175,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
       --project=${PROJECT_ID}
     ```
 
-2. **サービスアカウントに組織レベルの権限を付与**
+1. **サービスアカウントに組織レベルの権限を付与**
 
     組織リソースを管理するため、強力な権限を付与します。</br>
     サービスアカウント自体はプロジェクトに作成しているのに組織レベルの権限を付与してあり、付与した権限をIAM画面で確認するのも組織レベルである必要があります。
@@ -190,7 +202,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
 
     > **セキュリティ**: ここでは一般的な権限を付与していますが、要件に応じて[最小権限の原則](https://www.google.com/search?q=https://cloud.google.com/iam/docs/using-iam-securely%3Fhl%3Dja%23least_privilege)に従い、より厳密なロールを選択してください。
 
-3. **サービスアカウントにプロジェクトレベルの権限を付与**
+1. **サービスアカウントにプロジェクトレベルの権限を付与**
 
    あなたのユーザーアカウント (gcloudにログインしているアカウント) が、作成したサービスアカウントを借用する（成り代わる）ことを許可する必要があります。
 
@@ -201,7 +213,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
       --project=${PROJECT_ID}
     ```
 
-4. **サービスアカウントにGCSバケットの管理の権限を付与**
+1. **サービスアカウントにGCSバケットの管理の権限を付与**
 
    サービスカウントが、作成したバケットの操作することを許可する必要があります。
 
@@ -218,17 +230,25 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
 
 最後に、ローカルに作業ディレクトリを作成し、最初のTerraformファイル群を準備します。
 
+1. **Global変数を定義**
+
+    ```bash
+    cat << EOF > ./terraform/common.tfvars
+    terraform_service_account_email="${SA_EMAIL}"
+    EOF
+
+    cat ./terraform/common.tfvars
+    ```
+
 1. **作業ディレクトリを作成**
 
     ディレクトリ構成はREADME.mdを参照のこと
 
     ```bash
-    sh ./generate-backend-config.sh
-    mkdir domain/gcp-foundations/terraforom/0_bootstrap
-    cd domain/gcp-foundations/terraforom/0_bootstrap
+    cd ./terraform/0_bootstrap
     ```
 
-2. **`versions.tf` を作成**
+1. **`versions.tf` を作成**
     TerraformとGoogle Providerのバージョンを定義します。
 
     ```hcl
@@ -246,7 +266,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     }
     ```
 
-3. **`backend.tf` を作成**
+1. **`backend.tf` を作成**
     `.tfstate`の保存場所として、先ほど作成したGCSバケットを指定します。
 
     ```hcl
@@ -258,7 +278,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     }
     ```
 
-4. **`provider.tf` を作成**
+1. **`provider.tf` を作成**
 
     ```hcl
     # provider.tf
@@ -268,7 +288,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     }
     ```
 
-5. **`variables.tf` を作成** # variables.tf
+1. **`variables.tf` を作成** # variables.tf
     provider.tfのimpersonate_service_accountに値を渡すための変数を定義します。
 
     ```hcl
@@ -279,34 +299,40 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     }
     ```
 
-    ターミナルから変数に値を渡すために、TF_VAR_プレフィックスを付けたTerraform用の環境変数を設定します。
-
-    ```bash
-    # ステップ4-1で設定したSA_EMAIL
-    export TF_VAR_terraform_service_account_email=${SA_EMAIL}
-    ```
-
-6. **`.gitignore` を作成**
+1. **`.gitignore` を作成**
     Terraformが生成する不要なファイルをGitの管理対象から除外します。
 
     ```git
     # .gitignore
     .terraform/
     .terraform.lock.hcl
+    .terraform-version
     *.tfstate
     *.tfstate.*
+    *.tfvars
+    *.tfbackend
+    *.common.tfbackend
+    domain.env
     ```
 
-7. **Terraformを初期化**
+1. **Terraformを初期化**
     すべてのファイルを保存したら、最後に`terraform init`を実行します。
 
     ```bash
-    terraform init -backend-config="bucket=${BUCKET_NAME}"
+    # 自動参照する環境変数を定義
+    export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=$SA_EMAIL
+
+    # 認証を初期化
+    gcloud auth application-default revoke
+    gcloud auth application-default login
+    gcloud auth application-default set-quota-project $PROJECT_ID
+
+    terraform init -backend-config="../common.tfbackend"
 
     # -reconfigureオプションは、設定変更時に役立ちます
     terraform init \
       -reconfigure \
-      -backend-config="bucket=${BUCKET_NAME}"
+      -backend-config="../common.tfbackend"
     ```
 
     "Terraform has been successfully initialized\!" と表示されれば、バックエンドの設定は成功です。

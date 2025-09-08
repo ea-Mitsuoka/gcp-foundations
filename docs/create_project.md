@@ -306,9 +306,7 @@ echo $TF_VAR_folder_path
     ステージング環境や本番環境のプロジェクトを作成する際は、`stag.tfvars`や`prod.tfvars`を編集し、同じ手順を繰り返す
 
     ```bash
-    # terraform plan -var-file="dev.tfvars"
     terraform plan -var-file="../../common.tfvars" -var-file="dev.tfvars"
-    # terraform apply -var-file="dev.tfvars"
     terraform apply -var-file="../../common.tfvars" -var-file="dev.tfvars"
     ```
 
