@@ -3,6 +3,7 @@
 .terraform-version
 *.tfstate
 *.tfstate.*
+*.tfvars
 
 env
 memo*

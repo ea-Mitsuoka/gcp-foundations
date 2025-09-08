@@ -1,0 +1,2 @@
+# 全ディレクトリで共通のバックエンド設定をここに集約
+bucket = "tfstate-your-admin-project-id"
