@@ -223,6 +223,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     ディレクトリ構成はREADME.mdを参照のこと
 
     ```bash
+    sh ./generate-backend-config.sh
     mkdir domain/gcp-foundations/terraforom/0_bootstrap
     cd domain/gcp-foundations/terraforom/0_bootstrap
     ```
@@ -252,7 +253,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     # backend.tf
     terraform {
       backend "gcs" {
-        prefix = "terraform/state"
+        prefix = "bootstrap"
       }
     }
     ```

@@ -5,6 +5,8 @@
 *.tfstate.*
 *.tfvars
 *.tfbackend
+*.common.tfbackend
+domain.env
 
 env
 memo*
