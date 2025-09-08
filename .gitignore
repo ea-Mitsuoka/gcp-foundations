@@ -4,6 +4,7 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
+*.tfbackend
 
 env
 memo*
