@@ -1,29 +1,7 @@
-variable "organization_name" {
+variable "gcs_backend_bucket" {
+  description = "The name of the GCS bucket used for Terraform state."
   type        = string
-  description = "組織の名前（project_id 生成用に正規化する）。"
 }
-
-variable "organization_id" {
-  type        = string
-  description = "作成するGCPプロジェクトが属する組織のID。"
-}
-
-variable "billing_account" {
-  type        = string
-  description = "Billing account ID to associate with the project."
-}
-
-variable "project_name" {
-  type        = string
-  description = "The Name of the logging project."
-  default     = "logs-aggregation"
-}
-
-variable "project_id" {
-  type        = string
-  description = "The ID of the logging project."
-}
-
 
 variable "region" {
   type    = string

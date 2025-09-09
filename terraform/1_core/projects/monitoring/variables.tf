@@ -1,7 +1,13 @@
-variable "folder_path" {
+variable "terraform_service_account_email" {
   type        = string
   default     = ""
-  description = "プロジェクトを作成するフォルダのパス。空文字なら組織直下"
+  description = "Terraform 実行時に借用するサービスアカウントのメールアドレス。"
+}
+
+variable "project_name" {
+  type        = string
+  default     = ""
+  description = "プロジェクト名を作成するための名前。"
 }
 
 variable "project_apis" {

@@ -14,7 +14,7 @@ OUTPUT_IAM_FILE = os.path.join(SCRIPT_DIR, 'iam.tf')
 # シンク先タイプごとの設定を一元管理
 DESTINATION_CONFIG = {
     'bigquery': {
-        'uri_template': "bigquery.googleapis.com/projects/${{var.project_id}}/datasets/{parent}",
+        'uri_template': "bigquery.googleapis.com/projects/${{data.terraform_remote_state.project.outputs.project_id}}/datasets/{parent}",
         'iam_role': "roles/bigquery.dataEditor",
     },
     'cloud storage': {
@@ -59,7 +59,7 @@ def generate_dataset_hcl(datasets: Set[str]) -> str:
     parts = []
     for ds in sorted(list(datasets)):
         parts.append(f"""resource "google_bigquery_dataset" "{ds}" {{
-  project                     = var.project_id
+  project                     = data.terraform_remote_state.project.outputs.project_id
   dataset_id                  = "{ds}"
   location                    = var.region
   delete_contents_on_destroy  = var.bq_dataset_delete_contents_on_destroy
@@ -76,7 +76,7 @@ def generate_bucket_hcl(buckets: Set[str]) -> str:
     for bkt in sorted(list(buckets)):
         resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', bkt).lower()
         parts.append(f"""resource "google_storage_bucket" "{resource_name}" {{
-  project                   = var.project_id
+  project                   = data.terraform_remote_state.project.outputs.project_id
   name                      = "{bkt}"
   location                  = var.region
   uniform_bucket_level_access = true
@@ -114,7 +114,7 @@ def generate_sink_hcl(sink: Sink) -> str:
 
     sink_block = f"""resource "google_organization_log_sink" "{sink.tf_resource_name}_sink" {{
   name                 = "org-{sink.tf_resource_name}-sink"
-  org_id               = var.organization_id
+  org_id               = data.external.org_id.result.organization_id
   filter               = "{escaped_filter}"
   destination          = "{destination_uri}"
   unique_writer_identity = true{bigquery_options_block}
@@ -128,7 +128,7 @@ def generate_iam_hcl(sink: Sink) -> str:
         return ""
     iam_role = config['iam_role']
     iam_block = f"""resource "google_project_iam_member" "{sink.tf_resource_name}_sink_writer" {{
-  project = var.project_id
+  project = data.terraform_remote_state.project.outputs.project_id
   role    = "{iam_role}"
   member  = google_organization_log_sink.{sink.tf_resource_name}_sink.writer_identity
 }}\n\n"""
@@ -165,6 +165,44 @@ def parse_sinks_from_csv(path: str) -> List[Sink]:
             ))
     return sinks
 
+# --- メイン処理補助 ---
+DATA_TERRAFORM_REMOTE_STATE_BLOCK = """data "terraform_remote_state" "project" {
+  backend = "gcs"
+  config = {
+    bucket = var.gcs_backend_bucket
+    prefix = "core/projects/logsink"
+  }
+}
+"""
+
+# 追加: organization id を外部スクリプトで取得する data.external ブロック
+DATA_EXTERNAL_ORG_BLOCK = """data "external" "org_id" {
+  program = ["bash", "../../scripts/get-organization-id.sh"]
+}
+"""
+
+def build_file_content(body: str) -> str:
+    """
+    ヘッダを付与し、
+    - body内に data.terraform_remote_state.project.outputs.project_id が含まれていれば remote_state ブロックを挿入
+    - body内に data.external.org_id.result.organization_id が含まれていれば external org_id ブロックを挿入
+    ブロックの挿入順は remote_state -> external とする。
+    ファイル末尾は必ず1行の改行に揃える。
+    """
+    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
+
+    blocks: List[str] = []
+    if 'data.terraform_remote_state.project.outputs.project_id' in body:
+        blocks.append(DATA_TERRAFORM_REMOTE_STATE_BLOCK)
+    if 'data.external.org_id.result.organization_id' in body:
+        blocks.append(DATA_EXTERNAL_ORG_BLOCK)
+
+    if blocks:
+        # ヘッダ + 挿入ブロック群 + 空行1つ + 本文
+        return (header + "\n".join(blocks) + "\n" + body).rstrip() + "\n"
+
+    return (header + body).rstrip() + "\n"
+
 # --- メイン処理 ---
 def main():
     """スクリプトのメイン処理（出力を3ファイルに分割）"""
@@ -173,24 +211,21 @@ def main():
     datasets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'bigquery'}
     buckets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'cloud storage'}
 
-    # ヘッダは1行改行のみ
-    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
-
     # destinations (datasets + buckets)
     dest_body = generate_dataset_hcl(datasets) + generate_bucket_hcl(buckets)
-    dest_content = (header + dest_body).rstrip() + "\n"
+    dest_content = build_file_content(dest_body)
     with open(OUTPUT_DEST_FILE, 'w', encoding='utf-8') as f:
         f.write(dest_content)
 
     # sinks (organization_log_sink)
     sinks_body = "".join([generate_sink_hcl(s) for s in sinks])
-    sinks_content = (header + sinks_body).rstrip() + "\n"
+    sinks_content = build_file_content(sinks_body)
     with open(OUTPUT_SINKS_FILE, 'w', encoding='utf-8') as f:
         f.write(sinks_content)
 
     # iam bindings
     iam_body = "".join([generate_iam_hcl(s) for s in sinks])
-    iam_content = (header + iam_body).rstrip() + "\n"
+    iam_content = build_file_content(iam_body)
     with open(OUTPUT_IAM_FILE, 'w', encoding='utf-8') as f:
         f.write(iam_content)
 
