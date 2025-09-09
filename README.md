@@ -13,9 +13,19 @@ gcp-foundations/
 ├── README.md                     # リポジトリ全体の目的と運用ルール
 ├── docs/
 │   └── architecture.md           # 設計思想やアーキテクチャ図
+│   ├── best_practice.md
+│   ├── create_folder.md
+│   ├── create_project.md
+│   └── first_env_setup.md
 ├── policies/
+│   ├── example_rego.md
 │   └── require_labels.rego       # ポリシー・アズ・コードの定義
+├── generate-backend-config.sh
 └── terraform/                    # Terraformコードのルートディレクトリ
+    ├── scripts/
+    │   ├── get-billing-account-id.sh
+    │   ├── get-organization-name.sh
+    │   └── get-organization-id.sh
     ├── 0_bootstrap/              # 【責務⓪】Terraform基盤の初期構築
     │   ├── backend.tf            # 
     │   ├── provider.tf           # Google Cloudをプロバイダに指定️
@@ -23,7 +33,34 @@ gcp-foundations/
     │   ├── main.tf               # 管理用プロジェクトとGCSバケットを作成
     │   └── variables.tf
     │
-    ├── 1_organization/           # 【責務①】組織全体の設定
+    ├── 1_core/
+    │   ├── projects/
+    │   │   ├── monitoring/
+    │   │   │   ├── backend.tf
+    │   │   │   ├── main.tf
+    │   │   │   ├── provider.tf
+    │   │   │   ├── variables.tf
+    │   │   │   └── versions.tf
+    │   │   └── logsink/
+    │   │       ├── backend.tf
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       ├── provider.tf
+    │   │       ├── variables.tf
+    │   │       └── versions.tf
+    │   └── logsink/
+    │       ├── backend.tf
+    │       ├── destinations.tf
+    │       ├── generate_terraform.py
+    │       ├── get-bucket-name.sh
+    │       ├── iam.tf
+    │       ├── provider.tf
+    │       ├── sinks.csv
+    │       ├── sinks.tf
+    │       ├── variables.tf
+    │       └── versions.tf
+    │
+    ├── 2_organization/           # 【責務①】組織全体の設定
     │   ├── backend.tf
     │   ├── main.tf               # 組織ポリシー、組織レベルのIAMなどを定義
     │   ├── versions.tf           # バージョンを固定
