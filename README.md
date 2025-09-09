@@ -66,13 +66,13 @@ gcp-foundations/
     │   ├── versions.tf           # バージョンを固定
     │   └── variables.tf
     │
-    ├── 2_folders/                # 【責務②】基本となるフォルダ構造
+    ├── 3_folders/                # 【責務②】基本となるフォルダ構造
     │   ├── backend.tf
     │   ├── main.tf               # 'development', 'staging', 'production'などのフォルダを定義
     │   ├── versions.tf           # バージョンを固定
     │   └── variables.tf
     │
-    └── 3_projects/               # 【責務③】プロジェクトの作成（Project Factory）
+    └── 4_projects/               # 【責務③】プロジェクトの作成（Project Factory）
         └── example_project/      # アプリケーション'my_app'用のプロジェクト群
             ├── backend.tf
             ├── main.tf           # プロジェクト作成モジュールを呼び出す
