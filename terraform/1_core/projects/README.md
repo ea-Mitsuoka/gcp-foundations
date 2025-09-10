@@ -3,7 +3,7 @@
 ## 課金アカウントリンクに必要なIDを取得
 
 ```bash
-export PROJECT_ID=$(gcloud projects list --filter="name:mtskykhd-tokyo-logsink" --format="value(projectId)")
+export PROJECT_ID=$(gcloud projects list --filter="name:your-project-name" --format="value(projectId)")
 
 
 export BILLING_ACCOUNT_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1)

@@ -1,5 +1,15 @@
 # リポジトリ全体の目的と運用ルール
 
+## Terraformファイルの基本的な使い方
+
+1. `git clone`でリポジトリをダウンロード
+2. domain.envにdomain="my-domain.com"といった形式でドメインを記入
+3. gcp-foundationsディレクトリで以下のコマンドを実行
+
+   ```bash
+   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.h
+   ```
+
 ## リポジトリ構成
 
 ```plaintext
