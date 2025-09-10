@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TFBACKEND="$SCRIPT_DIR/../../common.tfbackend"
+TFBACKEND="$SCRIPT_DIR/../../../common.tfbackend"
 TFVARS="$SCRIPT_DIR/terraform.tfvars"
 
 if [ ! -f "$TFBACKEND" ]; then

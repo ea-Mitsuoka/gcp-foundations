@@ -67,17 +67,14 @@ gcp-foundations/
     │   │       ├── provider.tf
     │   │       ├── variables.tf
     │   │       └── versions.tf
-    │   └── logsink/
-    │       ├── backend.tf
-    │       ├── destinations.tf
-    │       ├── generate_terraform.py
-    │       ├── get-bucket-name.sh
-    │       ├── iam.tf
-    │       ├── provider.tf
-    │       ├── sinks.csv
-    │       ├── sinks.tf
-    │       ├── variables.tf
-    │       └── versions.tf
+    │   └── services/             # 【責務】作成済みプロジェクトへのリソース設定
+    │       └── logsink/
+    │           ├── backend.tf
+    │           ├── generate_terraform.py
+    │           ├── get-bucket-name.sh
+    │           ├── provider.tf
+    │           ├── variables.tf
+    │           └── versions.tf
     │
     ├── 2_organization/           # 【責務①】組織全体の設定
     │   ├── backend.tf
