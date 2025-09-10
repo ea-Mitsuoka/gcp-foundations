@@ -11,6 +11,7 @@ domain.env
 /terraform/1_core/services/logsink/sinks.tf
 /terraform/1_core/services/logsink/destinations.tf
 /terraform/1_core/services/logsink/iam.tf
+/terraform/1_core/services/logsink/data.tf
 
 env
 memo*

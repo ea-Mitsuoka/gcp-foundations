@@ -10,6 +10,7 @@ INPUT_CSV_FILE = os.path.join(SCRIPT_DIR, 'sinks.csv')
 OUTPUT_DEST_FILE = os.path.join(SCRIPT_DIR, 'destinations.tf')
 OUTPUT_SINKS_FILE = os.path.join(SCRIPT_DIR, 'sinks.tf')
 OUTPUT_IAM_FILE = os.path.join(SCRIPT_DIR, 'iam.tf')
+OUTPUT_DATA_FILE = os.path.join(SCRIPT_DIR, 'data.tf') # ★ 変更点: data.tfの出力パスを追加
 
 # シンク先タイプごとの設定を一元管理
 DESTINATION_CONFIG = {
@@ -31,7 +32,6 @@ class Sink:
     filter: str
     destination_type: str
     destination_parent: str
-    # ★ 修正点1: destination_child フィールドを削除
 
     @property
     def tf_resource_name(self) -> str:
@@ -59,9 +59,9 @@ def generate_dataset_hcl(datasets: Set[str]) -> str:
     parts = []
     for ds in sorted(list(datasets)):
         parts.append(f"""resource "google_bigquery_dataset" "{ds}" {{
-  project                     = data.terraform_remote_state.project.outputs.project_id
-  dataset_id                  = "{ds}"
-  location                    = var.region
+  project                       = data.terraform_remote_state.project.outputs.project_id
+  dataset_id                    = "{ds}"
+  location                      = var.region
   delete_contents_on_destroy  = var.bq_dataset_delete_contents_on_destroy
 
   labels = {{
@@ -76,9 +76,9 @@ def generate_bucket_hcl(buckets: Set[str]) -> str:
     for bkt in sorted(list(buckets)):
         resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', bkt).lower()
         parts.append(f"""resource "google_storage_bucket" "{resource_name}" {{
-  project                   = data.terraform_remote_state.project.outputs.project_id
-  name                      = "{bkt}"
-  location                  = var.region
+  project                     = data.terraform_remote_state.project.outputs.project_id
+  name                        = "{bkt}"
+  location                    = var.region
   uniform_bucket_level_access = true
 
   lifecycle_rule {{
@@ -113,10 +113,10 @@ def generate_sink_hcl(sink: Sink) -> str:
   }"""
 
     sink_block = f"""resource "google_organization_log_sink" "{sink.tf_resource_name}_sink" {{
-  name                 = "org-{sink.tf_resource_name}-sink"
-  org_id               = data.external.org_id.result.organization_id
-  filter               = "{escaped_filter}"
-  destination          = "{destination_uri}"
+  name                   = "org-{sink.tf_resource_name}-sink"
+  org_id                 = data.external.org_id.result.organization_id
+  filter                 = "{escaped_filter}"
+  destination            = "{destination_uri}"
   unique_writer_identity = true{bigquery_options_block}
 }}\n\n"""
     return sink_block
@@ -133,6 +133,18 @@ def generate_iam_hcl(sink: Sink) -> str:
   member  = google_organization_log_sink.{sink.tf_resource_name}_sink.writer_identity
 }}\n\n"""
     return iam_block
+
+# ★ 変更点: 新しい関数を追加
+def generate_data_hcl(path: str):
+    """
+    dataブロックを専用の data.tf ファイルに生成する
+    """
+    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
+    data_blocks = DATA_TERRAFORM_REMOTE_STATE_BLOCK + DATA_EXTERNAL_ORG_BLOCK
+    content = (header + "\n" + data_blocks).rstrip() + "\n"
+
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
 
 def parse_sinks_from_csv(path: str) -> List[Sink]:
     """CSVを読み込み、Sinkオブジェクトのリストを返す"""
@@ -175,7 +187,6 @@ DATA_TERRAFORM_REMOTE_STATE_BLOCK = """data "terraform_remote_state" "project" {
 }
 """
 
-# 追加: organization id を外部スクリプトで取得する data.external ブロック
 DATA_EXTERNAL_ORG_BLOCK = """locals {
   # スクリプト格納場所の候補（モジュールの位置が変わっても対応するため複数列挙）
   candidate_paths = [
@@ -198,31 +209,25 @@ data "external" "org_id" {
 }
 """
 
+# ★ 変更点: dataブロックを挿入するロジックを削除
 def build_file_content(body: str) -> str:
     """
-    ヘッダを付与し、
-    - body内に data.terraform_remote_state.project.outputs.project_id が含まれていれば remote_state ブロックを挿入
-    - body内に data.external.org_id.result.organization_id が含まれていれば external org_id ブロックを挿入
-    ブロックの挿入順は remote_state -> external とする。
-    ファイル末尾は必ず1行の改行に揃える。
+    ヘッダを付与し、ファイル末尾は必ず1行の改行に揃える。
+    本文が空の場合は空文字列を返す。
     """
+    if not body.strip():
+        return "" # 中身がなければ空のファイルにする
+
     header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
-
-    blocks: List[str] = []
-    if 'data.terraform_remote_state.project.outputs.project_id' in body:
-        blocks.append(DATA_TERRAFORM_REMOTE_STATE_BLOCK)
-    if 'data.external.org_id.result.organization_id' in body:
-        blocks.append(DATA_EXTERNAL_ORG_BLOCK)
-
-    if blocks:
-        # ヘッダ + 挿入ブロック群 + 空行1つ + 本文
-        return (header + "\n".join(blocks) + "\n" + body).rstrip() + "\n"
-
-    return (header + body).rstrip() + "\n"
+    # ヘッダと本文の間に改行を1つ入れる
+    return (header + "\n" + body).rstrip() + "\n"
 
 # --- メイン処理 ---
 def main():
-    """スクリプトのメイン処理（出力を3ファイルに分割）"""
+    """スクリプトのメイン処理（出力を4ファイルに分割）"""
+    # ★ 変更点: 最初にdata.tfを生成する
+    generate_data_hcl(OUTPUT_DATA_FILE)
+
     sinks = parse_sinks_from_csv(INPUT_CSV_FILE)
 
     datasets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'bigquery'}
@@ -246,7 +251,8 @@ def main():
     with open(OUTPUT_IAM_FILE, 'w', encoding='utf-8') as f:
         f.write(iam_content)
 
-    print(f"生成: {OUTPUT_DEST_FILE}, {OUTPUT_SINKS_FILE}, {OUTPUT_IAM_FILE}")
+    # ★ 変更点: 生成ファイルリストにdata.tfを追加
+    print(f"生成: {OUTPUT_DATA_FILE}, {OUTPUT_DEST_FILE}, {OUTPUT_SINKS_FILE}, {OUTPUT_IAM_FILE}")
 
 if __name__ == "__main__":
     main()
