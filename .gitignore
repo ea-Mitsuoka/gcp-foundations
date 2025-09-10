@@ -7,6 +7,10 @@
 *.tfbackend
 *.common.tfbackend
 domain.env
+/terraform/1_core/logsink/sinks.csv
+/terraform/1_core/logsink/sinks.tf
+/terraform/1_core/logsink/destinations.tf
+/terraform/1_core/logsink/iam.tf
 
 env
 memo*
