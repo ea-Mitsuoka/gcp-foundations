@@ -16,7 +16,7 @@
 7. terraform/1_core/services/logsinkディレクトリへ移動してログ集約シンクの設定
    1. 要件定義で作成した[ログ集約シンク設定ファイル](https://docs.google.com/spreadsheets/d/1pp-qeE457PHePtdSsADMWXy9yWtNI2fAnk_wa0KVmVE/edit?gid=0#gid=0 "Google Driveへリンク")からGASでcsv出力したsink.csvを同ディレクトリへコピー
    2. generate_terraform.pyを実行
-   3. `bash terraform/1_core/logsink/get-bucket-name.sh`を実行
+   3. `bash get-bucket-name.sh`を実行
 8. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
 
 ## リポジトリ構成
