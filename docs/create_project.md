@@ -315,7 +315,7 @@ echo $TF_VAR_folder_path
 ```bash
 gcloud auth application-default revoke
 gcloud auth application-default login
-export PROJECT_ID=$(terraform show | grep 'project_id' | awk -F'"' '{print $2}')
+export PROJECT_ID=$(terraform show | grep -m1 'project_id' | awk -F'"' '{print $2}')
 ```
 
 続いて[2.gcloudコマンドで作成する方法]の3.の手順に同じ

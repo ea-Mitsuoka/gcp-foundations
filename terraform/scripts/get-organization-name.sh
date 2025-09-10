@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# スクリプトの配置ディレクトリを基準にリポジトリルート方向へ上がって domain.env を探す
+# スクリプト配置ディレクトリを基準に上方向へ辿って repository ルートの domain.env を探す（get-organization-id.sh と同じ方針）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SEARCH_DIR="$SCRIPT_DIR"
 DOMAIN_ENV=""
 
-while [ "$SEARCH_DIR" != "/" ] ; do
+while [ "$SEARCH_DIR" != "/" ]; do
   if [ -f "$SEARCH_DIR/domain.env" ]; then
     DOMAIN_ENV="$SEARCH_DIR/domain.env"
     break
@@ -28,13 +28,8 @@ if [ -z "${domain:-}" ]; then
   exit 1
 fi
 
-# gcloudで組織IDを取得
-ORG_ID="$(gcloud organizations list --filter="displayName=${domain}" --format="value(ID)" || true)"
+# 組織名生成ルール：ドメインのドットをハイフンに置換（get-organization-id.sh と方針を統一）
+ORG_NAME="$(echo "$domain" | tr '.' '-')"
 
-if [ -z "$ORG_ID" ]; then
-  echo "error: 組織IDが取得できませんでした (domain=${domain})" >&2
-  exit 1
-fi
-
-# JSON を返す（external データソースは JSON を期待する）
-jq -n --arg org_id "$ORG_ID" '{"organization_id": $org_id}'
+# JSON を出力（external データソースは JSON を期待する）
+jq -n --arg org_name "$ORG_NAME" '{"organization_name": $org_name}'
