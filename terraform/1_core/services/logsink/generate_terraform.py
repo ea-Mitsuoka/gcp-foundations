@@ -10,7 +10,7 @@ INPUT_CSV_FILE = os.path.join(SCRIPT_DIR, 'sinks.csv')
 OUTPUT_DEST_FILE = os.path.join(SCRIPT_DIR, 'destinations.tf')
 OUTPUT_SINKS_FILE = os.path.join(SCRIPT_DIR, 'sinks.tf')
 OUTPUT_IAM_FILE = os.path.join(SCRIPT_DIR, 'iam.tf')
-OUTPUT_DATA_FILE = os.path.join(SCRIPT_DIR, 'data.tf') # ★ 変更点: data.tfの出力パスを追加
+OUTPUT_DATA_FILE = os.path.join(SCRIPT_DIR, 'data.tf')
 
 # シンク先タイプごとの設定を一元管理
 DESTINATION_CONFIG = {
@@ -112,7 +112,9 @@ def generate_sink_hcl(sink: Sink) -> str:
     use_partitioned_tables = true
   }"""
 
+    # ★ 変更点: `provider = google-beta` を追加
     sink_block = f"""resource "google_organization_log_sink" "{sink.tf_resource_name}_sink" {{
+  provider               = google-beta
   name                   = "org-{sink.tf_resource_name}-sink"
   org_id                 = data.external.org_id.result.organization_id
   filter                 = "{escaped_filter}"
@@ -127,6 +129,7 @@ def generate_iam_hcl(sink: Sink) -> str:
     if not config:
         return ""
     iam_role = config['iam_role']
+    # IAMリソース自体はベータではないが、依存するシンクがベータプロバイダーで作成されることを明記
     iam_block = f"""resource "google_project_iam_member" "{sink.tf_resource_name}_sink_writer" {{
   project = data.terraform_remote_state.project.outputs.project_id
   role    = "{iam_role}"
@@ -134,7 +137,6 @@ def generate_iam_hcl(sink: Sink) -> str:
 }}\n\n"""
     return iam_block
 
-# ★ 変更点: 新しい関数を追加
 def generate_data_hcl(path: str):
     """
     dataブロックを専用の data.tf ファイルに生成する
@@ -209,7 +211,6 @@ data "external" "org_id" {
 }
 """
 
-# ★ 変更点: dataブロックを挿入するロジックを削除
 def build_file_content(body: str) -> str:
     """
     ヘッダを付与し、ファイル末尾は必ず1行の改行に揃える。
@@ -225,7 +226,6 @@ def build_file_content(body: str) -> str:
 # --- メイン処理 ---
 def main():
     """スクリプトのメイン処理（出力を4ファイルに分割）"""
-    # ★ 変更点: 最初にdata.tfを生成する
     generate_data_hcl(OUTPUT_DATA_FILE)
 
     sinks = parse_sinks_from_csv(INPUT_CSV_FILE)
@@ -251,7 +251,6 @@ def main():
     with open(OUTPUT_IAM_FILE, 'w', encoding='utf-8') as f:
         f.write(iam_content)
 
-    # ★ 変更点: 生成ファイルリストにdata.tfを追加
     print(f"生成: {OUTPUT_DATA_FILE}, {OUTPUT_DEST_FILE}, {OUTPUT_SINKS_FILE}, {OUTPUT_IAM_FILE}")
 
 if __name__ == "__main__":
