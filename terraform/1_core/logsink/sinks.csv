@@ -1,5 +1,0 @@
-log_type,filter,destination_type,destination_parent
-管理アクティビティ監査ログ,"logName:""logs/cloudaudit.googleapis.com%2Factivity"" OR logName:""logs/cloudaudit.googleapis.com%2Fsystem_event""",BigQuery,sink_logs
-データアクセス監査ログ,"logName:""logs/cloudaudit.googleapis.com%2Fdata_access""",BigQuery,sink_logs
-VPCフローログ,"resource.type=""gce_subnetwork"" AND logName:""logs/compute.googleapis.com%2Fvpc_flows""",Cloud Storage,sink-logs-bucket
-課金ログ,"logName:""logs/billing.googleapis.com%2Fbilling_account""",BigQuery,sink_logs
