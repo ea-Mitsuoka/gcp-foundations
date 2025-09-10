@@ -7,8 +7,10 @@
 3. gcp-foundationsディレクトリで以下のコマンドを実行
 
    ```bash
-   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.h
+   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.sh
    ```
+
+4. `bash generate-backend-config.sh`を実行
 
 ## リポジトリ構成
 
