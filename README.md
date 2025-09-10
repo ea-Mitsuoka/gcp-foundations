@@ -7,10 +7,17 @@
 3. gcp-foundationsディレクトリで以下のコマンドを実行
 
    ```bash
-   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.sh
+   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.sh terraform/1_core/logsink/get-bucket-name.sh
    ```
 
 4. `bash generate-backend-config.sh`を実行
+5. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
+6. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
+7. terraform/1_core/logsinkディレクトリへ移動してログ集約シンクの設定
+   1. 要件定義で作成したログ集約シンク設定ファイルからGASでcsv出力したsink.csvを同ディレクトリへコピー
+   2. generate_terraform.pyを実行
+   3. `bash terraform/1_core/logsink/get-bucket-name.sh`を実行
+8. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
 
 ## リポジトリ構成
 
