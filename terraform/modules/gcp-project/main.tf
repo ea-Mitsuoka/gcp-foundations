@@ -1,6 +1,6 @@
 # 外部モジュール（string_utils）の呼び出し
 module "string_utils" {
-  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=610dae09b1"
+  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=54a758c"
   organization_name = var.organization_name # dataソースの代わりに変数から受け取る
   env               = var.labels.env
   app               = var.labels.app
