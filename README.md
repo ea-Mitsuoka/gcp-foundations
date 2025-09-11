@@ -13,11 +13,43 @@
 4. `bash generate-backend-config.sh`を実行
 5. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
 6. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
+   1. terraform.tfvarsのラベルに値を入力
+
+   ```bash
+   # terraform.tfvarsイメージ
+   project_name = "logsink"
+
+   labels = {
+      env         = ""
+      app         = ""
+      team        = ""
+      partner     = "vendor-e-agency"
+      cost-center = ""
+      managed-by  = "terraform"
+   }
+   ```
+
 7. terraform/1_core/services/logsinkディレクトリへ移動してログ集約シンクの設定
-   1. 要件定義で作成した[ログ集約シンク設定ファイル](https://docs.google.com/spreadsheets/d/1pp-qeE457PHePtdSsADMWXy9yWtNI2fAnk_wa0KVmVE/edit?gid=0#gid=0 "Google Driveへリンク")からGASでcsv出力したsink.csvを同ディレクトリへコピー
+   1. 要件定義で作成した[ログ集約シンク設定ファイル](https://docs.google.com/spreadsheets/d/1pp-qeE457PHePtdSsADMWXy9yWtNI2fAnk_wa0KVmVE/edit?gid=0#gid=0 "Google Driveへリンク")からGASでcsv出力したsinks.csvを同ディレクトリへコピー
    2. generate_terraform.pyを実行
+      1. destinations.tf, iam.tf, sinks.tfの３ファイルが生成される
    3. `bash get-bucket-name.sh`を実行
    4. regionの指定があればterraform.tfvarsにregion=""の形式で追記
+
+   ```bash
+   # terraform.tfvarsイメージ
+   project_apis = [
+      "storage.googleapis.com",
+      "iam.googleapis.com",
+      "serviceusage.googleapis.com",         # API有効化用（google_project_service）
+      "cloudresourcemanager.googleapis.com", # プロジェクト作成/管理
+      "logging.googleapis.com",              # Stackdriver Logging / sinks
+      "bigquery.googleapis.com",             # BigQuery（ログシンクを BigQuery にする場合）
+   ]
+
+   gcs_backend_bucket="tfstate-my-domain-tf-admin"
+   ```
+
 8. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
 
 ## リポジトリ構成
@@ -70,6 +102,7 @@ gcp-foundations/
     │   │       └── versions.tf
     │   └── services/             # 【責務】作成済みプロジェクトへのリソース設定
     │       └── logsink/
+    │           ├── docs/         # generate_terraform.pyのSphinx生成コード
     │           ├── backend.tf
     │           ├── generate_terraform.py
     │           ├── get-bucket-name.sh
