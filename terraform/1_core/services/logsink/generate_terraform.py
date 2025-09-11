@@ -1,4 +1,4 @@
-"""sinks.csvから設定を読み込み、Terraformの.tfファイルを自動生成するスクリプト。
+"""gcp_log_sink_config.csvから設定を読み込み、Terraformの.tfファイルを自動生成するスクリプト。
 
 このスクリプトは、ログシンクの要件が記述されたCSVファイルを基に、
 以下の3種類のTerraform構成ファイル（.tf）を生成します。
@@ -16,7 +16,7 @@ from typing import List, Tuple
 SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 """スクリプトが配置されているディレクトリの絶対パス。"""
 
-INPUT_CSV_FILE: str = os.path.join(SCRIPT_DIR, 'sinks.csv')
+INPUT_CSV_FILE: str = os.path.join(SCRIPT_DIR, 'gcp_log_sink_config.csv')
 """入力ファイル（シンク要件CSV）のパス。"""
 
 OUTPUT_DEST_FILE: str = os.path.join(SCRIPT_DIR, 'destinations.tf')
@@ -239,7 +239,7 @@ def generate_iam_hcl(sink: Sink) -> str:
 }}\n\n'''
 
 def parse_sinks_from_csv(path: str) -> List[Sink]:
-    """sinks.csvファイルを解析し、Sinkオブジェクトのリストを返します。
+    """gcp_log_sink_config.csvファイルを解析し、Sinkオブジェクトのリストを返します。
 
     Args:
         path (str): CSVファイルのパス。
