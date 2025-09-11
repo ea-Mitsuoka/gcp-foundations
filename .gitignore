@@ -7,7 +7,7 @@
 *.tfbackend
 *.common.tfbackend
 domain.env
-/terraform/1_core/services/logsink/sinks.csv
+/terraform/1_core/services/logsink/gcp_log_sink_config.csv
 /terraform/1_core/services/logsink/sinks.tf
 /terraform/1_core/services/logsink/destinations.tf
 /terraform/1_core/services/logsink/iam.tf
