@@ -105,8 +105,6 @@ def generate_dataset_hcl(datasets: List[Tuple[str, int]]) -> str:
   labels = {{
     purpose = "log-sink-destination"
   }}
-
-  depends_on = [google_project_service.services]
 }}\n\n''')
     return "".join(parts)
 
@@ -172,8 +170,6 @@ def generate_bucket_hcl(buckets: List[Tuple[str, int]]) -> str:
   versioning {{
     enabled = true
   }}
-
-  depends_on = [google_project_service.services]
 }}\n\n''')
     return "".join(parts)
 
@@ -192,31 +188,18 @@ def generate_sink_hcl(sink: Sink) -> str:
     destination_uri = config['uri_template'].format(parent=sink.destination_parent)
     escaped_filter = sink.filter.replace('"', '\\"')
 
-    depends_on_str = ""
-    if sink.destination_type.lower() == 'bigquery':
-        # BigQueryデータセットリソースに依存
-        depends_on_str = f'depends_on = [google_bigquery_dataset.{sink.destination_parent}]'
-    elif sink.destination_type.lower() == 'cloud storage':
-        # GCSバケットリソースに依存
-        # generate_bucket_hcl と同じロジックでリソース名を生成
-        resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', sink.destination_parent).lower()
-        depends_on_str = f'depends_on = [google_storage_bucket.{resource_name}]'
-
     bigquery_options_block = ""
     if sink.destination_type.lower() == 'bigquery':
         bigquery_options_block = """
   bigquery_options {
     use_partitioned_tables = true
   }"""
-    # 最後のブロックに depends_on_str を追加
     return f'''resource "google_logging_organization_sink" "{sink.tf_resource_name}_sink" {{
   provider    = google-beta
   name        = "org-{sink.tf_resource_name}-sink"
   org_id      = data.external.org_id.result.organization_id
   filter      = "{escaped_filter}"
   destination = "{destination_uri}"{bigquery_options_block}
-
-  {depends_on_str}
 }}\n\n'''
 
 def generate_iam_hcl(sink: Sink) -> str:
