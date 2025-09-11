@@ -14,6 +14,7 @@ domain.env
 build/
 __pycache__/
 
+
 env
 memo*
 TODO.md

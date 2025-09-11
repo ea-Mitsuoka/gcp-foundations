@@ -8,7 +8,7 @@
 import os
 import sys
 # Pythonスクリプト(generate_terraform.py)があるディレクトリへのパスを通す
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 project = 'CSV to Terraform Converter'
 copyright = '2025, eA Mitsuoka'
