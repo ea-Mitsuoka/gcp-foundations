@@ -13,10 +13,10 @@ domain.env
 env
 
 # Automatically created terraform files
-/terraform/1_core/services/logsink/gcp_log_sink_config.csv
-/terraform/1_core/services/logsink/sinks.tf
-/terraform/1_core/services/logsink/destinations.tf
-/terraform/1_core/services/logsink/iam.tf
+/terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv
+/terraform/1_core/services/logsink/sinks/sinks.tf
+/terraform/1_core/services/logsink/sinks/destinations.tf
+/terraform/1_core/services/logsink/sinks/iam.tf
 
 # Sphinx documentation build
 build/

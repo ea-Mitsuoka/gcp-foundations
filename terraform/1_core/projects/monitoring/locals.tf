@@ -1,6 +1,7 @@
 locals {
   # スクリプト格納場所の候補（モジュールの位置が変わっても対応するため複数列挙）
   candidate_paths = [
+    "${path.module}/../../../../scripts",
     "${path.module}/../../../scripts",
     "${path.module}/../../scripts",
     "${path.module}/../scripts",
