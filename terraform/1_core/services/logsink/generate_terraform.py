@@ -96,15 +96,17 @@ def generate_dataset_hcl(datasets: List[Tuple[str, int]]) -> str:
     for ds, days in sorted(datasets, key=lambda x: x[0]):
         expiration_ms = days * 24 * 60 * 60 * 1000
         parts.append(f'''resource "google_bigquery_dataset" "{ds}" {{
-  project                       = data.terraform_remote_state.project.outputs.project_id
-  dataset_id                    = "{ds}"
-  location                      = var.region
-  delete_contents_on_destroy    = var.bq_dataset_delete_contents_on_destroy
+  project                      = data.terraform_remote_state.project.outputs.project_id
+  dataset_id                   = "{ds}"
+  location                     = var.region
+  delete_contents_on_destroy   = var.bq_dataset_delete_contents_on_destroy
   default_table_expiration_ms = {expiration_ms}
 
   labels = {{
     purpose = "log-sink-destination"
   }}
+
+  depends_on = [google_project_service.services]
 }}\n\n''')
     return "".join(parts)
 
@@ -121,9 +123,9 @@ def generate_bucket_hcl(buckets: List[Tuple[str, int]]) -> str:
     for bkt, days in sorted(buckets, key=lambda x: x[0]):
         resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', bkt).lower()
         parts.append(f'''resource "google_storage_bucket" "{resource_name}" {{
-  project                       = data.terraform_remote_state.project.outputs.project_id
-  name                          = "{bkt}"
-  location                      = var.region
+  project                     = data.terraform_remote_state.project.outputs.project_id
+  name                        = "{bkt}"
+  location                    = var.region
   uniform_bucket_level_access = true
 
   # 30日→Nearline、90日→Coldline、365日→Archive
@@ -170,6 +172,8 @@ def generate_bucket_hcl(buckets: List[Tuple[str, int]]) -> str:
   versioning {{
     enabled = true
   }}
+
+  depends_on = [google_project_service.services]
 }}\n\n''')
     return "".join(parts)
 
@@ -187,18 +191,32 @@ def generate_sink_hcl(sink: Sink) -> str:
         return ""
     destination_uri = config['uri_template'].format(parent=sink.destination_parent)
     escaped_filter = sink.filter.replace('"', '\\"')
+
+    depends_on_str = ""
+    if sink.destination_type.lower() == 'bigquery':
+        # BigQueryデータセットリソースに依存
+        depends_on_str = f'depends_on = [google_bigquery_dataset.{sink.destination_parent}]'
+    elif sink.destination_type.lower() == 'cloud storage':
+        # GCSバケットリソースに依存
+        # generate_bucket_hcl と同じロジックでリソース名を生成
+        resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', sink.destination_parent).lower()
+        depends_on_str = f'depends_on = [google_storage_bucket.{resource_name}]'
+
     bigquery_options_block = ""
     if sink.destination_type.lower() == 'bigquery':
         bigquery_options_block = """
   bigquery_options {
     use_partitioned_tables = true
   }"""
+    # 最後のブロックに depends_on_str を追加
     return f'''resource "google_logging_organization_sink" "{sink.tf_resource_name}_sink" {{
   provider    = google-beta
   name        = "org-{sink.tf_resource_name}-sink"
   org_id      = data.external.org_id.result.organization_id
   filter      = "{escaped_filter}"
   destination = "{destination_uri}"{bigquery_options_block}
+
+  {depends_on_str}
 }}\n\n'''
 
 def generate_iam_hcl(sink: Sink) -> str:
@@ -269,7 +287,7 @@ def build_file_content(body: str) -> str:
     """
     if not body.strip():
         return ""
-    header = "# --- このファイルはPythonスクリリプトによって自動生成されました ---\n"
+    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
     return (header + "\n" + body).rstrip() + "\n"
 
 def main():
