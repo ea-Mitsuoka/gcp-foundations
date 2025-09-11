@@ -112,14 +112,13 @@ def generate_sink_hcl(sink: Sink) -> str:
     use_partitioned_tables = true
   }"""
 
-    # ★ 変更点: `provider = google-beta` を追加
-    sink_block = f"""resource "google_organization_log_sink" "{sink.tf_resource_name}_sink" {{
+    # ★ 変更点: 不要になった `unique_writer_identity` の行を削除
+    sink_block = f"""resource "google_logging_organization_sink" "{sink.tf_resource_name}_sink" {{
   provider               = google-beta
   name                   = "org-{sink.tf_resource_name}-sink"
   org_id                 = data.external.org_id.result.organization_id
   filter                 = "{escaped_filter}"
-  destination            = "{destination_uri}"
-  unique_writer_identity = true{bigquery_options_block}
+  destination            = "{destination_uri}"{bigquery_options_block}
 }}\n\n"""
     return sink_block
 
@@ -129,11 +128,10 @@ def generate_iam_hcl(sink: Sink) -> str:
     if not config:
         return ""
     iam_role = config['iam_role']
-    # IAMリソース自体はベータではないが、依存するシンクがベータプロバイダーで作成されることを明記
     iam_block = f"""resource "google_project_iam_member" "{sink.tf_resource_name}_sink_writer" {{
   project = data.terraform_remote_state.project.outputs.project_id
   role    = "{iam_role}"
-  member  = google_organization_log_sink.{sink.tf_resource_name}_sink.writer_identity
+  member  = google_logging_organization_sink.{sink.tf_resource_name}_sink.writer_identity
 }}\n\n"""
     return iam_block
 
@@ -157,7 +155,6 @@ def parse_sinks_from_csv(path: str) -> List[Sink]:
     with open(path, mode='r', encoding='utf-8') as infile:
         reader = csv.DictReader(infile)
         for i, row in enumerate(reader, start=1):
-            # 必要なカラムがあるかチェック
             if not {'log_type', 'filter', 'destination_type', 'destination_parent'}.issubset(row.keys()):
                 raise ValueError(f"CSVに必要な列がありません (行 {i}): {row.keys()}")
 
@@ -167,7 +164,6 @@ def parse_sinks_from_csv(path: str) -> List[Sink]:
             dest_parent = (row.get('destination_parent') or '').strip()
 
             if not log_type or not dest_type or not dest_parent:
-                # 空行や不完全な行はスキップ
                 print(f"警告: CSVの行 {i} をスキップします（不完全）: {row}")
                 continue
 
@@ -217,35 +213,29 @@ def build_file_content(body: str) -> str:
     本文が空の場合は空文字列を返す。
     """
     if not body.strip():
-        return "" # 中身がなければ空のファイルにする
+        return ""
 
     header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
-    # ヘッダと本文の間に改行を1つ入れる
     return (header + "\n" + body).rstrip() + "\n"
 
 # --- メイン処理 ---
 def main():
     """スクリプトのメイン処理（出力を4ファイルに分割）"""
     generate_data_hcl(OUTPUT_DATA_FILE)
-
     sinks = parse_sinks_from_csv(INPUT_CSV_FILE)
-
     datasets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'bigquery'}
     buckets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'cloud storage'}
 
-    # destinations (datasets + buckets)
     dest_body = generate_dataset_hcl(datasets) + generate_bucket_hcl(buckets)
     dest_content = build_file_content(dest_body)
     with open(OUTPUT_DEST_FILE, 'w', encoding='utf-8') as f:
         f.write(dest_content)
 
-    # sinks (organization_log_sink)
     sinks_body = "".join([generate_sink_hcl(s) for s in sinks])
     sinks_content = build_file_content(sinks_body)
     with open(OUTPUT_SINKS_FILE, 'w', encoding='utf-8') as f:
         f.write(sinks_content)
 
-    # iam bindings
     iam_body = "".join([generate_iam_hcl(s) for s in sinks])
     iam_content = build_file_content(iam_body)
     with open(OUTPUT_IAM_FILE, 'w', encoding='utf-8') as f:
