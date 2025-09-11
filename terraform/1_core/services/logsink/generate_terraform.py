@@ -2,7 +2,7 @@ import csv
 import re
 import os
 from dataclasses import dataclass
-from typing import List, Dict, Set
+from typing import List, Set
 
 # --- 定数定義 ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +10,6 @@ INPUT_CSV_FILE = os.path.join(SCRIPT_DIR, 'sinks.csv')
 OUTPUT_DEST_FILE = os.path.join(SCRIPT_DIR, 'destinations.tf')
 OUTPUT_SINKS_FILE = os.path.join(SCRIPT_DIR, 'sinks.tf')
 OUTPUT_IAM_FILE = os.path.join(SCRIPT_DIR, 'iam.tf')
-OUTPUT_DATA_FILE = os.path.join(SCRIPT_DIR, 'data.tf')
 
 # シンク先タイプごとの設定を一元管理
 DESTINATION_CONFIG = {
@@ -47,7 +46,6 @@ class Sink:
             'ポリシー違反ログ': 'policy_violation_logs',
             '課金ログ': 'billing_logs',
             'カスタムログ': 'custom_logs',
-            # 必要に応じて他のマッピングも追加
         }
         name = translation_map.get(self.log_type, self.log_type)
         s = re.sub(r'[^a-zA-Z0-9_ ]', '', name).strip().lower()
@@ -76,9 +74,9 @@ def generate_bucket_hcl(buckets: Set[str]) -> str:
     for bkt in sorted(list(buckets)):
         resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', bkt).lower()
         parts.append(f"""resource "google_storage_bucket" "{resource_name}" {{
-  project                     = data.terraform_remote_state.project.outputs.project_id
-  name                        = "{bkt}"
-  location                    = var.region
+  project                       = data.terraform_remote_state.project.outputs.project_id
+  name                          = "{bkt}"
+  location                      = var.region
   uniform_bucket_level_access = true
 
   lifecycle_rule {{
@@ -112,13 +110,12 @@ def generate_sink_hcl(sink: Sink) -> str:
     use_partitioned_tables = true
   }"""
 
-    # ★ 変更点: 不要になった `unique_writer_identity` の行を削除
     sink_block = f"""resource "google_logging_organization_sink" "{sink.tf_resource_name}_sink" {{
-  provider               = google-beta
-  name                   = "org-{sink.tf_resource_name}-sink"
-  org_id                 = data.external.org_id.result.organization_id
-  filter                 = "{escaped_filter}"
-  destination            = "{destination_uri}"{bigquery_options_block}
+  provider        = google-beta
+  name            = "org-{sink.tf_resource_name}-sink"
+  org_id          = data.external.org_id.result.organization_id
+  filter          = "{escaped_filter}"
+  destination     = "{destination_uri}"{bigquery_options_block}
 }}\n\n"""
     return sink_block
 
@@ -134,17 +131,6 @@ def generate_iam_hcl(sink: Sink) -> str:
   member  = google_logging_organization_sink.{sink.tf_resource_name}_sink.writer_identity
 }}\n\n"""
     return iam_block
-
-def generate_data_hcl(path: str):
-    """
-    dataブロックを専用の data.tf ファイルに生成する
-    """
-    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
-    data_blocks = DATA_TERRAFORM_REMOTE_STATE_BLOCK + DATA_EXTERNAL_ORG_BLOCK
-    content = (header + "\n" + data_blocks).rstrip() + "\n"
-
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(content)
 
 def parse_sinks_from_csv(path: str) -> List[Sink]:
     """CSVを読み込み、Sinkオブジェクトのリストを返す"""
@@ -176,36 +162,7 @@ def parse_sinks_from_csv(path: str) -> List[Sink]:
     return sinks
 
 # --- メイン処理補助 ---
-DATA_TERRAFORM_REMOTE_STATE_BLOCK = """data "terraform_remote_state" "project" {
-  backend = "gcs"
-  config = {
-    bucket = var.gcs_backend_bucket
-    prefix = "core/projects/logsink"
-  }
-}
-"""
-
-DATA_EXTERNAL_ORG_BLOCK = """locals {
-  # スクリプト格納場所の候補（モジュールの位置が変わっても対応するため複数列挙）
-  candidate_paths = [
-    "${path.module}/../../../scripts",
-    "${path.module}/../../scripts",
-    "${path.module}/../scripts",
-    "${path.root}/terraform/scripts",
-    "${path.root}/../terraform/scripts",
-  ]
-
-  # 存在する候補だけ残す
-  existing_candidates = [for p in local.candidate_paths : p if fileexists("${p}/get-organization-id.sh")]
-
-  # 見つかればそれを、見つからなければ最初の候補をフォールバックとして使う
-  scripts_dir = length(local.existing_candidates) > 0 ? local.existing_candidates[0] : local.candidate_paths[0]
-}
-
-data "external" "org_id" {
-  program = ["bash", "${local.scripts_dir}/get-organization-id.sh"]
-}
-"""
+# --- 変更点: dataブロックの文字列定数をすべて削除 ---
 
 def build_file_content(body: str) -> str:
     """
@@ -215,13 +172,12 @@ def build_file_content(body: str) -> str:
     if not body.strip():
         return ""
 
-    header = "# --- このファイルはPythonスクリプトによって自動生成されました ---\n"
+    header = "# --- このファイルはPythonスクリリプトによって自動生成されました ---\n"
     return (header + "\n" + body).rstrip() + "\n"
 
 # --- メイン処理 ---
 def main():
-    """スクリプトのメイン処理（出力を4ファイルに分割）"""
-    generate_data_hcl(OUTPUT_DATA_FILE)
+    """スクリプトのメイン処理（出力を3ファイルに分割）"""
     sinks = parse_sinks_from_csv(INPUT_CSV_FILE)
     datasets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'bigquery'}
     buckets = {s.destination_parent for s in sinks if s.destination_type.lower() == 'cloud storage'}
@@ -231,6 +187,7 @@ def main():
     with open(OUTPUT_DEST_FILE, 'w', encoding='utf-8') as f:
         f.write(dest_content)
 
+    # --- 変更点: dataブロックの統合処理を削除し、sinkリソースの生成のみに戻す ---
     sinks_body = "".join([generate_sink_hcl(s) for s in sinks])
     sinks_content = build_file_content(sinks_body)
     with open(OUTPUT_SINKS_FILE, 'w', encoding='utf-8') as f:
@@ -240,8 +197,8 @@ def main():
     iam_content = build_file_content(iam_body)
     with open(OUTPUT_IAM_FILE, 'w', encoding='utf-8') as f:
         f.write(iam_content)
-
-    print(f"生成: {OUTPUT_DATA_FILE}, {OUTPUT_DEST_FILE}, {OUTPUT_SINKS_FILE}, {OUTPUT_IAM_FILE}")
+    
+    print(f"生成: {OUTPUT_DEST_FILE}, {OUTPUT_SINKS_FILE}, {OUTPUT_IAM_FILE}")
 
 if __name__ == "__main__":
     main()
