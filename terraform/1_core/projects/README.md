@@ -4,8 +4,6 @@
 
 ```bash
 export PROJECT_ID=$(gcloud projects list --filter="name:your-project-name" --format="value(projectId)")
-
-
 export BILLING_ACCOUNT_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1)
 
 echo $PROJECT_ID
