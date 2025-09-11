@@ -1,3 +1,11 @@
+"""sinks.csvから設定を読み込み、Terraformの.tfファイルを自動生成するスクリプト。
+
+このスクリプトは、ログシンクの要件が記述されたCSVファイルを基に、
+以下の3種類のTerraform構成ファイル（.tf）を生成します。
+- ログの宛先となるリソース（BigQueryデータセット、GCSバケット）
+- ログシンク自体のリソース
+- ログシンクに必要なIAM権限
+"""
 import csv
 import re
 import os
@@ -5,13 +13,22 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 # --- 定数 ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_CSV_FILE = os.path.join(SCRIPT_DIR, 'sinks.csv')
-OUTPUT_DEST_FILE = os.path.join(SCRIPT_DIR, 'destinations.tf')
-OUTPUT_SINKS_FILE = os.path.join(SCRIPT_DIR, 'sinks.tf')
-OUTPUT_IAM_FILE = os.path.join(SCRIPT_DIR, 'iam.tf')
+SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+"""スクリプトが配置されているディレクトリの絶対パス。"""
 
-DESTINATION_CONFIG = {
+INPUT_CSV_FILE: str = os.path.join(SCRIPT_DIR, 'sinks.csv')
+"""入力ファイル（シンク要件CSV）のパス。"""
+
+OUTPUT_DEST_FILE: str = os.path.join(SCRIPT_DIR, 'destinations.tf')
+"""出力ファイル（宛先リソース）のパス。"""
+
+OUTPUT_SINKS_FILE: str = os.path.join(SCRIPT_DIR, 'sinks.tf')
+"""出力ファイル（シンクリソース）のパス。"""
+
+OUTPUT_IAM_FILE: str = os.path.join(SCRIPT_DIR, 'iam.tf')
+"""出力ファイル（IAM権限）のパス。"""
+
+DESTINATION_CONFIG: dict = {
     'bigquery': {
         'uri_template': "bigquery.googleapis.com/projects/${{data.terraform_remote_state.project.outputs.project_id}}/datasets/{parent}",
         'iam_role': "roles/bigquery.dataEditor",
@@ -21,9 +38,19 @@ DESTINATION_CONFIG = {
         'iam_role': "roles/storage.objectCreator",
     },
 }
+"""宛先の種類ごとのTerraform設定テンプレート。"""
 
 @dataclass
 class Sink:
+    """CSVファイルの1行分のシンク設定を保持するデータクラス。
+
+    Attributes:
+        log_type (str): ログの種類（例: '管理アクティビティ監査ログ'）。
+        filter (str): ログをフィルタリングするためのクエリ文字列。
+        destination_type (str): 宛先の種類（'bigquery' または 'cloud storage'）。
+        destination_parent (str): 宛先リソースの名前（データセット名やバケット名）。
+        retention_days (int): ログの保持期間（日数）。
+    """
     log_type: str
     filter: str
     destination_type: str
@@ -32,6 +59,14 @@ class Sink:
 
     @property
     def tf_resource_name(self) -> str:
+        """ログの種類をTerraformのリソース名として使える形式に変換します。
+
+        日本語のログ種別を、英小文字とアンダースコアで構成される
+        スネークケースの文字列に変換します。
+
+        Returns:
+            str: Terraformリソース名として整形された文字列。
+        """
         translation_map = {
             '管理アクティビティ監査ログ': 'admin_activity_audit_logs',
             'データアクセス監査ログ': 'data_access_audit_logs',
@@ -48,8 +83,15 @@ class Sink:
         s = re.sub(r'[^a-zA-Z0-9_ ]', '', name).strip().lower()
         return re.sub(r'\s+', '_', s)
 
-# BigQueryデータセットHCL生成
 def generate_dataset_hcl(datasets: List[Tuple[str, int]]) -> str:
+    """BigQueryデータセットを作成するためのTerraform HCL文字列を生成します。
+
+    Args:
+        datasets (List[Tuple[str, int]]): データセット名と保持期間（日）のタプルのリスト。
+
+    Returns:
+        str: 生成された `google_bigquery_dataset` リソースのHCL文字列。
+    """
     parts = []
     for ds, days in sorted(datasets, key=lambda x: x[0]):
         expiration_ms = days * 24 * 60 * 60 * 1000
@@ -66,8 +108,15 @@ def generate_dataset_hcl(datasets: List[Tuple[str, int]]) -> str:
 }}\n\n''')
     return "".join(parts)
 
-# GCSバケットHCL生成（固定ストレージクラス変更ルール＋削除）
 def generate_bucket_hcl(buckets: List[Tuple[str, int]]) -> str:
+    """GCSバケットを作成するためのTerraform HCL文字列を生成します。
+
+    Args:
+        buckets (List[Tuple[str, int]]): バケット名と保持期間（日）のタプルのリスト。
+
+    Returns:
+        str: 生成された `google_storage_bucket` リソースのHCL文字列。
+    """
     parts = []
     for bkt, days in sorted(buckets, key=lambda x: x[0]):
         resource_name = re.sub(r'[^a-zA-Z0-9_]', '_', bkt).lower()
@@ -124,8 +173,15 @@ def generate_bucket_hcl(buckets: List[Tuple[str, int]]) -> str:
 }}\n\n''')
     return "".join(parts)
 
-# Sink HCL生成
 def generate_sink_hcl(sink: Sink) -> str:
+    """ログシンクを作成するためのTerraform HCL文字列を生成します。
+
+    Args:
+        sink (Sink): 1つのシンク設定を表すSinkオブジェクト。
+
+    Returns:
+        str: 生成された `google_logging_organization_sink` リソースのHCL文字列。
+    """
     config = DESTINATION_CONFIG.get(sink.destination_type.lower())
     if not config:
         return ""
@@ -133,8 +189,6 @@ def generate_sink_hcl(sink: Sink) -> str:
     escaped_filter = sink.filter.replace('"', '\\"')
     bigquery_options_block = ""
     if sink.destination_type.lower() == 'bigquery':
-        # ★★★ 修正点 ★★★
-        # この文字列はf-stringではないため、{{ }}ではなく {} を使用します。
         bigquery_options_block = """
   bigquery_options {
     use_partitioned_tables = true
@@ -147,8 +201,15 @@ def generate_sink_hcl(sink: Sink) -> str:
   destination = "{destination_uri}"{bigquery_options_block}
 }}\n\n'''
 
-# IAM HCL生成
 def generate_iam_hcl(sink: Sink) -> str:
+    """ログシンクに必要なIAM権限を付与するためのTerraform HCL文字列を生成します。
+
+    Args:
+        sink (Sink): 1つのシンク設定を表すSinkオブジェクト。
+
+    Returns:
+        str: 生成された `google_project_iam_member` リソースのHCL文字列。
+    """
     config = DESTINATION_CONFIG.get(sink.destination_type.lower())
     if not config:
         return ""
@@ -159,8 +220,19 @@ def generate_iam_hcl(sink: Sink) -> str:
   member  = google_logging_organization_sink.{sink.tf_resource_name}_sink.writer_identity
 }}\n\n'''
 
-# CSV解析
 def parse_sinks_from_csv(path: str) -> List[Sink]:
+    """sinks.csvファイルを解析し、Sinkオブジェクトのリストを返します。
+
+    Args:
+        path (str): CSVファイルのパス。
+
+    Returns:
+        List[Sink]: CSVの各行から生成されたSinkオブジェクトのリスト。
+
+    Raises:
+        FileNotFoundError: 指定されたパスにCSVファイルが見つからない場合。
+        ValueError: CSVのヘッダーに必要な列が不足している場合。
+    """
     sinks: List[Sink] = []
     if not os.path.exists(path):
         raise FileNotFoundError(f"CSVファイルが見つかりません: {path}")
@@ -187,12 +259,24 @@ def parse_sinks_from_csv(path: str) -> List[Sink]:
     return sinks
 
 def build_file_content(body: str) -> str:
+    """HCL文字列の先頭に自動生成されたことを示すヘッダーを追加します。
+
+    Args:
+        body (str): メインとなるHCLコンテンツ文字列。
+
+    Returns:
+        str: ヘッダーが追加された最終的なファイルコンテンツ文字列。
+    """
     if not body.strip():
         return ""
     header = "# --- このファイルはPythonスクリリプトによって自動生成されました ---\n"
     return (header + "\n" + body).rstrip() + "\n"
 
 def main():
+    """スクリプトのメイン処理。
+
+    CSVファイルを読み込み、解析し、複数の.tfファイルを生成・出力します。
+    """
     sinks = parse_sinks_from_csv(INPUT_CSV_FILE)
     # 重複する宛先を排除するためにsetを使用
     datasets = list(set((s.destination_parent, s.retention_days) for s in sinks if s.destination_type.lower() == 'bigquery'))

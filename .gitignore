@@ -11,6 +11,8 @@ domain.env
 /terraform/1_core/services/logsink/sinks.tf
 /terraform/1_core/services/logsink/destinations.tf
 /terraform/1_core/services/logsink/iam.tf
+build/
+__pycache__/
 
 env
 memo*
