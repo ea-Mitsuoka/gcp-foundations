@@ -198,6 +198,11 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/billing.user"
+
+    # ログ集約シンクプロジェクトを設定するのにログ設定管理者を付与
+    gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/logging.admin"
     ```
 
     > **セキュリティ**: ここでは一般的な権限を付与していますが、要件に応じて[最小権限の原則](https://www.google.com/search?q=https://cloud.google.com/iam/docs/using-iam-securely%3Fhl%3Dja%23least_privilege)に従い、より厳密なロールを選択してください。
