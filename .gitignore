@@ -1,3 +1,4 @@
+# Terraform files to ignore
 .terraform/
 .terraform.lock.hcl
 .terraform-version
@@ -6,17 +7,27 @@
 *.tfvars
 *.tfbackend
 *.common.tfbackend
+
+# Environment files
 domain.env
+env
+
+# Automatically created terraform files
 /terraform/1_core/services/logsink/gcp_log_sink_config.csv
 /terraform/1_core/services/logsink/sinks.tf
 /terraform/1_core/services/logsink/destinations.tf
 /terraform/1_core/services/logsink/iam.tf
+
+# Sphinx documentation build
 build/
+
+# Python cache files
 __pycache__/
 
+# IDE files
+.netrc
 
-env
+# Other files
 memo*
 TODO.md
 .DS_Store
-.netrc
