@@ -3,16 +3,22 @@
 ## Terraformファイルの基本的な使い方
 
 1. `git clone`でリポジトリをダウンロード
-2. domain.envにdomain="my-domain.com"といった形式でドメインを記入
-3. gcp-foundationsディレクトリで以下のコマンドを実行
+
+    ```bash
+    git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
+    ```
+
+1. domain.envに`my-domain.com`といった形式でダブルクオーテーションなどで囲わずにドメインを記入
+1. gcp-foundations/terraform/scriptsディレクトリで以下のコマンドを実行
 
    ```bash
-   chmod +x terraform/scripts/get-organization-name.sh terraform/scripts/get-organization-id.sh generate-backend-config.sh terraform/1_core/logsink/services/get-bucket-name.sh
+   chmod +x *.sh
    ```
 
-4. `bash generate-backend-config.sh`を実行
-5. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
-6. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
+1. `bash generate-backend-config.sh`を実行
+1. `bash sync-domain-to-tfvars.sh`を実行
+1. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
+1. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
    1. terraform.tfvarsのラベルに値を入力
 
    ```bash
@@ -29,13 +35,13 @@
    }
    ```
 
-7. terraform/1_core/services/logsink/google_project_serviceディレクトリへ移動してAPI有効化の設定
-8. terraform/1_core/services/logsink/sinksディレクトリへ移動してログ集約シンクの設定
+1. terraform/1_core/services/logsink/google_project_serviceディレクトリへ移動してAPI有効化の設定
+1. terraform/1_core/services/logsink/sinksディレクトリへ移動してログ集約シンクの設定
    1. 要件定義で作成した[ログ集約シンク設定ファイル](https://docs.google.com/spreadsheets/d/1pp-qeE457PHePtdSsADMWXy9yWtNI2fAnk_wa0KVmVE/edit?gid=0#gid=0 "Google Driveへリンク")からGASでcsv出力したgcp_log_sink_config.csvを同ディレクトリへコピー
-   2. generate_terraform.pyを実行
+   1. generate_terraform.pyを実行
       1. destinations.tf, iam.tf, sinks.tfの３ファイルが生成される
-   3. `bash get-bucket-name.sh`を実行
-   4. regionの指定があればterraform.tfvarsにregion=""の形式で追記
+   1. `bash get-bucket-name.sh`を実行
+   1. regionの指定があればterraform.tfvarsにregion=""の形式で追記
 
    ```bash
    # terraform.tfvarsイメージ
@@ -51,7 +57,7 @@
    gcs_backend_bucket="tfstate-my-domain-tf-admin"
    ```
 
-9. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
+1. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
 
 ## リポジトリ構成
 

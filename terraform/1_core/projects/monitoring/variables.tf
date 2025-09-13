@@ -1,9 +1,3 @@
-variable "terraform_service_account_email" {
-  type        = string
-  default     = ""
-  description = "Terraform 実行時に借用するサービスアカウントのメールアドレス。"
-}
-
 variable "project_name" {
   type        = string
   default     = ""
@@ -14,4 +8,9 @@ variable "labels" {
   type        = map(string)
   description = "プロジェクトに付与するラベル。"
   default     = {}
+}
+
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名。"
 }

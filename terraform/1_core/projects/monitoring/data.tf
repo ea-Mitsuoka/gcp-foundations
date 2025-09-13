@@ -1,7 +1,4 @@
-data "external" "org_name" {
-  program = ["bash", "${local.scripts_dir}/get-organization-name.sh"]
-}
-
-data "external" "org_id" {
-  program = ["bash", "${local.scripts_dir}/get-organization-id.sh"]
+data "google_organization" "org" {
+  # 注入された変数を参照
+  domain = var.organization_domain
 }

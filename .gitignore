@@ -6,7 +6,6 @@
 *.tfstate.*
 *.tfvars
 *.tfbackend
-*.common.tfbackend
 
 # Environment files
 domain.env
@@ -14,9 +13,6 @@ env
 
 # Automatically created terraform files
 /terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv
-/terraform/1_core/services/logsink/sinks/sinks.tf
-/terraform/1_core/services/logsink/sinks/destinations.tf
-/terraform/1_core/services/logsink/sinks/iam.tf
 
 # Sphinx documentation build
 build/
@@ -31,3 +27,7 @@ __pycache__/
 memo*
 TODO.md
 .DS_Store
+.catignore
+list-files-for-ai.sh
+cat-for-ai.sh
+all_contents.txt

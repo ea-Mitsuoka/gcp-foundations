@@ -1,16 +1,6 @@
-variable "gcs_backend_bucket" {
-  description = "The name of the GCS bucket used for Terraform state."
-  type        = string
-}
-
 variable "region" {
   type    = string
   default = "asia-northeast1"
-}
-
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
 }
 
 variable "project_apis" {
@@ -24,3 +14,4 @@ variable "labels" {
   description = "プロジェクトに付与するラベル。"
   default     = {}
 }
+
