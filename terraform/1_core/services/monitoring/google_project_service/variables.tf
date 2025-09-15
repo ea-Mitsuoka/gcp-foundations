@@ -14,3 +14,8 @@ variable "labels" {
   description = "プロジェクトに付与するラベル。"
   default     = {}
 }
+
+# variable "organization_domain" {
+#   type        = string
+#   description = "GCP組織のドメイン名。"
+# }

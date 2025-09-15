@@ -12,7 +12,7 @@ terraform {
 data "terraform_remote_state" "project_to_link" {
   backend = "gcs"
   config = {
-    bucket = local.gcs_backend_bucket # locals.tfで管理
+    bucket = var.gcs_backend_bucket # locals.tfで管理
     # 4_projects/example_project のtfstateを指定
     prefix = "projects/example_project"
   }

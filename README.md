@@ -9,14 +9,25 @@
     ```
 
 1. domain.envに`my-domain.com`といった形式でダブルクオーテーションなどで囲わずにドメインを記入
+1. **重要**: terraformコマンドを簡単にするためにgitリポジトリのルートディレクトリをaliasに追加しておく
+
+    ```bash
+    alias git-root='echo "$(git rev-parse --show-toplevel)"'
+    ```
+
 1. gcp-foundations/terraform/scriptsディレクトリで以下のコマンドを実行
 
    ```bash
    chmod +x *.sh
    ```
 
+1. 一時的にgitのrootディレクトリのパスを通す
+
+   `export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"`
+
 1. `bash generate-backend-config.sh`を実行
 1. `bash sync-domain-to-tfvars.sh`を実行
+1. `bash setup-project-context.sh`を実行
 1. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
 1. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
    1. terraform.tfvarsのラベルに値を入力

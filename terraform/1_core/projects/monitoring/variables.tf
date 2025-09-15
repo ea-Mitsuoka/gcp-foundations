@@ -14,3 +14,8 @@ variable "organization_domain" {
   type        = string
   description = "GCP組織のドメイン名。"
 }
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
+}

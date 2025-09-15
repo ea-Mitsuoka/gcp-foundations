@@ -6,10 +6,16 @@ resource "google_project" "this" {
   folder_id  = var.folder_id
   # billing_account はプロジェクト作成後に管理者アカウントで設定するため、ここでは定義しない
   # billing_account = var.billing_account
-
-  labels = var.labels
-
+  labels              = { for k, v in var.labels : k => v if v != "" && v != null }
   auto_create_network = var.auto_create_network
+
+  # 差分を無視するための設定を追加
+  lifecycle {
+    ignore_changes = [
+      # billing_account属性への変更をTerraformの管理対象外にする
+      billing_account,
+    ]
+  }
 }
 
 # 使い方

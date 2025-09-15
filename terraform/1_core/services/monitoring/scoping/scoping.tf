@@ -1,6 +1,7 @@
-# terraform init -backend-config="../../../../common.tfbackend"
-# terraform apply -var-file="../../../../common.tfvars" -var-file="terraform.tfvars"
-# terraform init -backend-config="../../../../common.tfbackend" -reconfigure
+# terraform init -backend-config="$(git-root)/terraform/common.tfbackend"
+# terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+# terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+# terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
 
 resource "google_monitoring_monitored_project" "monitored_projects" {
   # for_each を使い、取得したプロジェクトのリストからリソースを動的に作成

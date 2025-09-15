@@ -1,4 +1,7 @@
 locals {
+  # providerが依存するデフォルトリージョンを定義
+  default_region = "asia-northeast1"
+
   # 1. CSVファイルを読み込み、オブジェクトのリストに変換
   sinks_from_csv = csvdecode(file("${path.module}/gcp_log_sink_config.csv"))
 
@@ -28,21 +31,35 @@ locals {
     }
   }
 
-  # 4. CSVからBigQueryデータセットのリストを動的に抽出し、重複を排除
-  unique_bigquery_datasets = {
+  # --- ▼▼▼ ここからが修正箇所 ▼▼▼ ---
+
+  # 4a. BigQuery宛先の保持期間を宛先名でグループ化
+  grouped_bigquery_retention_days = {
     for sink in local.sinks_from_csv :
-    sink.destination_parent => {
-      retention_days = tonumber(sink.retention_days)
-    }
+    sink.destination_parent => tonumber(sink.retention_days)... # Correct syntax: ... is before if
     if lower(sink.destination_type) == "bigquery"
   }
 
-  # 5. CSVからGCSバケットのリストを動的に抽出し、重複を排除
-  unique_gcs_buckets = {
-    for sink in local.sinks_from_csv :
-    sink.destination_parent => {
-      retention_days = tonumber(sink.retention_days)
+  # 4b. グループ化したリストの中から、宛先ごとに最大の保持期間を選択
+  unique_bigquery_datasets = {
+    for ds_name, retention_days_list in local.grouped_bigquery_retention_days :
+    ds_name => {
+      retention_days = max(retention_days_list...)
     }
+  }
+
+  # 5a. GCS宛先の保持期間を宛先名でグループ化
+  grouped_gcs_retention_days = {
+    for sink in local.sinks_from_csv :
+    sink.destination_parent => tonumber(sink.retention_days)... # Correct syntax: ... is before if
     if lower(sink.destination_type) == "cloud storage"
+  }
+
+  # 5b. グループ化したリストの中から、宛先ごとに最大の保持期間を選択
+  unique_gcs_buckets = {
+    for bucket_name, retention_days_list in local.grouped_gcs_retention_days :
+    bucket_name => {
+      retention_days = max(retention_days_list...)
+    }
   }
 }
