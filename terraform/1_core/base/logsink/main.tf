@@ -2,6 +2,8 @@
 # terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 # terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 # terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
+
+# TODO: 外部モジュール側に処理を移す
 locals {
   # プロジェクトIDで安全に使えるように、ドメイン名のドットをハイフンに置換する
   sanitized_domain = replace(var.organization_domain, ".", "-")
