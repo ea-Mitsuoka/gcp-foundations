@@ -29,7 +29,7 @@
 1. `bash sync-domain-to-tfvars.sh`を実行
 1. `bash setup-project-context.sh`を実行
 1. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
-1. terraform/1_core/projects/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
+1. terraform/1_core/base/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
    1. terraform.tfvarsのラベルに値を入力
 
    ```bash
@@ -68,7 +68,7 @@
    gcs_backend_bucket="tfstate-my-domain-tf-admin"
    ```
 
-1. terraform/1_core/projects/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
+2. terraform/1_core/base/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
 
 ## リポジトリ構成
 
@@ -104,7 +104,7 @@ gcp-foundations/
     │   └── variables.tf
     │
     ├── 1_core/
-    │   ├── projects/
+    │   ├── base/
     │   │   ├── monitoring/
     │   │   │   ├── backend.tf
     │   │   │   ├── main.tf
