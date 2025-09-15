@@ -9,7 +9,7 @@ locals {
 
 # 外部モジュール（string_utils）の呼び出し
 module "string_utils" {
-  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=610dae0"
+  source = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=610dae0"
   # 修正点: データソースからではなく、変数を直接使用
   organization_name = local.sanitized_domain
   env               = var.labels.env
