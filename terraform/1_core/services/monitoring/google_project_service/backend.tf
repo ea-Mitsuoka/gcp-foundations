@@ -1,5 +1,5 @@
 terraform {
   backend "gcs" {
-    prefix = "core/services/logsink/google_project_service"
+    prefix = "core/services/monitoring/google_project_service"
   }
 }
