@@ -213,6 +213,11 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/serviceusage.admin"
+
+    # スコープ対象のプロジェクトをモニタリングするためにを付与
+    gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/monitoring.viewer"
     ```
 
     > **セキュリティ**: ここでは一般的な権限を付与していますが、要件に応じて[最小権限の原則](https://www.google.com/search?q=https://cloud.google.com/iam/docs/using-iam-securely%3Fhl%3Dja%23least_privilege)に従い、より厳密なロールを選択してください。
