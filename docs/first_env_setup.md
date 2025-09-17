@@ -214,7 +214,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/serviceusage.admin"
 
-    # スコープ対象のプロジェクトをモニタリングするためにを付与
+    # スコープ対象のプロジェクトをモニタリングするために監視ビューアを付与
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/monitoring.viewer"
