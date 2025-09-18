@@ -4,5 +4,5 @@ module "impersonated_sa_permissions" {
 
   project_id = module.logsink_project.project_id
   member     = "serviceAccount:${var.terraform_service_account_email}"
-  roles      = local.logsink_project_base_roles
+  roles      = var.roles
 }

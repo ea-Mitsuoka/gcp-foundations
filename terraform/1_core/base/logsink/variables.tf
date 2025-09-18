@@ -10,6 +10,13 @@ variable "labels" {
   default     = {}
 }
 
+variable "roles" {
+  type        = set(string)
+  description = "Terraformが借用するサービスアカウントに付与するIAMロールのリスト。"
+  default = [
+  ]
+}
+
 variable "organization_domain" {
   type        = string
   description = "GCP組織のドメイン名。"
