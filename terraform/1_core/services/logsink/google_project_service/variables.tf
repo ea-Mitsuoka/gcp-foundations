@@ -1,8 +1,3 @@
-variable "region" {
-  type    = string
-  default = "asia-northeast1"
-}
-
 variable "project_apis" {
   type        = set(string)
   description = "プロジェクトで有効化するAPIのリスト。"
@@ -38,4 +33,10 @@ variable "terraform_service_account_email" {
 variable "project_id" {
   type        = string
   description = "この構成が操作対象とするGCPプロジェクトID。"
+}
+
+variable "gcp_region" {
+  type        = string
+  description = "プロジェクトのデフォルトリージョン。"
+  default     = "asia-northeast1"
 }
