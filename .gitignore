@@ -30,5 +30,8 @@ TODO.md
 .catignore
 list-files-for-ai.sh
 cat-for-ai.sh
+file_list.txt
 all_contents.txt
 change.patch
+alert_definitions.csv
+notifications.csv
