@@ -3,7 +3,7 @@ output "log_metrics" {
   value = {
     for k, v in module.log_metrics : k => {
       name = v.name
-      type = v.type
+      type = "logging.googleapis.com/user/${v.name}"
     }
   }
 }

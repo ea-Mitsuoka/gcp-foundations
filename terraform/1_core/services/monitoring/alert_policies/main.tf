@@ -1,4 +1,10 @@
-# (google_monitoring_notification_channel リソースは変更なし)
+# export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+# set-gcs-bucket-value.sh .
+# terraform init -backend-config="$(git-root)/terraform/common.tfbackend"
+# terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+# terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+# terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
+
 resource "google_monitoring_notification_channel" "email" {
   for_each     = local.unique_emails_to_notify
   project      = data.terraform_remote_state.monitoring_project.outputs.project_id

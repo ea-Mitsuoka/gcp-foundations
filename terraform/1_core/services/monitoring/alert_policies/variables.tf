@@ -18,3 +18,8 @@ variable "notifications_csv_path" {
   type        = string
   description = "Path to the notifications CSV file."
 }
+
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名。"
+}
