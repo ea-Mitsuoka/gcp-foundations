@@ -1,6 +1,12 @@
-variable "project_id" {
+variable "scoping_project_id" {
   type        = string
-  description = "The ID of the project in which the resource belongs."
+  description = "The ID of the project in which the alert policy will be created (the scoping project)."
+}
+
+# "monitored_project_id" を新しく追加
+variable "monitored_project_id" {
+  type        = string
+  description = "The ID of the project being monitored."
 }
 
 variable "display_name" {

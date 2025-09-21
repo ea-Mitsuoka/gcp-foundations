@@ -1,6 +1,6 @@
 resource "google_monitoring_alert_policy" "this" {
-  project      = var.project_id
-  display_name = "[${var.project_id}] ${var.display_name}"
+  project      = var.scoping_project_id
+  display_name = "[${var.monitored_project_id}] ${var.display_name}"
   combiner     = "OR"
   enabled      = true
 

@@ -15,7 +15,7 @@ variable "organization_domain" {
 
 variable "alert_definitions_csv_path" {
   type        = string
-  description = "ログベースアラートの定義を記載したCSVファイルのパス。"
+  description = "アラートポリシーの定義を記載したCSVファイルのパス。"
 }
 
 variable "notifications_csv_path" {
