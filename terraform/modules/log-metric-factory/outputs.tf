@@ -1,7 +1,4 @@
 output "name" {
-  value = google_logging_metric.this.name
+  description = "The name of the created log metric."
+  value       = google_logging_metric.this.name
 }
-
-# output "type" {
-#   value = google_logging_metric.this.metric_descriptor[0].type
-# }
