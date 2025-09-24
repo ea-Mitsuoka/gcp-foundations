@@ -25,16 +25,6 @@ variable "organization_domain" {
   description = "GCP組織のドメイン名。"
 }
 
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
-}
-
-variable "project_id" {
-  type        = string
-  description = "この構成が操作対象とするGCPプロジェクトID。"
-}
-
 variable "gcp_region" {
   type        = string
   description = "プロジェクトのデフォルトリージョン。"

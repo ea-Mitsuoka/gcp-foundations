@@ -19,3 +19,8 @@ variable "roles" {
   default = [
   ]
 }
+
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名です。"
+}

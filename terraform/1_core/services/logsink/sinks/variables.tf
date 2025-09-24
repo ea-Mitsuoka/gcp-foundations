@@ -35,8 +35,3 @@ variable "gcs_backend_bucket" {
   type        = string
   description = "Terraformの状態ファイルを保存するGCSバケット名。"
 }
-
-variable "project_id" {
-  type        = string
-  description = "この構成が操作対象とするGCPプロジェクトID。"
-}

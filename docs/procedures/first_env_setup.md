@@ -218,6 +218,17 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
     gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/monitoring.viewer"
+
+    # 退職者をモニタリングするために監視ビューアを付与
+    gcloud organizations add-iam-policy-binding ${ORGANIZATION_ID} \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/cloudasset.owner"
+
+    # モニタリング対象プロジェクトのメタ情報を取得
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/resourcemanager.projectViewer"
+
+    # 退職者をモニタリングするためにログ集約シンクプロジェクトに対するBigQueryデータ閲覧者とスコーピングプロジェクトに対するBigQueryジョブユーザー
     ```
 
     > **セキュリティ**: ここでは一般的な権限を付与していますが、要件に応じて[最小権限の原則](https://www.google.com/search?q=https://cloud.google.com/iam/docs/using-iam-securely%3Fhl%3Dja%23least_privilege)に従い、より厳密なロールを選択してください。
