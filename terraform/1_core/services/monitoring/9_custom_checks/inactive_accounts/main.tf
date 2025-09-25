@@ -1,3 +1,4 @@
+# 先にservices/logsink/datasetsでapplyをして適用しておくこと
 # export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
 # set-gcs-bucket-value.sh .
 # terraform init -backend-config="$(git-root)/terraform/common.tfbackend"
@@ -11,18 +12,11 @@ locals {
   logs_dataset_id       = data.terraform_remote_state.logsink_sinks.outputs.admin_activity_dataset_id
 }
 
-# BigQueryに分析用のデータセットとViewを作成
-resource "google_bigquery_dataset" "analytics_dataset" {
-  project     = local.logsink_project_id
-  dataset_id  = "security_analytics"
-  location    = var.gcp_region
-  description = "Dataset for security analytics views."
-}
-
 resource "google_bigquery_table" "inactive_users_view" {
-  project    = local.logsink_project_id
-  dataset_id = google_bigquery_dataset.analytics_dataset.dataset_id
-  table_id   = "inactive_users_view"
+  project             = data.terraform_remote_state.analytics_dataset.outputs.analytics_dataset_project
+  dataset_id          = data.terraform_remote_state.analytics_dataset.outputs.analytics_dataset_id
+  table_id            = "inactive_users_view"
+  deletion_protection = false
 
   view {
     query = replace(
@@ -70,10 +64,11 @@ resource "google_cloudfunctions2_function" "inactive_account_reporter" {
 
 # 毎日午前3時にFunctionを実行するスケジューラ
 resource "google_cloud_scheduler_job" "inactive_check_scheduler" {
-  project   = local.monitoring_project_id
-  name      = "daily-inactive-account-check"
-  schedule  = "0 3 * * *"
-  time_zone = "Asia/Tokyo"
+  project     = local.monitoring_project_id
+  name        = "daily-inactive-account-check"
+  description = "毎日午前3時にinactive-account-reporter関数をトリガーし、90日以上活動のないGCPユーザーアカウントを検知します。"
+  schedule    = "0 3 * * *"
+  time_zone   = "Asia/Tokyo"
 
   http_target {
     uri         = google_cloudfunctions2_function.inactive_account_reporter.service_config[0].uri

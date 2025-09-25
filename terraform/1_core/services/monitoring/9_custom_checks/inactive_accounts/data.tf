@@ -51,3 +51,12 @@ data "terraform_remote_state" "logsink_sinks" {
     prefix = "core/services/logsink/sinks"
   }
 }
+
+# 新しく作成したdatasetsモジュールの状態を読み込む
+data "terraform_remote_state" "analytics_dataset" {
+  backend = "gcs"
+  config = {
+    bucket = var.gcs_backend_bucket
+    prefix = "core/services/logsink/datasets"
+  }
+}

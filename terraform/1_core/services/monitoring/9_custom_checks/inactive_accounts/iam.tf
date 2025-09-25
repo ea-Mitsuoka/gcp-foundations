@@ -5,31 +5,36 @@ resource "google_service_account" "inactive_check_sa" {
   display_name = "Service Account for Inactive Account Check"
 }
 
-# --- サービスアカウントに必要な権限を付与 ---
+# --- ▼▼▼ ここからがリファクタリング箇所 ▼▼▼ ---
 
-# 1. logsinkプロジェクトのBigQueryジョブ実行権限
-resource "google_project_iam_member" "sa_bigquery_jobuser_on_logsink" {
+# logsinkプロジェクトに付与するロールをlocalsで定義
+locals {
+  logsink_project_roles = toset([
+    "roles/bigquery.jobUser",
+    "roles/bigquery.dataViewer",
+  ])
+}
+
+# 【改善後】logsinkプロジェクトへの権限をfor_eachでまとめて付与
+resource "google_project_iam_member" "sa_roles_on_logsink" {
+  for_each = local.logsink_project_roles
+
   project = data.terraform_remote_state.logsink_project.outputs.project_id
-  role    = "roles/bigquery.jobUser"
+  role    = each.key
   member  = google_service_account.inactive_check_sa.member
 }
 
-# 2. logsinkプロジェクトのBigQueryデータ閲覧権限
-# 注意：より厳密には特定のデータセットに限定すべきですが、ここではプロジェクトレベルで付与します
-resource "google_project_iam_member" "sa_bigquery_dataviewer_on_logsink" {
-  project = data.terraform_remote_state.logsink_project.outputs.project_id
-  role    = "roles/bigquery.dataViewer"
-  member  = google_service_account.inactive_check_sa.member
-}
+# --- ▲▲▲ ここまでがリファクタリング箇所 ▲▲▲ ---
 
-# 3. 組織のCloud Asset Inventory閲覧権限
+
+# 組織のCloud Asset Inventory閲覧権限 (対象が組織のため、別リソースとして定義)
 resource "google_organization_iam_member" "sa_asset_viewer_on_org" {
   org_id = data.google_organization.org.org_id
   role   = "roles/cloudasset.viewer"
   member = google_service_account.inactive_check_sa.member
 }
 
-# 4. monitoringプロジェクトへのカスタム指標書き込み権限
+# monitoringプロジェクトへのカスタム指標書き込み権限 (対象がmonitoringプロジェクトのため、別リソースとして定義)
 resource "google_project_iam_member" "sa_monitoring_metricwriter_on_monitoring" {
   project = data.terraform_remote_state.monitoring_project.outputs.project_id
   role    = "roles/monitoring.metricWriter"

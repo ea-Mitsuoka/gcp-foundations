@@ -228,7 +228,7 @@ Terraformが組織リソースを操作するための「ロボットアカウ�
       --member="serviceAccount:${SA_EMAIL}" \
       --role="roles/resourcemanager.projectViewer"
 
-    # 退職者をモニタリングするfunctionsをデプロイするため組織のロールの管理者を付与
+    # 退職者をモニタリングするfunctionsをデプロイするため組織管理者を付与
 
     # 退職者をモニタリングするためにログ集約シンクプロジェクトに対するBigQueryデータ閲覧者とスコーピングプロジェクトに対するBigQueryジョブユーザー
     ```
