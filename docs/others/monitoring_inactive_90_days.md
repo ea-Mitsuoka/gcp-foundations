@@ -153,7 +153,10 @@
 
     > **結果:** Cloud FunctionとCloud Schedulerが作成されます。
 
-2.  **ステップB：BigQuery Viewの作成**
+2.  **ステップB : データセット作成**
+    a.`services/logsink/datasets`ディレクトリで`terraform apply`をしデータセットを作成する
+
+3.  **ステップC：BigQuery Viewの作成**
     a. **管理アクティビティログを生成**します。（例：コンソールでいずれかのプロジェクトのラベルを編集・保存、または一時的なGCSバケットを作成・削除する）
     b. **5分ほど待機**し、ログが`logsink`プロジェクトのBigQueryに転送され、`cloudaudit_googleapis_com_activity`テーブルが作成されるのを待ちます。
     c. `inactive_accounts/main.tf` を開き、`resource "google_bigquery_table" "inactive_users_view"` の**コメントアウトを解除**します。
@@ -161,7 +164,7 @@
 
     > **結果:** BigQuery Viewが作成されます。
 
-3.  **ステップC：アラートポリシーの作成**
+4.  **ステップD：アラートポリシーの作成**
     a. コンソールから作成済みの`inactive-account-reporter`関数を**手動で一度実行**します。これによりカスタム指標がCloud Monitoringに登録されます。
     b. `inactive_accounts/main.tf` を開き、`resource "google_monitoring_alert_policy" "inactive_account_alert"` の**コメントアウトを解除**します。
     c. `inactive_accounts` ディレクトリで `terraform apply` を再度実行します。
