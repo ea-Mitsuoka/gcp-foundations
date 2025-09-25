@@ -25,46 +25,15 @@ resource "google_bigquery_table" "inactive_users_view" {
   table_id   = "inactive_users_view"
 
   view {
-    query          = <<-EOT
-      WITH
-      -- 1. Asset Inventoryから権限を持つ全ユーザーを取得
-      all_permissioned_users AS (
-        SELECT DISTINCT
-          TRIM(member, 'user:') AS email
-        FROM
-          `${local.logsink_project_id}.asset_inventory.iam_policy`,
-          UNNEST(policy.bindings) AS binding,
-          UNNEST(binding.members) AS member
-        WHERE
-          STARTS_WITH(member, 'user:')
-          AND NOT ENDS_WITH(TRIM(member, 'user:'), '.gserviceaccount.com')
+    query = replace(
+      replace(
+        file("${path.module}/inactive_users_view.sql"),
+        "__LOGSINK_PROJECT_ID__",
+        local.logsink_project_id
       ),
-      -- 2. 監査ログから過去90日間に活動のあったユーザーを取得
-      active_users_last_90_days AS (
-        SELECT DISTINCT
-          -- protoPayload を protopayload_auditlog に変更
-          protopayload_auditlog.authenticationInfo.principalEmail AS email
-        FROM
-          `${local.logsink_project_id}.${local.logs_dataset_id}.cloudaudit_googleapis_com_activity`
-        WHERE
-          timestamp BETWEEN
-            TIMESTAMP(FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY))) AND
-            TIMESTAMP(FORMAT_DATE('%Y-%m-%d', CURRENT_DATE()))
-          -- protoPayload を protopayload_auditlog に変更
-          AND protopayload_auditlog.authenticationInfo.principalEmail IS NOT NULL
-      )
-      -- 3. (1)のリストにいて(2)のリストにいないユーザーを「非アクティブ」として抽出
-      SELECT
-        apu.email
-      FROM
-        all_permissioned_users AS apu
-      LEFT JOIN
-        active_users_last_90_days AS au
-      ON
-        apu.email = au.email
-      WHERE
-        au.email IS NULL
-    EOT
+      "__LOGS_DATASET_ID__",
+      local.logs_dataset_id
+    )
     use_legacy_sql = false
   }
 }
