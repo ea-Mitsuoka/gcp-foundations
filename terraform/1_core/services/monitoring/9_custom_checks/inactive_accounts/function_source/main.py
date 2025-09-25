@@ -9,7 +9,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 LOGSINK_PROJECT_ID = os.environ.get('LOGSINK_PROJECT_ID', 'gcp-project-id')
 MONITORING_PROJECT_ID = os.environ.get('MONITORING_PROJECT_ID', 'gcp-project-id')
 
-def check_inactive_accounts(event, context):
+def check_inactive_accounts(request):
     """
     BigQueryのViewをクエリし、非アクティブなアカウント数を取得して
     Cloud Monitoringのカスタム指標として書き込む関数。
@@ -40,10 +40,13 @@ def check_inactive_accounts(event, context):
         write_custom_metric(MONITORING_PROJECT_ID, inactive_count)
         
     except Exception as e:
-        print(f"An error occurred: {e}")
-        # エラーが発生した場合でも、関数を正常終了させることで再試行を防ぐ
-        # 必要に応じてエラー通知の仕組みをここに追加する
+        error_message = f"An error occurred: {e}"
+        print(error_message)
+        # エラーが発生した場合、500エラーとエラーメッセージを返す
+        return error_message, 500
 
+    # 関数の最後に、成功したことを示す応答を追加します
+    return "Successfully processed inactive account check.", 200
 
 def write_custom_metric(project_id, value):
     """指定された値をCloud Monitoringのカスタム指標として書き込む"""

@@ -8,8 +8,7 @@
 locals {
   monitoring_project_id = data.terraform_remote_state.monitoring_project.outputs.project_id
   logsink_project_id    = data.terraform_remote_state.logsink_project.outputs.project_id
-  # 【前提作業】で作成したデータセットとテーブル名を指定
-  asset_inventory_table = "`_TABLE_SUFFIX` BETWEEN FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)) AND FORMAT_DATE('%Y%m%d', CURRENT_DATE())"
+  logs_dataset_id       = data.terraform_remote_state.logsink_sinks.outputs.admin_activity_dataset_id
 }
 
 # BigQueryに分析用のデータセットとViewを作成
@@ -26,7 +25,7 @@ resource "google_bigquery_table" "inactive_users_view" {
   table_id   = "inactive_users_view"
 
   view {
-    query = <<-EOT
+    query          = <<-EOT
       WITH
       -- 1. Asset Inventoryから権限を持つ全ユーザーを取得
       all_permissioned_users AS (
@@ -43,14 +42,16 @@ resource "google_bigquery_table" "inactive_users_view" {
       -- 2. 監査ログから過去90日間に活動のあったユーザーを取得
       active_users_last_90_days AS (
         SELECT DISTINCT
-          protoPayload.authenticationInfo.principalEmail AS email
+          -- protoPayload を protopayload_auditlog に変更
+          protopayload_auditlog.authenticationInfo.principalEmail AS email
         FROM
-          `${local.logsink_project_id}.cloudaudit_googleapis_com_activity.cloudaudit_googleapis_com_activity_*`
+          `${local.logsink_project_id}.${local.logs_dataset_id}.cloudaudit_googleapis_com_activity`
         WHERE
-          _TABLE_SUFFIX BETWEEN
-            FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)) AND
-            FORMAT_DATE('%Y%m%d', CURRENT_DATE())
-          AND protoPayload.authenticationInfo.principalEmail IS NOT NULL
+          timestamp BETWEEN
+            TIMESTAMP(FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY))) AND
+            TIMESTAMP(FORMAT_DATE('%Y-%m-%d', CURRENT_DATE()))
+          -- protoPayload を protopayload_auditlog に変更
+          AND protopayload_auditlog.authenticationInfo.principalEmail IS NOT NULL
       )
       -- 3. (1)のリストにいて(2)のリストにいないユーザーを「非アクティブ」として抽出
       SELECT
@@ -79,7 +80,7 @@ resource "google_cloudfunctions2_function" "inactive_account_reporter" {
     entry_point = "check_inactive_accounts"
     source {
       storage_source {
-        bucket = var.function_source_bucket
+        bucket = data.terraform_remote_state.bootstrap.outputs.function_source_bucket_name
         object = var.function_source_object
       }
     }
@@ -104,22 +105,26 @@ resource "google_cloud_scheduler_job" "inactive_check_scheduler" {
   name      = "daily-inactive-account-check"
   schedule  = "0 3 * * *"
   time_zone = "Asia/Tokyo"
-  
+
   http_target {
-    uri = google_cloudfunctions2_function.inactive_account_reporter.service_config[0].uri
+    uri         = google_cloudfunctions2_function.inactive_account_reporter.service_config[0].uri
     http_method = "POST"
-    oauth_token {
-        service_account_email = google_service_account.inactive_check_sa.email
+    # oauth_token から oidc_token に変更
+    oidc_token {
+      service_account_email = google_service_account.inactive_check_sa.email
+      # audience は通常、呼び出し先のURIと同じものを指定します
+      audience = google_cloudfunctions2_function.inactive_account_reporter.service_config[0].uri
     }
   }
 }
+
 
 # カスタム指標を監視するアラートポリシー
 resource "google_monitoring_alert_policy" "inactive_account_alert" {
   project      = local.monitoring_project_id
   display_name = "Inactive User Account Detected"
   combiner     = "OR"
-  
+
   notification_channels = [for channel in values(data.terraform_remote_state.notification_channels.outputs.notification_channels_by_email) : channel.id]
 
   conditions {
@@ -134,7 +139,7 @@ resource "google_monitoring_alert_policy" "inactive_account_alert" {
   }
 
   documentation {
-    content = "One or more user accounts with IAM permissions have shown no activity for over 90 days. Please investigate and disable or remove unnecessary accounts. Check the `inactive_users_view` in the `security_analytics` dataset of the logsink project for details."
+    content   = "One or more user accounts with IAM permissions have shown no activity for over 90 days. Please investigate and disable or remove unnecessary accounts. Check the `inactive_users_view` in the `security_analytics` dataset of the logsink project for details."
     mime_type = "text/markdown"
   }
 }

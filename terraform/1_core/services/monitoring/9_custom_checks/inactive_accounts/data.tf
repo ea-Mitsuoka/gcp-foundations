@@ -29,3 +29,25 @@ data "terraform_remote_state" "notification_channels" {
     prefix = "core/services/monitoring/1_notification_channels"
   }
 }
+
+data "terraform_remote_state" "bootstrap" {
+  backend = "gcs"
+  config = {
+    bucket = var.gcs_backend_bucket
+    prefix = "bootstrap"
+  }
+}
+
+# monitoringプロジェクトのプロジェクト番号などを取得するためのデータソース
+data "google_project" "monitoring" {
+  project_id = data.terraform_remote_state.monitoring_project.outputs.project_id
+}
+
+
+data "terraform_remote_state" "logsink_sinks" {
+  backend = "gcs"
+  config = {
+    bucket = var.gcs_backend_bucket
+    prefix = "core/services/logsink/sinks"
+  }
+}

@@ -1,3 +1,8 @@
+variable "terraform_service_account_email" {
+  type        = string
+  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
+}
+
 variable "gcs_backend_bucket" {
   type        = string
   description = "Terraformの状態ファイルを保存するGCSバケット名。"
@@ -7,11 +12,6 @@ variable "gcp_region" {
   type        = string
   description = "リソースを作成するデフォルトリージョン。"
   default     = "asia-northeast1"
-}
-
-variable "function_source_bucket" {
-  type        = string
-  description = "Cloud Functionのソースコード(ZIP)をアップロードしたGCSバケット名。"
 }
 
 variable "function_source_object" {
