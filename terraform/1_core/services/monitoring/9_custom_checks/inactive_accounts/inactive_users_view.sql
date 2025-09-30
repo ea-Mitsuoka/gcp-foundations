@@ -12,6 +12,7 @@ all_permissioned_users AS (
     AND NOT ENDS_WITH(TRIM(member, 'user:'), '.gserviceaccount.com')
 ),
 -- 2. 監査ログから過去90日間に活動のあったユーザーを取得
+-- データアクセス監査ログが無効なままだと、「毎日データは見ているが、リソースの変更はしない」というデータ分析者のようなユーザーが「非アクティブ」として誤検出されてしまう
 active_users_last_90_days AS (
   SELECT DISTINCT
     protopayload_auditlog.authenticationInfo.principalEmail AS email
