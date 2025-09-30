@@ -16,6 +16,7 @@ active_users_last_90_days AS (
   SELECT DISTINCT
     protopayload_auditlog.authenticationInfo.principalEmail AS email
   FROM
+    -- 管理アクセスログを参照しているが、必要に応じて他のログタイプも追加する
     `__LOGSINK_PROJECT_ID__.__LOGS_DATASET_ID__.cloudaudit_googleapis_com_activity`
   WHERE
     timestamp BETWEEN
