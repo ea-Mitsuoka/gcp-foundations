@@ -1,7 +1,4 @@
 locals {
-  # providerが依存するデフォルトリージョンを定義
-  default_region = "asia-northeast1"
-
   # 1. CSVファイルを読み込み、オブジェクトのリストに変換
   sinks_from_csv = csvdecode(file("${path.module}/gcp_log_sink_config.csv"))
 

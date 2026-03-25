@@ -19,12 +19,6 @@ variable "folder_id" {
   default     = null
 }
 
-variable "billing_account" {
-  type        = string
-  description = "The ID of the billing account to associate with the project."
-  default     = null
-}
-
 variable "labels" {
   type        = map(string)
   description = "A map of labels to assign to the project."
