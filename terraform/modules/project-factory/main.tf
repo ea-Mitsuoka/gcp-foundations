@@ -21,9 +21,9 @@ resource "google_project" "this" {
 # 使い方
 # # 外部モジュール（string_utils）の呼び出し
 # module "string_utils" {
-#   source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=54a758c"
+#   source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
 #   # domain-com-<project_name>にするならこちら
-#   # source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e"
+#   # source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
 #   organization_name = var.organization_name # dataソースの代わりに変数から受け取る
 #   env               = var.labels.env
 #   app               = var.labels.app
