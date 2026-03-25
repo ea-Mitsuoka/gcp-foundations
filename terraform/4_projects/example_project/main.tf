@@ -7,7 +7,7 @@ data "external" "org_id" {
 }
 
 module "string_utils" {
-  source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=610dae09b1"
+  source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e"
   organization_id = data.external.org_name.result.organization_id
   env             = var.labels.env
   app             = var.labels.app

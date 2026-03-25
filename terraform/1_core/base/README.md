@@ -24,7 +24,7 @@ gcloud billing projects link ${PROJECT_ID} \
 
   ```bash
   module "string_utils" {
-    source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=610dae09b1"
+    source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e"
   ```
 
   - domain.com → dc-<project_name>
