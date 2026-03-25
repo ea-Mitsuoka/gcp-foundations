@@ -1,0 +1,107 @@
+# This workflow runs checks for Terraform code quality.
+#
+# It is triggered on:
+# - Pull requests targeting the main branch (for .tf and .tfvars files)
+# - Pushes to the main branch (for .tf and .tfvars files)
+# - Manual execution (workflow_dispatch)
+#
+name: Terraform Lint
+
+on:
+  pull_request:
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+  workflow_dispatch:
+
+jobs:
+  ####################################################
+  # Job 1: Run format check and static analysis
+  ####################################################
+  lint:
+    name: Terraform Format and TFLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --recursive
+
+  ####################################################
+  # Job 2: Discover Terraform root directories
+  ####################################################
+  discover:
+    name: Discover Terraform Root Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build validation matrix
+        id: discover
+        shell: bash
+        run: |
+          mapfile -t dirs < <(
+            find terraform -type f -name '*.tf' \
+              -not -path '*/.terraform/*' \
+              -not -path 'terraform/modules/*' \
+              -printf '%h\n' | sort -u
+          )
+
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo 'matrix={"working-directory":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          matrix_json="$(printf '%s\n' "${dirs[@]}" | jq -R . | jq -cs '{"working-directory": .}')"
+          echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
+
+  ####################################################
+  # Job 3: Validate all Terraform root modules
+  ####################################################
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    needs: [lint, discover]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.working-directory }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: ${{ matrix.working-directory }}
