@@ -10,14 +10,16 @@ name: Terraform Lint
 on:
   pull_request:
     paths:
-      - '**/*.tf'
-      - '**/*.tfvars'
+      - '**.tf'
+      - '**.tfvars'
+      - '**.md' # For terraform-docs
   push:
     branches:
       - main
     paths:
-      - '**/*.tf'
-      - '**/*.tfvars'
+      - '**.tf'
+      - '**.tfvars'
+      - '**.md' # For terraform-docs
   workflow_dispatch:
 
 jobs:
@@ -49,7 +51,7 @@ jobs:
         run: tflint --recursive
 
   ####################################################
-  # Job 2: Discover Terraform root directories
+  # Job 2: Discover Terraform root directories (for validate job)
   ####################################################
   discover:
     name: Discover Terraform Root Modules
@@ -80,7 +82,35 @@ jobs:
           echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
 
   ####################################################
-  # Job 3: Validate all Terraform root modules
+  # Job 3: Discover Terraform modules (for docs job)
+  ####################################################
+  discover-modules:
+    name: Discover Terraform Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build docs matrix
+        id: discover
+        shell: bash
+        run: |
+          mapfile -t dirs < <(
+            find terraform/modules -mindepth 1 -maxdepth 1 -type d
+          )
+
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo 'matrix={"working-directory":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          matrix_json="$(printf '%s\n' "${dirs[@]}" | jq -R . | jq -cs '{"working-directory": .}')"
+          echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
+
+  ####################################################
+  # Job 4: Validate all Terraform root modules
   ####################################################
   validate:
     name: Terraform Validate
@@ -110,3 +140,25 @@ jobs:
         id: validate
         run: terraform validate -no-color
         working-directory: ${{ matrix.working-directory }}
+
+  ####################################################
+  # Job 5: Check all Terraform module READMEs
+  ####################################################
+  docs:
+    name: Check Terraform Module Docs
+    runs-on: ubuntu-latest
+    needs: [lint, discover-modules]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-modules.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check module README
+        uses: terraform-docs/gh-actions@v1
+        with:
+          working-dir: ${{ matrix.working-directory }}
+          output-file: README.md
+          output-check: "true"
+          git-push: "false"
