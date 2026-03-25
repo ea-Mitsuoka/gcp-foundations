@@ -1,6 +1,6 @@
 terraform {
   # "~>" を使い、意図しないメジャー/マイナーアップデートを防ぎます
-  required_version = "~> 1.12.2"
+  required_version = "~> 1.14"
 
   required_providers {
     google = {
