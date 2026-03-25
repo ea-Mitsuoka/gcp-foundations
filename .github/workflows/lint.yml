@@ -93,6 +93,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create dummy CSV for validation
+        if: matrix.working-directory == 'terraform/1_core/services/logsink/sinks'
+        run: echo "log_type,filter,destination_type,destination_parent,retention_days" > gcp_log_sink_config.csv
+        working-directory: ${{ matrix.working-directory }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
