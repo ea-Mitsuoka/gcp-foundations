@@ -7,10 +7,10 @@ data "external" "org_id" {
 }
 
 module "string_utils" {
-  source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
-  organization_id = data.external.org_name.result.organization_id
-  env             = var.labels.env
-  app             = var.labels.app
+  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
+  organization_name = data.external.org_name.result.organization_name
+  env               = var.labels.env
+  app               = var.labels.app
 }
 
 resource "random_id" "project_suffix" {
