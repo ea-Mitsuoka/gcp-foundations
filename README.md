@@ -59,17 +59,17 @@ ______________________________________________________________________
 
 1. **便利なエイリアスとパスを設定（推奨）**
 
-  以下のコマンドを実行して、エイリアスとパスを設定します。
+    以下のコマンドを実行して、エイリアスとパスを設定します。
 
-  ```bash
-  # エイリアスの設定
-  alias git-root='echo "$(git rev-parse --show-toplevel)"'
+    ```bash
+    # エイリアスの設定
+    alias git-root='echo "$(git rev-parse --show-toplevel)"'
 
-  # スクリプトへのパスを通す
-  export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
-  ```
+    # スクリプトへのパスを通す
+    export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+    ```
 
-  この設定はターミナルセッションを閉じるとリセットされるため、.bashrcや.zshrcに追記することを推奨します。
+    この設定はターミナルセッションを閉じるとリセットされるため、.bashrcや.zshrcに追記することを推奨します。
 
 1. **自動化スクリプトを実行します。(要動作確認)**
    `setup_new_client.sh` スクリプトが、対話形式で必要な情報を質問し、tfstate管理基盤の構築を自動で行います。
