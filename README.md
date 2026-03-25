@@ -33,7 +33,7 @@ graph TD
   - "Project Factory" パターンに基づき、各アプリケーションやチームのためのGCPプロジェクトを作成します。
   - 責務: アプリケーションごとのプロジェクトの作成、API有効化、サービスアカウント設定など。
 
----
+______________________________________________________________________
 
 ## 🚀 環境構築手順
 
@@ -47,64 +47,67 @@ graph TD
 
 1. **リポジトリをクローンします。**
 
-    ```bash
-    git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
-    cd gcp-foundations
-    ```
+   ```bash
+   git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
+   cd gcp-foundations
+   ```
 
-2. **ドメインを設定します。**
-    リポジトリのルートに `domain.env` ファイルを作成し、GCPの組織に紐づくドメインを記述します。（例: `example.com`）
+1. **ドメインを設定します。**
+   リポジトリのルートに `domain.env` ファイルを作成し、GCPの組織に紐づくドメインを記述します。（例: `example.com`）
 
-    ```bash
-    echo "your-domain.com" > domain.env
-    ```
+   ```bash
+   echo "your-domain.com" > domain.env
+   ```
 
-3. **便利なエイリアスとパスを設定します。（推奨）**
-    スクリプトを簡単に実行するために、エイリアスとパスを設定します。
+1. **便利なエイリアスとパスを設定します。（推奨）**
+   スクリプトを簡単に実行するために、エイリアスとパスを設定します。
 
-    ```bash
-    # エイリアスの設定
-    alias git-root='echo "$(git rev-parse --show-toplevel)"'
+   ```bash
+   # エイリアスの設定
+   alias git-root='echo "$(git rev-parse --show-toplevel)"'
 
-    # スクリプトへのパスを通す
-    export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
-    ```
+   # スクリプトへのパスを通す
+   export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+   ```
 
-    *この設定はターミナルセッションを閉じるとリセットされるため、`.bashrc`や`.zshrc`に追記することを推奨します。*
+   *この設定はターミナルセッションを閉じるとリセットされるため、`.bashrc`や`.zshrc`に追記することを推奨します。*
 
-4. **スクリプトに実行権限を付与します。**
+1. **スクリプトに実行権限を付与します。**
 
-    ```bash
-    chmod +x terraform/scripts/*.sh
-    ```
+   ```bash
+   chmod +x terraform/scripts/*.sh
+   ```
 
 ### 2. Terraformバックエンドの設定
 
 1. **設定スクリプトを実行します。**
-    以下のスクリプトが `terraform/` 配下の各ディレクトリに `backend.tf` を自動生成し、必要な変数を設定します。
+   以下のスクリプトが `terraform/` 配下の各ディレクトリに `backend.tf` を自動生成し、必要な変数を設定します。
 
-    ```bash
-    generate-backend-config.sh
-    sync-domain-to-tfvars.sh
-    setup-project-context.sh
-    ```
+   ```bash
+   generate-backend-config.sh
+   sync-domain-to-tfvars.sh
+   setup-project-context.sh
+   ```
 
 ### 3. Terraformの段階的な適用
 
 `docs/first_env_setup.md` の詳細な手順に従い、以下の順序で各レイヤーのTerraformコードを適用していきます。
 
 1. **`terraform/0_bootstrap`**
-    - `tfstate`管理用のGCSバケットを作成します。これは手動での適用が必要です。
 
-2. **`terraform/1_core/base/logsink`**
-    - ログ集約用のプロジェクトを作成します。
+   - `tfstate`管理用のGCSバケットを作成します。これは手動での適用が必要です。
 
-3. **`terraform/1_core/base/monitoring`**
-    - モニタリング用のプロジェクトを作成します。
+1. **`terraform/1_core/base/logsink`**
 
-4. 以降、`2_organization`, `3_folders`, `4_projects` の順に必要に応じて適用します。
+   - ログ集約用のプロジェクトを作成します。
 
----
+1. **`terraform/1_core/base/monitoring`**
+
+   - モニタリング用のプロジェクトを作成します。
+
+1. 以降、`2_organization`, `3_folders`, `4_projects` の順に必要に応じて適用します。
+
+______________________________________________________________________
 
 ## CI/CDによる自動化
 
@@ -116,7 +119,7 @@ graph TD
 
 `main`ブランチにマージされると、これらのワークフローがトリガーされ、`terraform apply`が自動的に実行されます。
 
----
+______________________________________________________________________
 
 ## 📂 リポジトリ構成
 

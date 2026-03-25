@@ -28,15 +28,15 @@ terraform-docs markdown table --output-file README.md terraform/modules/<your-mo
 モジュールの変更が、それを呼び出している既存のインフラにどのような影響を与えるかを確認します。
 
 1. **影響を受けるディレクトリを特定します。**
-    `grep`コマンドなどで、変更したモジュールを`source`として指定しているディレクトリをすべて洗い出します。
+   `grep`コマンドなどで、変更したモジュールを`source`として指定しているディレクトリをすべて洗い出します。
 
-    ```bash
-    # 例: project-factoryモジュールを使っている場所を探す
-    grep -r "source.*project-factory" terraform/
-    ```
+   ```bash
+   # 例: project-factoryモジュールを使っている場所を探す
+   grep -r "source.*project-factory" terraform/
+   ```
 
-2. **特定したすべてのディレクトリで`plan`を実行します。**
-    洗い出したディレクトリそれぞれに移動し、`terraform plan`を実行して、意図しない変更（`destroy`など）が発生しないかを慎重に確認してください。
+1. **特定したすべてのディレクトリで`plan`を実行します。**
+   洗い出したディレクトリそれぞれに移動し、`terraform plan`を実行して、意図しない変更（`destroy`など）が発生しないかを慎重に確認してください。
 
 ### 4. コミット & プルリクエスト
 

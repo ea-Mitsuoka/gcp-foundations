@@ -53,55 +53,55 @@ labels = {
 
 1. **対象のディレクトリに移動します。**
 
-    ```bash
-    cd terraform/4_projects/my-new-app
-    ```
+   ```bash
+   cd terraform/4_projects/my-new-app
+   ```
 
-2. **`dev`ワークスペースを新規に作成します。**
-    （初回のみ）
+1. **`dev`ワークスペースを新規に作成します。**
+   （初回のみ）
 
-    ```bash
-    terraform workspace new dev
-    ```
+   ```bash
+   terraform workspace new dev
+   ```
 
-    これで`dev`という名前のワークスペースが作成され、自動的にそのワークスペースに切り替わります。
+   これで`dev`という名前のワークスペースが作成され、自動的にそのワークスペースに切り替わります。
 
-    既存のワークスペースの一覧は`terraform workspace list`で、現在のワークスペースは`terraform workspace show`で確認できます。
+   既存のワークスペースの一覧は`terraform workspace list`で、現在のワークスペースは`terraform workspace show`で確認できます。
 
 ### 3. `terraform apply` の実行
 
 特定の環境に対応するワークスペースと`.tfvars`ファイルを指定して、`apply`を実行します。
 
 1. **対象のワークスペースに切り替えます。**
-    （すでに`dev`にいる場合は不要）
+   （すでに`dev`にいる場合は不要）
 
-    ```bash
-    terraform workspace select dev
-    ```
+   ```bash
+   terraform workspace select dev
+   ```
 
-2. **`init`と`plan`を実行します。**
+1. **`init`と`plan`を実行します。**
 
-    ```bash
-    terraform init
-    terraform plan -var-file="dev.tfvars"
-    ```
+   ```bash
+   terraform init
+   terraform plan -var-file="dev.tfvars"
+   ```
 
-    `-var-file`フラグで、手順1で作成した環境ごとの設定ファイルを指定します。
+   `-var-file`フラグで、手順1で作成した環境ごとの設定ファイルを指定します。
 
-3. **`apply`を実行します。**
-    `plan`の内容に問題がなければ、`apply`を実行します。
+1. **`apply`を実行します。**
+   `plan`の内容に問題がなければ、`apply`を実行します。
 
-    ```bash
-    terraform apply -var-file="dev.tfvars"
-    ```
+   ```bash
+   terraform apply -var-file="dev.tfvars"
+   ```
 
 ### 他の環境をセットアップする場合
 
 同様に、`prod`環境をセットアップする場合は、以下のようになります。
 
 1. `prod.tfvars`ファイルを作成します。
-2. `terraform workspace new prod`で`prod`ワークスペースを作成します。
-3. `terraform workspace select prod`で`prod`に切り替えます。
-4. `terraform apply -var-file="prod.tfvars"`を実行します。
+1. `terraform workspace new prod`で`prod`ワークスペースを作成します。
+1. `terraform workspace select prod`で`prod`に切り替えます。
+1. `terraform apply -var-file="prod.tfvars"`を実行します。
 
 この手順により、安全かつ再現性の高い方法で、複数の環境を管理することができます。

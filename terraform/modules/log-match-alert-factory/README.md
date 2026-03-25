@@ -1,16 +1,17 @@
 <!-- BEGIN_TF_DOCS -->
+
 ## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.14 |
-| <a name="requirement_google"></a> [google](#requirement\_google) | ~> 6.48.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement_terraform) | ~> 1.14 |
+| <a name="requirement_google"></a> [google](#requirement_google) | ~> 6.48.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | ~> 6.48.0 |
+| <a name="provider_google"></a> [google](#provider_google) | ~> 6.48.0 |
 
 ## Modules
 
@@ -26,14 +27,15 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_display_name"></a> [display\_name](#input\_display\_name) | A user-assigned name for this resource. | `string` | n/a | yes |
-| <a name="input_documentation"></a> [documentation](#input\_documentation) | Documentation for the alert policy, in Markdown format. | `string` | `"No documentation provided."` | no |
-| <a name="input_filter"></a> [filter](#input\_filter) | A filter that identifies which log entries to monitor. | `string` | n/a | yes |
-| <a name="input_monitored_project_id"></a> [monitored\_project\_id](#input\_monitored\_project\_id) | The ID of the project being monitored. | `string` | n/a | yes |
-| <a name="input_notification_channel_ids"></a> [notification\_channel\_ids](#input\_notification\_channel\_ids) | A list of notification channel IDs to which notifications will be sent when the alert is triggered. | `list(string)` | `[]` | no |
-| <a name="input_scoping_project_id"></a> [scoping\_project\_id](#input\_scoping\_project\_id) | The ID of the project in which the alert policy will be created (the scoping project). | `string` | n/a | yes |
+| <a name="input_display_name"></a> [display_name](#input_display_name) | A user-assigned name for this resource. | `string` | n/a | yes |
+| <a name="input_documentation"></a> [documentation](#input_documentation) | Documentation for the alert policy, in Markdown format. | `string` | `"No documentation provided."` | no |
+| <a name="input_filter"></a> [filter](#input_filter) | A filter that identifies which log entries to monitor. | `string` | n/a | yes |
+| <a name="input_monitored_project_id"></a> [monitored_project_id](#input_monitored_project_id) | The ID of the project being monitored. | `string` | n/a | yes |
+| <a name="input_notification_channel_ids"></a> [notification_channel_ids](#input_notification_channel_ids) | A list of notification channel IDs to which notifications will be sent when the alert is triggered. | `list(string)` | `[]` | no |
+| <a name="input_scoping_project_id"></a> [scoping_project_id](#input_scoping_project_id) | The ID of the project in which the alert policy will be created (the scoping project). | `string` | n/a | yes |
 
 ## Outputs
 
 No outputs.
+
 <!-- END_TF_DOCS -->

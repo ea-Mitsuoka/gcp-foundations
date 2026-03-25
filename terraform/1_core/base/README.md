@@ -20,21 +20,22 @@ gcloud billing projects link ${PROJECT_ID} \
 ## プロジェクト命名
 
 - 2種類あり好きな方を使う
-  - domain.com → domain-com-<project_name>
+
+  - domain.com → domain-com-\<project_name>
 
   ```bash
   module "string_utils" {
     source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
   ```
 
-  - domain.com → dc-<project_name>
+  - domain.com → dc-\<project_name>
 
   ```bash
   module "string_utils" {
     source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
   ```
 
----
+______________________________________________________________________
 
 ## 補足: `1_core/base` ディレクトリの役割
 
