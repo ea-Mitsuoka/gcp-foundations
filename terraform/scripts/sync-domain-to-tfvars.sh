@@ -25,8 +25,16 @@ if [ ! -f "$DOMAIN_ENV_FILE" ]; then
   exit 1
 fi
 
-# ファイルからドメイン名を読み込み、前後の空白や改行を削除
-DOMAIN_VALUE=$(tr -d '[:space:]' < "$DOMAIN_ENV_FILE")
+# domain.env の正規形式は `domain="example.com"` を想定。
+# 旧形式（ファイルにドメイン文字列のみ）も互換として読み込む。
+DOMAIN_VALUE=""
+# shellcheck disable=SC1090
+source "$DOMAIN_ENV_FILE" || true
+if [ -n "${domain:-}" ]; then
+  DOMAIN_VALUE="$domain"
+else
+  DOMAIN_VALUE="$(tr -d '[:space:]' < "$DOMAIN_ENV_FILE")"
+fi
 
 if [ -z "$DOMAIN_VALUE" ]; then
   echo "error: $DOMAIN_ENV_FILE が空か、読み込めません。" >&2

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # --- domain.env を上位ディレクトリまで探す ---
 ENV_FILE=""
@@ -17,8 +17,19 @@ if [ -z "$ENV_FILE" ]; then
   exit 1
 fi
 
-# domain.env の中身をそのまま読み込む（例：my-domain.com）
-domain=$(<"$ENV_FILE")
+# domain.env の正規形式は `domain="example.com"` を想定。
+# 旧形式（ファイルにドメイン文字列のみ）も互換として読み込む。
+domain=""
+# shellcheck disable=SC1090
+source "$ENV_FILE" || true
+if [ -z "${domain:-}" ]; then
+  domain="$(tr -d '[:space:]' < "$ENV_FILE")"
+fi
+
+if [ -z "$domain" ]; then
+  echo "domain.env から domain を読み取れませんでした。" >&2
+  exit 1
+fi
 
 # ドメイン名のドットをハイフンに置換
 SAFE_DOMAIN_NAME=$(echo "$domain" | tr '.' '-')

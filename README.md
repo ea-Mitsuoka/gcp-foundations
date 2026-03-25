@@ -35,15 +35,20 @@ graph TD
 
 ______________________________________________________________________
 
-## 🚀 環境構築手順
+## 🚀 新規顧客向け 環境構築手順
+
+このリポジトリをテンプレートとして使い、新しい顧客のGCP組織にインフラ基盤を払い出すためのセットアップは、自動化スクリプトを実行するだけで簡単に行えます。
 
 ### 前提条件
 
-- `gcloud` CLIがインストールされ、認証済みであること。
-- `terraform` CLIがインストールされていること。
-- GCPの組織 (Organization) が存在し、自身のユーザーにそれを管理する権限があること。
+- `gcloud` CLI, `terraform` CLI, `git`, `openssl` がローカル環境にインストールされていること。
+- 顧客のGCP組織に対する**組織管理者**などの強い権限を持つアカウントで、`gcloud`にログイン済みであること。
+  ```bash
+  gcloud auth login
+  gcloud auth application-default login
+  ```
 
-### 1. リポジトリのクローンと初期設定
+### 手順
 
 1. **リポジトリをクローンします。**
 
@@ -52,62 +57,35 @@ ______________________________________________________________________
    cd gcp-foundations
    ```
 
-1. **ドメインを設定します。**
-   リポジトリのルートに `domain.env` ファイルを作成し、GCPの組織に紐づくドメインを記述します。（例: `example.com`）
+1. **便利なエイリアスとパスを設定（推奨）**
+
+  以下のコマンドを実行して、エイリアスとパスを設定します。
+
+  ```bash
+  # エイリアスの設定
+  alias git-root='echo "$(git rev-parse --show-toplevel)"'
+
+  # スクリプトへのパスを通す
+  export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+  ```
+
+  この設定はターミナルセッションを閉じるとリセットされるため、.bashrcや.zshrcに追記することを推奨します。
+
+1. **自動化スクリプトを実行します。(要動作確認)**
+   `setup_new_client.sh` スクリプトが、対話形式で必要な情報を質問し、tfstate管理基盤の構築を自動で行います。
 
    ```bash
-   echo "your-domain.com" > domain.env
+   chmod +x terraform/scripts/setup_new_client.sh
+   ./terraform/scripts/setup_new_client.sh
    ```
 
-1. **便利なエイリアスとパスを設定します。（推奨）**
-   スクリプトを簡単に実行するために、エイリアスとパスを設定します。
+1. **手動で課金アカウントをリンクします。**
+   スクリプトの最後に表示される`gcloud billing projects link ...`コマンドを実行し、管理用プロジェクトに課金アカウントを手動で紐付けます。これは、権限の都合上、手動での実行が必須となっています。
 
-   ```bash
-   # エイリアスの設定
-   alias git-root='echo "$(git rev-parse --show-toplevel)"'
+1. **`0_bootstrap` を適用します。**
+   スクリプトの案内に従い、`0_bootstrap`ディレクトリで`terraform init`と`terraform apply`を実行し、Terraformの管理をGCSバックエンドで開始します。
 
-   # スクリプトへのパスを通す
-   export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
-   ```
-
-   *この設定はターミナルセッションを閉じるとリセットされるため、`.bashrc`や`.zshrc`に追記することを推奨します。*
-
-1. **スクリプトに実行権限を付与します。**
-
-   ```bash
-   chmod +x terraform/scripts/*.sh
-   ```
-
-### 2. Terraformバックエンドの設定
-
-1. **設定スクリプトを実行します。**
-   以下のスクリプトが `terraform/` 配下の各ディレクトリに `backend.tf` を自動生成し、必要な変数を設定します。
-
-   ```bash
-   generate-backend-config.sh
-   sync-domain-to-tfvars.sh
-   setup-project-context.sh
-   ```
-
-### 3. Terraformの段階的な適用
-
-`docs/first_env_setup.md` の詳細な手順に従い、以下の順序で各レイヤーのTerraformコードを適用していきます。
-
-1. **`terraform/0_bootstrap`**
-
-   - `tfstate`管理用のGCSバケットを作成します。これは手動での適用が必要です。
-
-1. **`terraform/1_core/base/logsink`**
-
-   - ログ集約用のプロジェクトを作成します。
-
-1. **`terraform/1_core/base/monitoring`**
-
-   - モニタリング用のプロジェクトを作成します。
-
-1. 以降、`2_organization`, `3_folders`, `4_projects` の順に必要に応じて適用します。
-
-______________________________________________________________________
+これ以降の`1_core`からの各レイヤーの適用については、`docs/procedures/first_env_setup.md`の詳細な手順を参照してください。
 
 ## CI/CDによる自動化
 
