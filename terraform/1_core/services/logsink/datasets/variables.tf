@@ -13,8 +13,3 @@ variable "gcp_region" {
   description = "リソースを作成するデフォルトリージョン。"
   default     = "asia-northeast1"
 }
-
-variable "organization_domain" {
-  type        = string
-  description = "GCP組織のドメイン名。"
-}

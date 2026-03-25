@@ -1,5 +1,5 @@
 terraform {
-  # required_versionはルートモジュールで定義する
+  required_version = "~> 1.12.2"
   required_providers {
     google = {
       source  = "hashicorp/google"

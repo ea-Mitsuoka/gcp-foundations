@@ -1,19 +1,3 @@
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
-}
-
-variable "region" {
-  type    = string
-  default = "asia-northeast1"
-}
-
-variable "labels" {
-  type        = map(string)
-  description = "プロジェクトに付与するラベル。"
-  default     = {}
-}
-
 variable "organization_domain" {
   type        = string
   description = "GCP組織のドメイン名。"

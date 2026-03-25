@@ -3,11 +3,6 @@ variable "terraform_service_account_email" {
   description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
 }
 
-variable "region" {
-  type    = string
-  default = "asia-northeast1"
-}
-
 variable "roles" {
   type        = set(string)
   description = "Terraformが借用するサービスアカウントに付与するIAMロールのリスト。"
@@ -18,9 +13,4 @@ variable "roles" {
 variable "gcs_backend_bucket" {
   type        = string
   description = "Terraformの状態ファイルを保存するGCSバケット名。"
-}
-
-variable "organization_domain" {
-  type        = string
-  description = "GCP組織のドメイン名。"
 }

@@ -8,11 +8,6 @@ variable "gcs_backend_bucket" {
   description = "Terraformの状態ファイルを保存するGCSバケット名。"
 }
 
-variable "organization_domain" {
-  type        = string
-  description = "GCP組織のドメイン名。"
-}
-
 variable "notifications_csv_path" {
   type        = string
   description = "通知チャネルの定義を記載したCSVファイルのパス。"

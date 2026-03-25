@@ -4,12 +4,6 @@ variable "project_apis" {
   default     = []
 }
 
-variable "labels" {
-  type        = map(string)
-  description = "プロジェクトに付与するラベル。"
-  default     = {}
-}
-
 variable "terraform_service_account_email" {
   type        = string
   description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
@@ -18,11 +12,6 @@ variable "terraform_service_account_email" {
 variable "gcs_backend_bucket" {
   type        = string
   description = "Terraformの状態ファイルを保存するGCSバケット名。"
-}
-
-variable "organization_domain" {
-  type        = string
-  description = "GCP組織のドメイン名。"
 }
 
 variable "gcp_region" {

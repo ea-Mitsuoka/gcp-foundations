@@ -9,18 +9,6 @@ variable "bq_dataset_delete_contents_on_destroy" {
   default     = false
 }
 
-variable "gcs_log_retention_days" {
-  type        = number
-  description = "The number of days to retain logs in the GCS bucket."
-  default     = 365
-}
-
-variable "labels" {
-  type        = map(string)
-  description = "プロジェクトに付与するラベル。"
-  default     = {}
-}
-
 variable "organization_domain" {
   type        = string
   description = "GCP組織のドメイン名。"
