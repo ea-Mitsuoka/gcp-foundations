@@ -18,6 +18,12 @@ terraform {
 }
 
 # どのプロジェクトを対象にするか、tfstateから読み込む
+
+variable "gcs_backend_bucket" {
+  type        = string
+  description = "The name of the GCS bucket where the Terraform state is stored."
+}
+
 data "terraform_remote_state" "project_to_link" {
   backend = "gcs"
   config = {
@@ -34,7 +40,7 @@ variable "billing_account_id" {
 }
 
 # 課金アカウントとプロジェクトをリンクさせるリソース
-resource "google_project_billing_info" "project_billing" {
+resource "google_billing_project_info" "project_billing" {
   project         = data.terraform_remote_state.project_to_link.outputs.project_id
   billing_account = var.billing_account_id
 }
