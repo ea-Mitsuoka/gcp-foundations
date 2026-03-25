@@ -1,152 +1,135 @@
-# リポジトリ全体の目的と運用ルール
+# GCP Foundations (Terraform IaC)
 
-## Terraformファイルの基本的な使い方
+このリポジトリは、Terraformを使用してGoogle Cloud Platform (GCP) 環境を体系的に構築・管理するための Infrastructure as Code (IaC) 基盤です。ガバナンスを確保しつつ、セキュアで再利用可能なGCP環境を効率的に展開することを目的とします。
 
-1. `git clone`でリポジトリをダウンロード
+## 📖 設計思想
+
+この基盤は、責務の分離と段階的なインフラ構築を重視した**レイヤー構造**を採用しています。各レイヤーは独立したTerraformのルートモジュールとして管理され、下位のレイヤーに依存します。
+
+```mermaid
+graph TD
+    A[0. Bootstrap] --> B[1. Core Services];
+    B --> C[2. Organization];
+    C --> D[3. Folders];
+    D --> E[4. Projects];
+```
+
+- **Layer 0: Bootstrap**
+  - Terraformの実行基盤自体を構築します。
+  - 責務: `tfstate`を管理するGCSバケットの作成。
+- **Layer 1: Core Services**
+  - 組織全体で共有されるログ集約やモニタリングなどの中核サービスを構築します。
+  - 責務: ログ集約プロジェクト、モニタリングプロジェクトの作成と設定。
+- **Layer 2: Organization**
+  - 組織全体に適用されるポリシーやIAM設定を管理します。
+  - 責務: 組織ポリシー、組織レベルでのIAM設定。
+- **Layer 3: Folders**
+  - `production`, `staging`, `development` といった、リソースを階層的に管理するためのフォルダ構造を定義します。
+  - 責務: 基本となるフォルダの作成とIAM設定。
+- **Layer 4: Projects**
+  - "Project Factory" パターンに基づき、各アプリケーションやチームのためのGCPプロジェクトを作成します。
+  - 責務: アプリケーションごとのプロジェクトの作成、API有効化、サービスアカウント設定など。
+
+---
+
+## 🚀 環境構築手順
+
+### 前提条件
+
+- `gcloud` CLIがインストールされ、認証済みであること。
+- `terraform` CLIがインストールされていること。
+- GCPの組織 (Organization) が存在し、自身のユーザーにそれを管理する権限があること。
+
+### 1. リポジトリのクローンと初期設定
+
+1. **リポジトリをクローンします。**
 
     ```bash
     git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
+    cd gcp-foundations
     ```
 
-1. domain.envに`my-domain.com`といった形式でダブルクオーテーションなどで囲わずにドメインを記入
-1. **重要**: terraformコマンドを簡単にするためにgitリポジトリのルートディレクトリをaliasに追加しておく
+2. **ドメインを設定します。**
+    リポジトリのルートに `domain.env` ファイルを作成し、GCPの組織に紐づくドメインを記述します。（例: `example.com`）
 
     ```bash
-    alias git-root='echo "$(git rev-parse --show-toplevel)"'
+    echo "your-domain.com" > domain.env
     ```
 
-1. gcp-foundations/terraform/scriptsディレクトリで以下のコマンドを実行
+3. **便利なエイリアスとパスを設定します。（推奨）**
+    スクリプトを簡単に実行するために、エイリアスとパスを設定します。
 
-   ```bash
-   chmod +x *.sh
-   ```
+    ```bash
+    # エイリアスの設定
+    alias git-root='echo "$(git rev-parse --show-toplevel)"'
 
-1. 一時的にgitのrootディレクトリのパスを通す
+    # スクリプトへのパスを通す
+    export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+    ```
 
-   `export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"`
+    *この設定はターミナルセッションを閉じるとリセットされるため、`.bashrc`や`.zshrc`に追記することを推奨します。*
 
-1. `bash generate-backend-config.sh`を実行
-1. `bash sync-domain-to-tfvars.sh`を実行
-1. `bash setup-project-context.sh`を実行
-1. docs/first_env_setup.mdを参考にtfstateファイル管理専用のプロジェクトを作成
-1. terraform/1_core/base/logsinkディレクトリへ移動してログ集約シンクプロジェクトを作成
-   1. terraform.tfvarsのラベルに値を入力
+4. **スクリプトに実行権限を付与します。**
 
-   ```bash
-   # terraform.tfvarsイメージ
-   project_name = "logsink"
+    ```bash
+    chmod +x terraform/scripts/*.sh
+    ```
 
-   labels = {
-      env         = ""
-      app         = ""
-      team        = ""
-      partner     = "vendor-e-agency"
-      cost-center = ""
-      managed-by  = "terraform"
-   }
-   ```
+### 2. Terraformバックエンドの設定
 
-1. terraform/1_core/services/logsink/google_project_serviceディレクトリへ移動してAPI有効化の設定
-1. terraform/1_core/services/logsink/sinksディレクトリへ移動してログ集約シンクの設定
-   1. 要件定義で作成した[ログ集約シンク設定ファイル](https://docs.google.com/spreadsheets/d/1pp-qeE457PHePtdSsADMWXy9yWtNI2fAnk_wa0KVmVE/edit?gid=0#gid=0 "Google Driveへリンク")からGASでcsv出力したgcp_log_sink_config.csvを同ディレクトリへコピー
-   1. generate_terraform.pyを実行
-      1. destinations.tf, iam.tf, sinks.tfの３ファイルが生成される
-   1. `bash get-bucket-name.sh`を実行
-   1. regionの指定があればterraform.tfvarsにregion=""の形式で追記
+1. **設定スクリプトを実行します。**
+    以下のスクリプトが `terraform/` 配下の各ディレクトリに `backend.tf` を自動生成し、必要な変数を設定します。
 
-   ```bash
-   # terraform.tfvarsイメージ
-   project_apis = [
-      "storage.googleapis.com",
-      "iam.googleapis.com",
-      "serviceusage.googleapis.com",         # API有効化用（google_project_service）
-      "cloudresourcemanager.googleapis.com", # プロジェクト作成/管理
-      "logging.googleapis.com",              # Stackdriver Logging / sinks
-      "bigquery.googleapis.com",             # BigQuery（ログシンクを BigQuery にする場合）
-   ]
+    ```bash
+    generate-backend-config.sh
+    sync-domain-to-tfvars.sh
+    setup-project-context.sh
+    ```
 
-   gcs_backend_bucket="tfstate-my-domain-tf-admin"
-   ```
+### 3. Terraformの段階的な適用
 
-2. terraform/1_core/base/monitoringディレクトリへ移動してモニタリング専用のプロジェクトを作成
+`docs/first_env_setup.md` の詳細な手順に従い、以下の順序で各レイヤーのTerraformコードを適用していきます。
 
-## リポジトリ構成
+1. **`terraform/0_bootstrap`**
+    - `tfstate`管理用のGCSバケットを作成します。これは手動での適用が必要です。
+
+2. **`terraform/1_core/base/logsink`**
+    - ログ集約用のプロジェクトを作成します。
+
+3. **`terraform/1_core/base/monitoring`**
+    - モニタリング用のプロジェクトを作成します。
+
+4. 以降、`2_organization`, `3_folders`, `4_projects` の順に必要に応じて適用します。
+
+---
+
+## CI/CDによる自動化
+
+このリポジトリでは、GitHub Actionsを用いたCI/CDパイプラインが `.github/workflows/` に定義されています。
+
+- `org-apply.yml`: 組織レイヤー (`2_organization`) への変更を自動適用します。
+- `folders-apply.yml`: フォルダレイヤー (`3_folders`) への変更を自動適用します。
+- `projects-apply.yml`: プロジェクトレイヤー (`4_projects`) への変更を自動適用します。
+
+`main`ブランチにマージされると、これらのワークフローがトリガーされ、`terraform apply`が自動的に実行されます。
+
+---
+
+## 📂 リポジトリ構成
 
 ```plaintext
 gcp-foundations/
 ├── .github/
-│   └── workflows/
-│       ├── org-apply.yml         # 組織レベルのCI/CDパイプライン
-│       ├── folders-apply.yml     # フォルダ作成のCI/CDパイプライン
-│       └── projects-apply.yml    # プロジェクト作成のCI/CDパイプライン
-├── .gitignore
-├── README.md                     # リポジトリ全体の目的と運用ルール
-├── docs/
-│   └── architecture.md           # 設計思想やアーキテクチャ図
-│   ├── best_practice.md
-│   ├── create_folder.md
-│   ├── create_project.md
-│   └── first_env_setup.md
-├── policies/
-│   ├── example_rego.md
-│   └── require_labels.rego       # ポリシー・アズ・コードの定義
-├── generate-backend-config.sh
-└── terraform/                    # Terraformコードのルートディレクトリ
-    ├── scripts/
-    │   ├── get-billing-account-id.sh
-    │   ├── get-organization-name.sh
-    │   └── get-organization-id.sh
-    ├── 0_bootstrap/              # 【責務⓪】Terraform基盤の初期構築
-    │   ├── backend.tf            # 
-    │   ├── provider.tf           # Google Cloudをプロバイダに指定️
-    │   ├── versions.tf           # バージョンを固定
-    │   ├── main.tf               # 管理用プロジェクトとGCSバケットを作成
-    │   └── variables.tf
-    │
-    ├── 1_core/
-    │   ├── base/
-    │   │   ├── monitoring/
-    │   │   │   ├── backend.tf
-    │   │   │   ├── main.tf
-    │   │   │   ├── provider.tf
-    │   │   │   ├── variables.tf
-    │   │   │   └── versions.tf
-    │   │   └── logsink/
-    │   │       ├── backend.tf
-    │   │       ├── main.tf
-    │   │       ├── outputs.tf
-    │   │       ├── provider.tf
-    │   │       ├── variables.tf
-    │   │       └── versions.tf
-    │   └── services/             # 【責務】作成済みプロジェクトへのリソース設定
-    │       └── logsink/
-    │           ├── docs/         # generate_terraform.pyのSphinx生成コード
-    │           ├── backend.tf
-    │           ├── generate_terraform.py
-    │           ├── get-bucket-name.sh
-    │           ├── provider.tf
-    │           ├── variables.tf
-    │           └── versions.tf
-    │
-    ├── 2_organization/           # 【責務①】組織全体の設定
-    │   ├── backend.tf
-    │   ├── main.tf               # 組織ポリシー、組織レベルのIAMなどを定義
-    │   ├── versions.tf           # バージョンを固定
-    │   └── variables.tf
-    │
-    ├── 3_folders/                # 【責務②】基本となるフォルダ構造
-    │   ├── backend.tf
-    │   ├── main.tf               # 'development', 'staging', 'production'などのフォルダを定義
-    │   ├── versions.tf           # バージョンを固定
-    │   └── variables.tf
-    │
-    └── 4_projects/               # 【責務③】プロジェクトの作成（Project Factory）
-        └── example_project/      # アプリケーション'my_app'用のプロジェクト群
-            ├── backend.tf
-            ├── main.tf           # プロジェクト作成モジュールを呼び出す
-            ├── versions.tf       # バージョンを固定
-            ├── variables.tf
-            ├── dev.tfvars        # 開発環境用プロジェクトの設定値
-            ├── stag.tfvars       # ステージング環境用プロジェクトの設定値
-            └── prod.tfvars       # 本番環境用プロジェクトの設定値
+│   └── workflows/          # CI/CDワークフロー (GitHub Actions)
+├── docs/                   # 設計資料、手順書などのドキュメント
+├── policies/               # ポリシー・アズ・コード (Open Policy Agent)
+├── scripts/                # 各種ヘルパースクリプト
+└── terraform/              # Terraformコードのルート
+    ├── 0_bootstrap/        # レイヤー0: Terraform実行基盤
+    ├── 1_core/             # レイヤー1: コアサービス (ログ、監視)
+    ├── 2_organization/     # レイヤー2: 組織全体の設定
+    ├── 3_folders/          # レイヤー3: フォルダ構造
+    ├── 4_projects/         # レイヤー4: プロジェクトファクトリー
+    ├── modules/            # 共通Terraformモジュール
+    └── configs/            # 環境ごとの設定ファイル
 ```
