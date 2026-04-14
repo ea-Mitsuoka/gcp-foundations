@@ -76,12 +76,33 @@ if [ -z "$ORGANIZATION_ID" ]; then
     exit 1
 fi
 
-# Generate resource names
+# ドメイン名のドットをハイフンに変換 (例: adradarstore.online -> adradarstore-online)
 ORG_NAME_FOR_ID="$(echo "$CUSTOMER_DOMAIN" | tr '.' '-')"
-SUFFIX="$(openssl rand -hex 2)"
-MGMT_PROJECT_ID="${ORG_NAME_FOR_ID}-tf-admin-${SUFFIX}"
-MGMT_PROJECT_NAME="${ORG_NAME_FOR_ID}-tf-admin"
-GCS_BUCKET_TFSTATE="${MGMT_PROJECT_ID}-tfstate"
+
+# 30文字制限のための計算 (-tfstate-xxxx で13文字使うため、ドメイン部分は17文字まで)
+if [ ${#ORG_NAME_FOR_ID} -le 17 ]; then
+    # 17文字以内なら全体を使用 (例: example.com -> example-com)
+    SHORT_ORG_NAME="$ORG_NAME_FOR_ID"
+else
+    # 17文字を超える場合は、最初のドットより前の「プライマリドメイン」のみを抽出 (例: adradarstore.online -> adradarstore)
+    PRIMARY_DOMAIN="$(echo "$CUSTOMER_DOMAIN" | cut -d'.' -f1)"
+    # プライマリドメイン単体でも17文字を超える場合の安全対策
+    SHORT_ORG_NAME="$(echo "$PRIMARY_DOMAIN" | cut -c1-17 | sed 's/-$//')"
+fi
+
+# すでに作成済みのプロジェクトがあるか検索する
+EXISTING_PROJECT=$(gcloud projects list --filter="id:${SHORT_ORG_NAME}-tfstate-*" --format="value(projectId)" | head -n 1)
+
+if [ -n "$EXISTING_PROJECT" ]; then
+    print_info "Found existing project. Reusing: ${EXISTING_PROJECT}"
+    MGMT_PROJECT_ID="${EXISTING_PROJECT}"
+else
+    SUFFIX="$(openssl rand -hex 2)"
+    MGMT_PROJECT_ID="${SHORT_ORG_NAME}-tfstate-${SUFFIX}"
+fi
+
+MGMT_PROJECT_NAME="${SHORT_ORG_NAME}-tfstate"
+GCS_BUCKET_TFSTATE="${MGMT_PROJECT_ID}-bucket"
 SA_NAME="terraform-org-manager"
 SA_EMAIL="${SA_NAME}@${MGMT_PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -95,7 +116,7 @@ echo "  GCS Bucket for tfstate:  ${GCS_BUCKET_TFSTATE}"
 echo "  Service Account Email:   ${SA_EMAIL}"
 echo "--------------------------------------------------"
 read -r -p "Do you want to proceed? (y/n): " confirm
-if [[ "$confirm" != "y" ]]; then
+if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     print_error "Operation aborted by user."
     exit 1
 fi
@@ -105,10 +126,14 @@ echo
 print_info "Starting automated GCP resource creation..."
 
 print_info "(3.1/5) Creating management project '${MGMT_PROJECT_ID}'..."
-gcloud projects create "${MGMT_PROJECT_ID}" \
-  --name="${MGMT_PROJECT_NAME}" \
-  --organization="${ORGANIZATION_ID}"
-print_success "Project created."
+if gcloud projects describe "${MGMT_PROJECT_ID}" >/dev/null 2>&1; then
+    print_success "Project already exists. Skipping creation."
+else
+    gcloud projects create "${MGMT_PROJECT_ID}" \
+      --name="${MGMT_PROJECT_NAME}" \
+      --organization="${ORGANIZATION_ID}"
+    print_success "Project created."
+fi
 
 print_info "(3.2/5) Enabling necessary APIs on the project..."
 gcloud services enable \
@@ -119,81 +144,121 @@ gcloud services enable \
   --project="${MGMT_PROJECT_ID}"
 print_success "APIs enabled."
 
+# --- (追加) 手動での請求先アカウント紐づけ待ち ---
+echo
+print_warning "-------------------- MANUAL ACTION REQUIRED --------------------"
+print_info "GCP requires an active billing account to create GCS buckets."
+print_info "Please open a NEW terminal window and run the following command,"
+print_info "replacing <YOUR_BILLING_ID> with the actual Billing Account ID:"
+echo
+echo "  gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=<YOUR_BILLING_ID>"
+echo
+print_warning "----------------------------------------------------------------"
+read -r -p "Press [Enter] AFTER you have successfully linked the billing account..."
+echo
+
 print_info "(3.3/5) Creating GCS bucket 'gs://${GCS_BUCKET_TFSTATE}'..."
-gcloud storage buckets create "gs://${GCS_BUCKET_TFSTATE}" \
-  --project="${MGMT_PROJECT_ID}" \
-  --location="${GCP_REGION}" \
-  --uniform-bucket-level-access
-gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --versioning
+if gcloud storage buckets describe "gs://${GCS_BUCKET_TFSTATE}" >/dev/null 2>&1; then
+    print_success "Bucket already exists. Skipping creation."
+else
+    gcloud storage buckets create "gs://${GCS_BUCKET_TFSTATE}" \
+      --project="${MGMT_PROJECT_ID}" \
+      --location="${GCP_REGION}" \
+      --uniform-bucket-level-access
+    print_success "Bucket created."
+fi
+
+# バージョニングの有効化は、バケットが既存・新規に関わらず必ず実行する（冪等性があるため安全）
+print_info "Ensuring versioning is enabled on the bucket..."
+MAX_RETRIES=6
+RETRY_COUNT=0
+while ! gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning >/dev/null 2>&1; do
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+    print_error "Failed to enable versioning after $MAX_RETRIES attempts."
+    exit 1
+  fi
+  print_warning "Permission not yet propagated. Retrying in 10 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
+  sleep 10
+done
+print_success "GCS bucket versioning is enabled."
+
+print_info "Waiting for IAM propagation to enable versioning (this may take up to a minute)..."
+
+# バージョニングの有効化を最大6回（約60秒間）リトライする
+MAX_RETRIES=6
+RETRY_COUNT=0
+while ! gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning; do
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+    print_error "Failed to enable versioning after $MAX_RETRIES attempts."
+    exit 1
+  fi
+  print_warning "Permission not yet propagated. Retrying in 10 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
+  sleep 10
+done
+
 print_success "GCS bucket created and versioning enabled."
 
 print_info "(3.4/5) Creating service account '${SA_NAME}'..."
-gcloud iam service-accounts create "${SA_NAME}" \
-  --display-name="Terraform Organization Manager" \
-  --project="${MGMT_PROJECT_ID}"
-print_success "Service account created."
+
+# プロジェクト内のSA一覧から、該当のメールアドレスを持つSAを検索する
+EXISTING_SA=$(gcloud iam service-accounts list --project="${MGMT_PROJECT_ID}" --filter="email=${SA_EMAIL}" --format="value(email)")
+
+if [ -n "$EXISTING_SA" ]; then
+    print_success "Service account already exists. Skipping creation."
+else
+    gcloud iam service-accounts create "${SA_NAME}" \
+      --display-name="Terraform Organization Manager" \
+      --project="${MGMT_PROJECT_ID}"
+    print_success "Service account created."
+fi
 
 print_info "(3.5/5) Granting IAM permissions..."
-# Grant org-level roles to the SA
-gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/resourcemanager.organizationViewer" --quiet
+print_info "Waiting for Service Account propagation to Organization IAM..."
+
+# 最初の権限付与をリトライループで実行し、SAの伝播を待機する
+MAX_RETRIES=6
+RETRY_COUNT=0
+while ! gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/resourcemanager.organizationViewer" \
+  --quiet >/dev/null 2>&1; do
+
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+    print_error "Failed to apply IAM binding after $MAX_RETRIES attempts."
+    exit 1
+  fi
+  print_warning "Service Account not yet recognized. Retrying in 10 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
+  sleep 10
+done
+
+print_info "Service Account recognized. Applying remaining IAM roles..."
+
+# 組織(Organization)レベルの権限付与
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/resourcemanager.folderAdmin" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/resourcemanager.projectCreator" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/billing.user" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/logging.admin" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/iam.securityAdmin" --quiet
-gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/serviceusage.admin" --quiet
+# 【修正箇所】ロール名のタイポを修正 (serviceusage.admin -> serviceusage.serviceUsageAdmin)
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/serviceusage.serviceUsageAdmin" --quiet
+# 残りの組織レベルの権限付与
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/monitoring.viewer" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudasset.owner" --quiet
-gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/resourcemanager.projectViewer" --quiet
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/browser" --quiet
 
 # Allow current user to impersonate the SA
 gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
   --member="user:$(gcloud config get-value account)" \
   --role="roles/iam.serviceAccountTokenCreator" \
-  --project="${MGMT_PROJECT_ID}"
+  --project="${MGMT_PROJECT_ID}" --quiet
 
 # Allow SA to manage the GCS bucket
 gcloud storage buckets add-iam-policy-binding "gs://${GCS_BUCKET_TFSTATE}" \
   --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/storage.objectAdmin"
+  --role="roles/storage.objectAdmin" --quiet
+
 print_success "IAM permissions granted."
 echo
-
-# --- Step 4: Local File Configuration ---
-print_info "Configuring local files..."
-
-# Create domain.env
-printf 'domain="%s"\n' "${CUSTOMER_DOMAIN}" > "${REPO_ROOT}/domain.env"
-print_success "Created domain.env"
-
-# Create common.tfvars
-printf 'terraform_service_account_email="%s"\n' "${SA_EMAIL}" > "${REPO_ROOT}/terraform/common.tfvars"
-print_success "Created terraform/common.tfvars"
-
-# Create common.tfbackend
-cat << EOF2 > "${REPO_ROOT}/terraform/common.tfbackend"
-bucket = "${GCS_BUCKET_TFSTATE}"
-EOF2
-print_success "Created terraform/common.tfbackend"
-echo
-
-# --- Step 5: Manual Action Required ---
-print_warning "-------------------- MANUAL ACTION REQUIRED --------------------"
-print_info "The automated setup is almost complete."
-print_info "As per your requirement, you must link the billing account manually."
-print_info "Please copy and run the following command, replacing <YOUR_BILLING_ID> with the actual Billing Account ID:"
-echo
-echo "gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=<YOUR_BILLING_ID>"
-echo
-print_warning "----------------------------------------------------------------"
-echo
-
-# --- Step 6: Next Steps ---
-print_success "Initial environment setup is complete!"
-print_info "After linking the billing account, please proceed with the following steps:"
-echo "1. cd terraform/0_bootstrap"
-echo '2. terraform init -backend-config="../common.tfbackend"'
-echo '3. terraform apply -var-file="../common.tfvars"'
-echo
-
-exit 0
