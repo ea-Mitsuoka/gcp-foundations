@@ -35,3 +35,4 @@ all_contents.txt
 change.patch
 alert_definitions.csv
 notifications.csv
+.catignore
