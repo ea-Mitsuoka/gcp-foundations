@@ -1,7 +1,16 @@
 variable "project_apis" {
   type        = set(string)
   description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
+  default = [
+    "monitoring.googleapis.com",
+    "logging.googleapis.com",
+    "cloudfunctions.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "cloudscheduler.googleapis.com",
+    "run.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "compute.googleapis.com"
+  ]
 }
 
 variable "gcs_backend_bucket" {

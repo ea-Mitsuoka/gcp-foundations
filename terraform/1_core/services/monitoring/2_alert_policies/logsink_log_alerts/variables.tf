@@ -11,9 +11,11 @@ variable "gcs_backend_bucket" {
 variable "alert_definitions_csv_path" {
   type        = string
   description = "アラートポリシーの定義を記載したCSVファイルのパス。"
+  default     = "alert_definitions.csv"
 }
 
 variable "notifications_csv_path" {
   type        = string
   description = "通知チャネルの定義を記載したCSVファイルのパス。"
+  default     = "notifications.csv"
 }

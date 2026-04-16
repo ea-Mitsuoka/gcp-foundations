@@ -11,4 +11,5 @@ variable "gcs_backend_bucket" {
 variable "notifications_csv_path" {
   type        = string
   description = "通知チャネルの定義を記載したCSVファイルのパス。"
+  default     = "notifications.csv"
 }

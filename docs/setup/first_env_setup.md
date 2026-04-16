@@ -163,6 +163,24 @@ terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraf
 terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 ```
 
+#### 2. 必須APIの有効化
+
+```bash
+cd "$(git rev-parse --show-toplevel)/terraform/0_bootstrap/google_project_service"
+terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
+terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+```
+
+#### 3. TerraformサービスアカウントへのIAM権限付与
+
+```bash
+cd "$(git rev-parse --show-toplevel)/terraform/0_bootstrap/iam"
+terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
+terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+```
+
 ______________________________________________________________________
 
 ## ステップ4: 基盤全体の一括デプロイ

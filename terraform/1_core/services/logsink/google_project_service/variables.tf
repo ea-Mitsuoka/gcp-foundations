@@ -1,7 +1,13 @@
 variable "project_apis" {
   type        = set(string)
   description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
+  default = [
+    "bigquery.googleapis.com",
+    "pubsub.googleapis.com",
+    "cloudasset.googleapis.com",
+    "logging.googleapis.com",
+    "storage.googleapis.com"
+  ]
 }
 
 variable "terraform_service_account_email" {
