@@ -19,21 +19,13 @@ gcloud billing projects link ${PROJECT_ID} \
 
 ## プロジェクト命名
 
-- 2種類あり好きな方を使う
+プロジェクトの命名は、Single Source of Truth (SSOT) の原則に基づき、ルートディレクトリの domain.env で定義されたドメイン名から自動的に算出されます。
+外部モジュール等への依存はなく、ドメイン名のドットをハイフンに変換した文字列が接頭辞として付与されます。
 
-  - domain.com → domain-com-\<project_name>
+例: domain.env に domain="example.com" が設定されている場合
 
-  ```bash
-  module "string_utils" {
-    source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
-  ```
-
-  - domain.com → dc-\<project_name>
-
-  ```bash
-  module "string_utils" {
-    source          = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
-  ```
+- example-com-logsink
+- example-com-monitoring
 
 ______________________________________________________________________
 

@@ -60,9 +60,9 @@ if os.path.exists(xlsx_path):
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"
 project_id_prefix   = "{sanitized_domain}"
-+app_name            = "{app_name}"
-+environment         = "{row_dict.get('env', '')}"
-+folder_id           = "{row_dict.get('folder_id', '')}"
+app_name            = "{app_name}"
+environment         = "{row_dict.get('env', '')}"
+folder_id           = "{row_dict.get('folder_id', '')}"
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)

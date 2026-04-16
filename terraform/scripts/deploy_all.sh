@@ -48,7 +48,11 @@ TARGET_DIRS=(
 # 4_projects 配下のプロジェクトディレクトリを動的に検出して追加
 for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   if [ -d "$proj_dir" ]; then
-    TARGET_DIRS+=("terraform/4_projects/$(basename "$proj_dir")")
+    proj_name="$(basename "$proj_dir")"
+    # テンプレートディレクトリはデプロイ対象から除外する
+    if [ "$proj_name" != "example_project" ]; then
+      TARGET_DIRS+=("terraform/4_projects/${proj_name}")
+    fi
   fi
 done
 
