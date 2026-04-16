@@ -78,35 +78,24 @@ cd terraform/2_folders
 
 ```hcl
 # terraform/2_folders/main.tf
+data "google_organization" "org" {
+  domain = var.organization_domain
+}
 
 # "Production"フォルダ
 resource "google_folder" "production" {
   display_name = "Production"
-  parent       = "organizations/${var.organization_id}"
+  parent       = data.google_organization.org.name
 }
 
 # "Development"フォルダ
 resource "google_folder" "development" {
   display_name = "Development"
-  parent       = "organizations/${var.organization_id}"
+  parent       = data.google_organization.org.name
 }
 ```
 
-### **ステップ2: 環境変数でTerraformに変数を渡す**
-
-`terraform.tfvars`ファイルは作成しません。代わりに、ターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
-
-```bash
-# Terraformが読み取れる形式の環境変数に設定します。
-export TF_VAR_organization_id=$ORGANIZATION_ID
-export TF_VAR_terraform_service_account_email=$SA_EMAIL
-
-# 設定されたか確認
-echo $TF_VAR_organization_id
-echo $TF_VAR_terraform_service_account_email
-```
-
-### **ステップ3: Terraformを実行**
+### ステップ2: Terraformを実行
 
 <!-- 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 

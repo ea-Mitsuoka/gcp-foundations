@@ -113,31 +113,20 @@ cd gcp-foundations/terraform/3_projects/example_project
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/main.tf
-module "string_utils" {
-  source            = "gitea.mtskykhd.tokyo/admin/terraform-modules.git"
-  organization_name = var.organization_name
-  env               = var.labels.env
-  app               = var.labels.app
-}
+module "project" {
+  source = "../../modules/project-factory"
 
-locals {
-  folder_id = var.folder_path != "" ? var.folder_path : null
-}
-
-resource "google_project" "main" {
-  project_id      = "${module.string_utils.sanitized_org_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}"
-  name            = "${var.labels.app}-${var.labels.env}"
-  billing_account = var.billing_account_id
+  project_id      = "${var.project_id_prefix}-${var.environment}-${var.app_name}"
+  name            = "${var.app_name}-${var.environment}"
+  organization_id = data.google_organization.org.org_id
+  folder_id       = var.folder_id != "" ? var.folder_id : null
   labels          = var.labels
-
-  org_id    = local.folder_id == null ? var.organization_id : null
-  folder_id = local.folder_id # folder_id が null なら無視され、組織直下に作成される
 }
 
 resource "google_project_service" "apis" {
   for_each = var.project_apis
 
-  project                    = google_project.main.project_id
+  project                    = module.project.project_id
   service                    = each.key
   disable_dependent_services = true
 }
@@ -164,25 +153,7 @@ labels = {
 }
 ```
 
-### **ステップ2: 環境変数でTerraformに変数を渡す**
-
-`terraform.tfvars`ファイルの他に秘匿情報はターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
-
-```bash
-# Terraformが読み取れる形式の環境変数に設定します。
-export TF_VAR_organization_id=$ORGANIZATION_ID
-export TF_VAR_terraform_service_account_email=$SA_EMAIL
-
-# 設定されたか確認
-echo $TF_VAR_organization_id
-echo $TF_VAR_terraform_service_account_email
-
-# プロジェクトをフォルダ配下に作る場合のみ定義
-export TF_VAR_folder_path=$FOLDER_ID
-echo $TF_VAR_folder_path
-```
-
-### **ステップ3：Terraformを実行**
+### **ステップ2：Terraformを実行**
 
 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 

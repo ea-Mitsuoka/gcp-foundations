@@ -11,9 +11,5 @@ terraform {
       source  = "hashicorp/google-beta"
       version = "~> 6.48.0"
     }
-    external = {
-      source  = "hashicorp/external"
-      version = "~> 2.2.2"
-    }
   }
 }

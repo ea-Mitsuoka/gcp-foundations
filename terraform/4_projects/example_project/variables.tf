@@ -1,7 +1,27 @@
-variable "folder_path" {
+variable "organization_domain" {
   type        = string
-  default     = ""
-  description = "プロジェクトを作成するフォルダのパス。空文字なら組織直下"
+  description = "GCP組織のドメイン名"
+}
+
+variable "project_id_prefix" {
+  type        = string
+  description = "プロジェクトIDの接頭辞（ドメイン名ベース）"
+}
+
+variable "app_name" {
+  type        = string
+  description = "アプリケーション名"
+}
+
+variable "environment" {
+  type        = string
+  description = "環境名 (dev, stag, prodなど)"
+}
+
+variable "folder_id" {
+  type       = string
+  default    = ""
+  escription = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
 }
 
 variable "project_apis" {

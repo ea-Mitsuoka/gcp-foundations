@@ -1,37 +1,23 @@
-data "external" "org_name" {
-  program = ["bash", "../../scripts/get-organization-name.sh"]
+data "google_organization" "org" {
+  domain = var.organization_domain
 }
 
-data "external" "org_id" {
-  program = ["bash", "../../scripts/get-organization-id.sh"]
-}
+module "project" {
+  source = "../../modules/project-factory"
 
-module "string_utils" {
-  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
-  organization_name = data.external.org_name.result.organization_name
-  env               = var.labels.env
-  app               = var.labels.app
-}
-
-locals {
-  folder_id = var.folder_path != "" ? var.folder_path : null
-}
-
-resource "google_project" "main" {
-  project_id = "${data.external.org_name.result.organization_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}"
-  name       = "${module.string_utils.sanitized_org_name}-${module.string_utils.sanitized_env}-${module.string_utils.sanitized_app}"
-  org_id     = local.folder_id == null ? data.external.org_id.result.organization_id : null
-  folder_id  = local.folder_id # folder_id が null なら無視され、組織直下に作成される
-  labels     = var.labels
+  project_id      = "${var.project_id_prefix}-${var.environment}-${var.app_name}"
+  name            = "${var.app_name}-${var.environment}"
+  organization_id = data.google_organization.org.org_id
+  folder_id       = var.folder_id != "" ? var.folder_id : null
+  labels          = var.labels
 
   # 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
-  # billing_account = var.billing_account_id
 }
 
 resource "google_project_service" "apis" {
   for_each = var.project_apis
 
-  project                    = google_project.main.project_id
+  project                    = module.project.project_id
   service                    = each.key
   disable_dependent_services = true
 }
