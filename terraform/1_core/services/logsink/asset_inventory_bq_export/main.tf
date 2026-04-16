@@ -116,6 +116,11 @@ resource "google_cloud_asset_organization_feed" "iam_policy_feed" {
       topic = google_pubsub_topic.asset_inventory_feed.id
     }
   }
+
+  # Pub/Subへの発行権限が完全に伝播するのを待つための明示的な依存関係
+  depends_on = [
+    google_pubsub_topic_iam_member.asset_inventory_sa_publisher
+  ]
 }
 
 # IAM権限付与の前にサービスエージェントを明示的に強制生成

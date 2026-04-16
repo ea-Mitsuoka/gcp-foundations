@@ -1,9 +1,23 @@
+# Cloud BuildとCloud Functionsのサービスエージェントを強制生成
+resource "google_project_service_identity" "cloudbuild_sa" {
+  provider = google-beta
+  project  = data.google_project.monitoring.project_id
+  service  = "cloudbuild.googleapis.com"
+}
+
+resource "google_project_service_identity" "gcf_sa" {
+  provider = google-beta
+  project  = data.google_project.monitoring.project_id
+  service  = "cloudfunctions.googleapis.com"
+}
+
+
 # 権限を付与するサービスエージェントのメールアドレスを動的に作成
 locals {
   # Cloud FunctionsのサービスエージェントとCloud Buildのサービスエージェントのリスト
   service_agents_for_gcs_access = toset([
-    "service-${data.google_project.monitoring.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com",
-    "service-${data.google_project.monitoring.number}@gcf-admin-robot.iam.gserviceaccount.com",
+    google_project_service_identity.cloudbuild_sa.email,
+    google_project_service_identity.gcf_sa.email,
   ])
 }
 
