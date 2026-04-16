@@ -15,11 +15,6 @@ module "string_utils" {
   app               = var.labels.app
 }
 
-# プロジェクトID用のランダムな接尾辞
-resource "random_id" "project_suffix" {
-  byte_length = 2
-}
-
 # 新しいproject-factoryモジュールを呼び出す
 module "logsink_project" {
   # 1. 新しいモジュールのパスを指定
@@ -27,7 +22,7 @@ module "logsink_project" {
 
   # 2. モジュールに必要な変数を渡す（ここで命名規則を定義）
   # 修正点: データソースからではなく、変数を直接使用
-  project_id      = "${local.sanitized_domain}-${var.project_name}-${random_id.project_suffix.hex}"
+  project_id      = "${local.sanitized_domain}-${var.project_name}
   name            = "${module.string_utils.sanitized_org_name}-${var.project_name}"
   organization_id = data.google_organization.org.org_id
   labels          = var.labels

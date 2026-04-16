@@ -1,8 +1,18 @@
 # GCP Foundations (Terraform IaC)
 
-このリポジトリは、Terraformを使用してGoogle Cloud Platform (GCP) 環境を体系的に構築・管理するための Infrastructure as Code (IaC) 基盤です。ガバナンスを確保しつつ、セキュアで再利用可能なGCP環境を効率的に展開することを目的とします。
+このリポジトリは、Terraformを使用してGoogle Cloud Platform (GCP) 環境を体系的に構築・管理するための Infrastructure as Code (IaC) 基盤です。ガバナンスを確保しつつ、セキュアで再利用可能なGCP環境を効率的に展開することを目的とします。初心者でも迷わず、再現性高くセキュアなGCP環境を展開できるように設計されています。
 
 ## 📖 設計思想
+
+## 📚 ドキュメントインデックス (ここから読み始めてください)
+
+本リポジトリの運用に関するあらゆる情報は、以下のドキュメントに集約されています。
+
+1. **[環境構築の全体手順 (新規顧客向け)](docs/procedures/first_env_setup.md)**: 一番最初に実行するセットアップ手順
+1. **[アーキテクチャ設計思想](docs/procedures/architecture.md)**: ディレクトリ構造と各レイヤーの役割
+1. **[フォルダの作成手順](docs/procedures/create_folder.md)**: コンソール/gcloud/Terraformの各手順を網羅
+1. **[プロジェクトの作成手順](docs/procedures/create_project.md)**: コンソール/gcloud/Terraformの各手順を網羅
+1. **[変更履歴と設計意図](docs/others/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
 
 この基盤は、責務の分離と段階的なインフラ構築を重視した**レイヤー構造**を採用しています。各レイヤーは独立したTerraformのルートモジュールとして管理され、下位のレイヤーに依存します。
 
@@ -32,6 +42,16 @@ graph TD
 - **Layer 4: Projects**
   - "Project Factory" パターンに基づき、各アプリケーションやチームのためのGCPプロジェクトを作成します。
   - 責務: アプリケーションごとのプロジェクトの作成、API有効化、サービスアカウント設定など。
+
+## 🚀 ワンストップ・デプロイ
+
+すべてのリソースのデプロイは、以下のスクリプトを1回叩くだけで完了します。
+
+```bash
+bash terraform/scripts/deploy_all.sh
+```
+
+※ 事前に `projects_config.csv` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
 
 ______________________________________________________________________
 
