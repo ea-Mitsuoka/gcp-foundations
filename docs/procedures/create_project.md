@@ -112,96 +112,6 @@ ______________________________________________________________________
 cd gcp-foundations/terraform/3_projects/example_project
 ```
 
-### **ステップ2：ファイルの内容を定義**
-
-各ファイルに、プロジェクトを作成するためのコードを記述します。
-
-#### **`versions.tf`**
-
-```hcl
-# gcp-foundations/terraform/3_projects/example_project/versions.tf
-terraform {
-    # "~>" を使い、意図しないメジャー/マイナーアップデートを防ぎます
-    required_version = "~> 1.12.2"
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-  }
-}
-```
-
-#### **`backend.tf`**
-
-`dev`環境用のtfstateが、他の環境と分離されるように`prefix`を設定します。
-
-```hcl
-# gcp-foundations/terraform/3_projects/example_project/backend.tf
-terraform {
-  backend "gcs" {
-    # このディレクトリ用のtfstateの保存場所を区別するためのprefix
-    prefix = "projects/dev"
-  }
-}
-```
-
-#### **`provider.tf`**
-
-この設定により、Terraform実行時に自動でSAを借用します
-
-```hcl
-provider "google" {
-  impersonate_service_account = var.terraform_service_account_email
-}
-```
-
-#### **`variables.tf`**
-
-この「プロジェクト工場」が必要とする変数を定義します。
-
-```hcl
-# gcp-foundations/terraform/3_projects/example_project/variables.tf
-variable "organization_name" {
-  type        = string
-  description = "組織の名前（project_id 生成用に正規化する）。"
-}
-
-variable "organization_id" {
-  type        = string
-  description = "作成するGCPプロジェクトが属する組織のID。"
-}
-
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
-}
-
-variable "folder_path" {
-  type        = string
-  default     = ""
-  description = "プロジェクトを作成するフォルダのパス。空文字なら組織直下"
-}
-
-variable "billing_account_id" {
-  type        = string
-  description = "紐付ける請求先アカウントのID。"
-}
-
-variable "project_apis" {
-  type        = set(string)
-  description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
-}
-
-variable "labels" {
-  type        = map(string)
-  description = "プロジェクトに付与するラベル。"
-  default     = {}
-}
-```
-
 #### **`main.tf`**
 
 変数を使い、実際にリソースを作成するコードです。
@@ -263,7 +173,7 @@ labels = {
 }
 ```
 
-### **ステップ3: 環境変数でTerraformに変数を渡す**
+### **ステップ2: 環境変数でTerraformに変数を渡す**
 
 `terraform.tfvars`ファイルの他に秘匿情報はターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
 
@@ -281,7 +191,7 @@ export TF_VAR_folder_path=$FOLDER_ID
 echo $TF_VAR_folder_path
 ```
 
-### **ステップ4：Terraformを実行**
+### **ステップ3：Terraformを実行**
 
 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
