@@ -17,7 +17,8 @@ ______________________________________________________________________
 作業者のローカルPCで以下を実行します。
 
 1. **ツールのインストール:**
-   `gcloud` CLI, `terraform` CLI, `openssl`, `git` がインストールされていることを確認してください。
+   `gcloud` CLI, `terraform` CLI, `openssl`, `git`, `uv` (Pythonパッケージマネージャ) がインストールされていることを確認してください。
+   ※ `uv` が未インストールの場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` でインストールできます。
 
 1. **GCPへの認証:**
    顧客のGCP組織に対して**組織管理者**などの強い権限を持つアカウントで`gcloud`にログインします。
@@ -162,4 +163,13 @@ terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraf
 terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 ```
 
-これで、Terraformを使って安全にGCP組織リソースを管理していくためのすべての準備が整いました。
+______________________________________________________________________
+
+## ステップ4: 基盤全体の一括デプロイ
+
+0_bootstrap の適用が完了し、GCP上でTerraformを実行する準備（State管理や権限借用）が整いました。
+最後に、残りのすべてのコアインフラ（ログ集約、監視、組織ポリシー、フォルダ作成など）を一括でデプロイします。
+
+bash +bash terraform/scripts/deploy_all.sh +
+
+スクリプトが成功し 🎉 All deployments completed successfully! と表示されれば、初期環境のセットアップはすべて完了です！
