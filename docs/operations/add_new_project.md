@@ -1,96 +1,57 @@
 # 新しいプロジェクトを追加する手順
 
-このドキュメントは、このリポジトリのProject Factoryパターンに従って、新しいアプリケーションやサービスのためのGCPプロジェクト群を追加する際の手順を説明します。
-
-## 前提
-
-- `terraform/4_projects/`ディレクトリ配下で、新しいプロジェクトを管理します。
-- 既存の`terraform/4_projects/example_project`をテンプレートとして利用します。
+本リポジトリでは、新しいプロジェクトの追加はすべて自動化されています。
+手作業でディレクトリをコピーしたり、Terraformファイルを手書きで修正する必要はありません。
 
 ## 手順
 
-ここでは、例として`my-new-app`という新しいアプリケーションのプロジェクトを追加する場合を想定します。
+1. **スプレッドシートの更新**
+   リポジトリルートにある `projects_config.xlsx` を開き、新しく作成したいプロジェクトの情報を新しい行に追記して保存します。
+   ※ 記載方法の詳細は `docs/reference/spreadsheet_format.md` を参照してください。
 
-### 1. 既存プロジェクトのディレクトリをコピー
+1. **デプロイスクリプトの実行**
+   ターミナルから以下の一括デプロイスクリプトを実行します。
 
-まず、`example_project`ディレクトリを、新しいプロジェクト名でコピーします。
+   ```bash
+   bash terraform/scripts/deploy_all.sh
+   ```
 
-```bash
-cp -r terraform/4_projects/example_project terraform/4_projects/my-new-app
-```
+スクリプトが自動的に `projects_config.xlsx` を読み取り、必要なTerraformディレクトリの生成、バックエンド設定の置換、変数の注入、およびデプロイまでを全自動で行います。
 
-### 2. `backend.tf`の修正
+#### 3. `docs/operations/create_project.md` (「3. Terraformで作成する方法」以降を上書き)
 
-コピーしたディレクトリ内の`backend.tf`を修正し、TerraformのStateを管理するGCSのパス（prefix）が他のプロジェクトと重複しないようにします。
+※前半の `1. コンソールで作成する方法` と `2. gcloudコマンドで作成する方法` は残し、後半のTerraformの手順を以下で上書きしてください。
 
-**ファイル:** `terraform/4_projects/my-new-app/backend.tf`
+````markdown
+## 3. Terraformで作成する方法（推奨）
 
-```terraform
-terraform {
-  backend "gcs" {
-    # bucketは共通のものを参照するため、修正不要
-    prefix = "projects/my-new-app" # "projects/example_project" から変更
-  }
-}
-```
+リポジトリ (`gcp-foundations`) を使い、**Infrastructure as Code (IaC) として**プロジェクトを管理します。本リポジトリではSSOTの原則に従い、個別のtfvarsの手書きや手動でのterraformコマンドの実行は行いません。
 
-### 3. `variables.tf`の値を調整（任意）
+### **ステップ1：プロジェクト情報の登録**
 
-必要に応じて、`terraform/4_projects/my-new-app/variables.tf`内のデフォルト値を調整します。特に、有効化したいAPIのリスト`project_apis`や、プロジェクトに付与する`labels`などは、新しいプロジェクトの要件に合わせて変更することが多いでしょう。
+ルートディレクトリにある `projects_config.xlsx` を開き、新しく作成したいプロジェクトの要件を行として追加します。
+初回作成時は、必ず `billing_linked` カラムを `FALSE` としてください。
 
-```terraform
-# terraform/4_projects/my-new-app/variables.tf の例
+### **ステップ2：デプロイの実行（第1段階：プロジェクトの作成）**
 
-variable "project_apis" {
-  description = "A set of APIs to enable on the project."
-  type        = set(string)
-  default = [
-    "compute.googleapis.com",
-    "storage.googleapis.com",
-    "iam.googleapis.com",
-    # ... 新しいプロジェクトで必要なAPIを追加・削除
-  ]
-}
-```
-
-### 4. CIワークフローへの反映
-
-このリポジトリに導入されているCIワークフロー（`.github/workflows/lint.yml`）は、**ディレクトリを自動的に検出**します。
-そのため、新しいプロジェクトディレクトリを追加した際に、**CIの定義ファイル（`.yml`）を修正する必要は一切ありません。**
-
-新しいディレクトリ内の`.tf`ファイルは、自動的に`validate`ジョブの対象となります。
-
-### 5. コミット & プルリクエスト
-
-変更したファイルと新しく追加したディレクトリをコミットし、GitHubでプルリクエストを作成します。
+スクリプトを実行し、プロジェクトの「器」だけを作成します。
 
 ```bash
-git add terraform/4_projects/my-new-app/
-git commit -m "feat: add new project for my-new-app"
-git push origin <your-branch-name>
-```
+bash terraform/scripts/deploy_all.sh
+````
 
-プルリクエストを作成すると、自動的にCIが実行され、`terraform fmt`, `tflint`, `terraform validate`などのチェックが行われます。すべてのチェックが成功することを確認してください。
+### ステップ3：課金アカウントのリンク（手動）
 
-### 6. `terraform apply` の実行
-
-プルリクエストがレビューされ、`main`ブランチにマージされた後、ローカル環境から`terraform apply`を実行して、実際にGCP上にリソースを作成します。
-
-> **Note:**
-> 現在、`apply`を自動実行するCD（継続的デプロイ）は導入されていません。将来的には、`main`ブランチへのマージをトリガーに`apply`を自動実行する仕組みの導入が推奨されます。
+GCPコンソール画面、または以下のコマンドを使用して、作成されたプロジェクトに課金アカウントをリンクしてください。
 
 ```bash
-# 新しいプロジェクトのディレクトリに移動
-cd terraform/4_projects/my-new-app
-
-# (初回のみ) Terraformの初期化
-terraform init
-
-# 実行計画の確認
-terraform plan
-
-# 計画に問題がなければ、リソースを適用
-terraform apply
+gcloud billing projects link <作成されたプロジェクトID> --billing-account=<あなたの請求先アカウントID>
 ```
 
-以上で、新しいプロジェクトの追加は完了です。
+### ステップ4：APIの有効化（第2段階）
+
+projects_config.xlsx の対象プロジェクトの billing_linked を TRUE に変更し、再度デプロイを実行してAPIの有効化など残りの設定を適用します。
+
+```bash
+bash terraform/scripts/deploy_all.sh
+```

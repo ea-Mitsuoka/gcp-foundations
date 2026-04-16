@@ -55,17 +55,6 @@ for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   fi
 done
 
-# 4_projects 配下のプロジェクトディレクトリを動的に検出して追加
-for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
-  if [ -d "$proj_dir" ]; then
-    proj_name="$(basename "$proj_dir")"
-    # テンプレートディレクトリはデプロイ対象から除外する
-    if [ "$proj_name" != "example_project" ]; then
-      TARGET_DIRS+=("terraform/4_projects/${proj_name}")
-    fi
-  fi
-done
-
 # コアプロジェクトの課金リンク状態を取得
 CORE_BILLING_LINKED=$(grep "core_billing_linked" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
 

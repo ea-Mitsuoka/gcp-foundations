@@ -97,44 +97,20 @@ ______________________________________________________________________
 
 ## 3. Terraformで作成する方法（推奨）
 
-リポジトリ (`gcp-foundations`) を使い、**Infrastructure as Code (IaC) として**プロジェクトを管理します。これが最も再現性が高く、安全な方法です。
+リポジトリ (`gcp-foundations`) を使い、**Infrastructure as Code (IaC) として**プロジェクトを管理します。本リポジトリではSSOTの原則に従い、個別のtfvarsの手書きや手動でのterraformコマンドの実行は行いません。
 
-作業は `3_projects/example_project` ディレクトリで行います。
+### **ステップ1：プロジェクト情報の登録**
 
-### **ステップ1：作業ディレクトリへ移動**
+ルートディレクトリにある `projects_config.xlsx` を開き、新しく作成したいプロジェクトの要件を行として追加します。
+初回作成時は、必ず `billing_linked` カラムを `FALSE` としてください。
+
+### **ステップ2：デプロイの実行（第1段階：プロジェクトの作成）**
+
+スクリプトを実行し、プロジェクトの「器」だけを作成します。
 
 ```bash
-cd gcp-foundations/terraform/3_projects/example_project
+bash terraform/scripts/deploy_all.sh
 ```
-
-#### **`main.tf`**
-
-変数を使い、実際にリソースを作成するコードです。
-
-```hcl
-# gcp-foundations/terraform/3_projects/example_project/main.tf
-module "project" {
-  source = "../../modules/project-factory"
-
-  project_id      = "${var.project_id_prefix}-${var.environment}-${var.app_name}"
-  name            = "${var.app_name}-${var.environment}"
-  organization_id = data.google_organization.org.org_id
-  folder_id       = var.folder_id != "" ? var.folder_id : null
-  labels          = var.labels
-}
-
-resource "google_project_service" "apis" {
-  for_each = var.project_apis
-
-  project                    = module.project.project_id
-  service                    = each.key
-  disable_dependent_services = true
-}
-```
-
-#### **`dev.tfvars`**
-
-`dev`環境用の具体的な値を設定します。
 
 ```hcl
 # gcp-foundations/terraform/3_projects/example_project/dev.tfvars
