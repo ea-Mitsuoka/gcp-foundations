@@ -72,72 +72,6 @@ ______________________________________________________________________
 cd terraform/2_folders
 ```
 
-### **ステップ2：ファイルの内容を定義**
-
-各ファイルに、プロジェクトを作成するためのコードを記述します。
-
-#### **`versions.tf`**
-
-TerraformとGoogle Providerのバージョンを定義します。
-
-```hcl
-# terraform/2_folders/versions.tf
-terraform {
-    # "~>" を使い、意図しないメジャー/マイナーアップデートを防ぎます
-    required_version = "~> 1.12.2"
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-  }
-}
-```
-
-#### **`backend.tf`**
-
-`0_bootstrap`で作成したGCSバケットを指定し、`prefix`を変更してtfstateが分離されるようにします。
-
-```hcl
-# terraform/2_folders/backend.tf
-
-terraform {
-  backend "gcs" {
-    # このディレクトリ用のtfstateの保存場所を区別するためのprefix
-    prefix = "folders"
-  }
-}
-```
-
-#### **`provider.tf`**
-
-この設定により、Terraform実行時に自動でSAを借用します
-
-```hcl
-provider "google" {
-  impersonate_service_account = var.terraform_service_account_email
-}
-```
-
-#### **`variables.tf`**
-
-`main.tf`で使っている変数を定義します。
-
-```hcl
-# terraform/2_folders/variables.tf
-
-variable "organization_id" {
-  type        = string
-  description = "フォルダを作成する親となるGCP組織ID。"
-}
-
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
-}
-```
-
 #### **`main.tf`**
 
 `google_folder`リソースを使って、作成したいフォルダを定義します。
@@ -158,7 +92,7 @@ resource "google_folder" "development" {
 }
 ```
 
-### **ステップ3: 環境変数でTerraformに変数を渡す**
+### **ステップ2: 環境変数でTerraformに変数を渡す**
 
 `terraform.tfvars`ファイルは作成しません。代わりに、ターミナルで以下のコマンドを実行し、Terraformが自動で読み込む環境変数を設定します。
 
@@ -172,7 +106,7 @@ echo $TF_VAR_organization_id
 echo $TF_VAR_terraform_service_account_email
 ```
 
-### **ステップ4: Terraformを実行**
+### **ステップ3: Terraformを実行**
 
 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
