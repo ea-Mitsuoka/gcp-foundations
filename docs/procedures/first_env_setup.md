@@ -111,6 +111,7 @@ ______________________________________________________________________
 - `roles/monitoring.viewer`: モニタリング情報の閲覧
 - `roles/cloudasset.owner`: Cloud Asset Inventoryの管理
 - `roles/browser`: GCPリソースの閲覧
+- `roles/orgpolicy.policyAdmin`: 組織ポリシーの管理 (追加)
 
 #### **その他のIAMロール:**
 
