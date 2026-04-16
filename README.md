@@ -63,6 +63,7 @@ ______________________________________________________________________
 
 - `gcloud` CLI, `terraform` CLI, `git`, `openssl` がローカル環境にインストールされていること。
 - 顧客のGCP組織に対する**組織管理者**などの強い権限を持つアカウントで、`gcloud`にログイン済みであること。
+
   ```bash
   gcloud auth login
   gcloud auth application-default login
