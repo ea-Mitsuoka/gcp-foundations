@@ -12,5 +12,6 @@ variable "roles" {
   type        = set(string)
   description = "Terraformが借用するサービスアカウントに付与するIAMロールのリスト。"
   default = [
+    "roles/storage.admin" # SAが別プロジェクトから自身の管理用GCSバケットのIAMを操作するために必須
   ]
 }

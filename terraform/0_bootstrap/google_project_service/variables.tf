@@ -6,5 +6,10 @@ variable "project_id" {
 variable "project_apis" {
   type        = set(string)
   description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
+  default = [
+    "cloudresourcemanager.googleapis.com",
+    "storage.googleapis.com",
+    "iam.googleapis.com",
+    "serviceusage.googleapis.com"
+  ]
 }
