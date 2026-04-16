@@ -137,22 +137,29 @@ ______________________________________________________________________
 ### 3c. Terraformの初期化
 
 `0_bootstrap` ディレクトリに移動し、`terraform init` を実行します。
-このコマンドにより、TerraformはGCSバックエンドを利用するための設定を初期化します。
+パスの設定と初期化コマンドは、運用ルールに則り以下の標準コマンドを使用します。
 
 ```bash
 cd terraform/0_bootstrap
 
-terraform init -backend-config="../common.tfbackend"
+export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+
+terraform init -backend-config="$(git-root)/terraform/common.tfbackend"
 ```
 
 "Terraform has been successfully initialized!" と表示されれば成功です。
 
 ### 3d. `0_bootstrap`のリソースを適用
 
-`terraform apply` を実行して、最初のTerraform管理リソースをデプロイします。
+Terraform実行用のベースとなるリソース（ストレージ、API有効化、IAM設定）を順番にデプロイします。
+
+#### 1. tfstate保存用バケットの管理化
 
 ```bash
-terraform apply -var-file="../common.tfvars"
+cd "$(git rev-parse --show-toplevel)/terraform/0_bootstrap"
+terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
+terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 ```
 
 これで、Terraformを使って安全にGCP組織リソースを管理していくためのすべての準備が整いました。

@@ -56,8 +56,18 @@ print_success "Prerequisites met."
 echo
 
 # --- Step 1: Interactive Information Input ---
-print_info "Please provide the following information for the new client."
-read -r -p "Enter customer's domain (e.g., customer-domain.com): " CUSTOMER_DOMAIN
+DOMAIN_ENV_PATH="${REPO_ROOT}/domain.env"
+if [ -f "$DOMAIN_ENV_PATH" ]; then
+    print_info "Found domain.env. Reading domain..."
+    CUSTOMER_DOMAIN=$(grep -E '^domain=' "$DOMAIN_ENV_PATH" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    print_success "Loaded domain: $CUSTOMER_DOMAIN"
+else
+    print_info "Please provide the following information for the new client."
+    read -r -p "Enter customer's domain (e.g., customer-domain.com): " CUSTOMER_DOMAIN
+    echo "domain=\"${CUSTOMER_DOMAIN}\"" > "$DOMAIN_ENV_PATH"
+    print_success "Created domain.env with domain: $CUSTOMER_DOMAIN"
+fi
+
 read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
 
 if [ -z "$CUSTOMER_DOMAIN" ] || [ -z "$GCP_REGION" ]; then
@@ -270,6 +280,17 @@ EOF
 cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
 terraform_service_account_email = "${SA_EMAIL}"
 gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
+organization_domain             = "${CUSTOMER_DOMAIN}"
 EOF
-print_success "common.tfbackend and common.tfvars created successfully."
+
+cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
+project_id = "${MGMT_PROJECT_ID}"
+EOF
+cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/iam/terraform.tfvars"
+project_id = "${MGMT_PROJECT_ID}"
+EOF
+cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/google_project_service/terraform.tfvars"
+project_id = "${MGMT_PROJECT_ID}"
+EOF
+print_success "Configuration files and tfvars generated successfully."
 echo
