@@ -13,7 +13,7 @@ resource "google_storage_bucket" "function_source" {
   name = "${var.project_id}-function-source"
 
   # リージョンは他のリソースと合わせます
-  location = var.region
+  location = var.gcp_region
 
   # 推奨：均一なバケットレベルのアクセス制御を有効化
   uniform_bucket_level_access = true

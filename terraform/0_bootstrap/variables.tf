@@ -3,7 +3,8 @@ variable "project_id" {
   description = "Terraformで操作するGCPプロジェクトのIDです。"
 }
 
-variable "region" {
-  type    = string
-  default = "asia-northeast1"
+variable "gcp_region" {
+  type        = string
+  default     = "asia-northeast1"
+  description = "リソースを作成するデフォルトリージョン。"
 }

@@ -281,6 +281,7 @@ cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
 terraform_service_account_email = "${SA_EMAIL}"
 gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
 organization_domain             = "${CUSTOMER_DOMAIN}"
+gcp_region                      = "${GCP_REGION}
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
