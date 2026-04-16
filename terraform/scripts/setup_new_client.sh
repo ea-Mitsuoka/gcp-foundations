@@ -151,6 +151,7 @@ gcloud services enable \
   storage.googleapis.com \
   iam.googleapis.com \
   serviceusage.googleapis.com \
+  iamcredentials.googleapis.com \
   --project="${MGMT_PROJECT_ID}"
 print_success "APIs enabled."
 

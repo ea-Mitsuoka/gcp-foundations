@@ -118,19 +118,32 @@ resource "google_cloud_asset_organization_feed" "iam_policy_feed" {
   }
 }
 
+# IAM権限付与の前にサービスエージェントを明示的に強制生成
+resource "google_project_service_identity" "asset_inventory_sa" {
+  provider = google-beta
+  project  = data.terraform_remote_state.project.outputs.project_id
+  service  = "cloudasset.googleapis.com"
+}
+
+resource "google_project_service_identity" "pubsub_sa" {
+  provider = google-beta
+  project  = data.terraform_remote_state.project.outputs.project_id
+  service  = "pubsub.googleapis.com"
+}
+
+
 # 必要なIAM設定：
 # Cloud Asset InventoryのサービスエージェントにPub/Subトピックへの発行権限を付与
 resource "google_pubsub_topic_iam_member" "asset_inventory_sa_publisher" {
   project = data.terraform_remote_state.project.outputs.project_id
   topic   = google_pubsub_topic.asset_inventory_feed.name
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:service-${data.google_project.logsink.number}@gcp-sa-cloudasset.iam.gserviceaccount.com"
+  member  = "serviceAccount:${google_project_service_identity.asset_inventory_sa.email}"
 }
 
 # Pub/SubサービスエージェントにBigQueryデータ編集者ロールを明示的に付与
 resource "google_project_iam_member" "pubsub_sa_bq_writer" {
   project = data.google_project.logsink.project_id
   role    = "roles/bigquery.dataEditor"
-  # "service-[プロジェクト番号]@gcp-sa-pubsub.iam.gserviceaccount.com" という形式のメンバーを動的に生成
-  member = "serviceAccount:service-${data.google_project.logsink.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+  member  = "serviceAccount:${google_project_service_identity.pubsub_sa.email}"
 }
