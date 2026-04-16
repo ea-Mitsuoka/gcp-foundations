@@ -1,5 +1,3 @@
-# docs/reference/spreadsheet_format.md
-
 # プロジェクト構成用スプレッドシート (projects_config.xlsx) の仕様
 
 この基盤では、`projects_config.xlsx` を Single Source of Truth (SSOT) とし、このExcelファイルに記入するだけで、新しいGCPプロジェクトが自動生成される仕組みを採用しています。
