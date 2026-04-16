@@ -283,6 +283,7 @@ gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
 organization_domain             = "${CUSTOMER_DOMAIN}"
 gcp_region                      = "${GCP_REGION}
 project_id_prefix               = "${SHORT_ORG_NAME}"
+core_billing_linked             = false
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"

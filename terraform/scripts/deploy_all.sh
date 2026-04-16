@@ -55,12 +55,21 @@ for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   fi
 done
 
+# コアプロジェクトの課金リンク状態を取得
+CORE_BILLING_LINKED=$(grep "core_billing_linked" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
+
 for dir in "${TARGET_DIRS[@]}"; do
   if [ ! -d "${ROOT_DIR}/${dir}" ]; then
     echo "Skipping ${dir} (Directory not found)"
     continue
   fi
   
+  # 課金が未リンクの場合、API有効化を伴う services ディレクトリを安全にスキップ
+  if [ "$CORE_BILLING_LINKED" != "true" ] && [[ "$dir" == *"1_core/services"* ]]; then
+    echo "⏭️ Skipping ${dir} (core_billing_linked is false. Please link billing accounts and set it to true)"
+    continue
+  fi
+
   echo ">>> Deploying: ${dir}"
   cd "${ROOT_DIR}/${dir}"
   
