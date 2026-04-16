@@ -14,10 +14,9 @@ module "project" {
   # 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
 }
 
-resource "google_project_service" "apis" {
-  for_each = var.billing_linked ? var.project_apis : toset([])
+module "project_services" {
+  source = "../../modules/project-services"
 
-  project                    = module.project.project_id
-  service                    = each.key
-  disable_dependent_services = true
+  project_id   = module.project.project_id
+  project_apis = var.billing_linked ? var.project_apis : toset([])
 }

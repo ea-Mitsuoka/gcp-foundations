@@ -11,7 +11,9 @@ variable "project_apis" {
     "storage.googleapis.com",
     "iam.googleapis.com",
     "serviceusage.googleapis.com",
-    "iamcredentials.googleapis.com"
+    "iamcredentials.googleapis.com",
+    "orgpolicy.googleapis.com",
+    "logging.googleapis.com"
   ]
 }
 
