@@ -128,23 +128,11 @@ ______________________________________________________________________
 
 ### 3a. バックエンド設定ファイルの作成
 
-TerraformがtfstateをどのGCSバケットに保存するかを指定するファイルを作成します。スクリプトの実行結果で表示されたGCSバケット名を `bucket` に設定してください。
-
-**`terraform/common.tfbackend`**
-
-```bash
-bucket = "【スクリプトが作成したGCSバケット名】"
-```
+スクリプトの実行により、リポジトリルートの `terraform/` ディレクトリ配下に `common.tfbackend` が**自動生成**されています。中身に作成されたGCSバケット名が正しく設定されていることを確認してください。
 
 ### 3b. 変数ファイルの作成
 
-Terraformが借用するサービスアカウントのメールアドレスを共通変数として定義します。スクリプトの実行結果で表示されたSAのメールアドレスを設定してください。
-
-**`terraform/common.tfvars`**
-
-```bash
-terraform_service_account_email = "terraform-org-manager@【プロジェクトID】.iam.gserviceaccount.com"
-```
+同じく、`terraform/` ディレクトリ配下に `common.tfvars` が**自動生成**されています。Terraform操作用のサービスアカウントのメールアドレスが設定されていることを確認してください。
 
 ### 3c. Terraformの初期化
 

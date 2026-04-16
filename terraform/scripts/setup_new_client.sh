@@ -261,4 +261,14 @@ gcloud storage buckets add-iam-policy-binding "gs://${GCS_BUCKET_TFSTATE}" \
   --role="roles/storage.objectAdmin" --quiet
 
 print_success "IAM permissions granted."
+
+print_info "(3.6/5) Generating common Terraform configuration files..."
+cat <<EOF > "${REPO_ROOT}/terraform/common.tfbackend"
+bucket = "${GCS_BUCKET_TFSTATE}"
+EOF
+
+cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
+terraform_service_account_email = "${SA_EMAIL}"
+EOF
+print_success "common.tfbackend and common.tfvars created successfully."
 echo

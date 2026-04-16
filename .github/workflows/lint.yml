@@ -128,6 +128,16 @@ jobs:
         run: echo "log_type,filter,destination_type,destination_parent,retention_days" > gcp_log_sink_config.csv
         working-directory: ${{ matrix.working-directory }}
 
+      - name: Create dummy CSV for notification channels validation
+        if: matrix.working-directory == 'terraform/1_core/services/monitoring/1_notification_channels'
+        run: echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
+        working-directory: ${{ matrix.working-directory }}
+
+      - name: Create dummy CSV for log alerts validation
+        if: matrix.working-directory == 'terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts'
+        run: echo "alert_name,alert_display_name,metric_filter,alert_documentation" > alert_definitions.csv && echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
+        working-directory: ${{ matrix.working-directory }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
