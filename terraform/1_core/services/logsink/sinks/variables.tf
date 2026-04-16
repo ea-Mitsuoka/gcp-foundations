@@ -1,6 +1,7 @@
-variable "region" {
-  type    = string
-  default = "asia-northeast1"
+variable "gcp_region" {
+  type        = string
+  description = "プロジェクトのデフォルトリージョン。"
+  default     = "asia-northeast1"
 }
 
 variable "bq_dataset_delete_contents_on_destroy" {

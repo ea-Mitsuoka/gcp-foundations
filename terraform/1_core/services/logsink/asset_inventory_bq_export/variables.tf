@@ -12,3 +12,9 @@ variable "organization_domain" {
   type        = string
   description = "GCP組織のドメイン名。"
 }
+
+variable "gcp_region" {
+  type        = string
+  description = "プロジェクトのデフォルトリージョン。"
+  default     = "asia-northeast1"
+}

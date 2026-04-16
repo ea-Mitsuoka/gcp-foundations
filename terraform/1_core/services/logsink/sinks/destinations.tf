@@ -4,7 +4,7 @@ resource "google_bigquery_dataset" "dynamic_datasets" {
 
   project                     = data.terraform_remote_state.project.outputs.project_id
   dataset_id                  = each.key
-  location                    = var.region
+  location                    = var.gcp_region
   delete_contents_on_destroy  = var.bq_dataset_delete_contents_on_destroy
   default_table_expiration_ms = each.value.retention_days * 24 * 60 * 60 * 1000
 
@@ -19,7 +19,7 @@ resource "google_storage_bucket" "dynamic_buckets" {
 
   project                     = data.terraform_remote_state.project.outputs.project_id
   name                        = each.key
-  location                    = var.region
+  location                    = var.gcp_region
   uniform_bucket_level_access = true
 
   # 静的なライフサイクルルール

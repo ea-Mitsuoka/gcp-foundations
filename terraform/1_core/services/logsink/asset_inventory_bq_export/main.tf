@@ -60,7 +60,7 @@ resource "google_pubsub_topic" "asset_inventory_feed" {
 resource "google_bigquery_dataset" "asset_inventory_dataset" {
   project     = data.terraform_remote_state.project.outputs.project_id
   dataset_id  = "asset_inventory"
-  location    = "asia-northeast1" # リージョンを指定
+  location    = var.gcp_region
   description = "Dataset for Cloud Asset Inventory exports."
 }
 

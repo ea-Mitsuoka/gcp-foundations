@@ -1,6 +1,6 @@
 variable "project_name" {
   type        = string
-  default     = ""
+  default     = "logsink"
   description = "プロジェクト名を作成するための名前。"
 }
 
@@ -24,4 +24,9 @@ variable "gcp_region" {
   type        = string
   description = "プロジェクトのデフォルトリージョン。"
   default     = "asia-northeast1"
+}
+
+variable "project_id_prefix" {
+  type        = string
+  description = "プロジェクトIDの接頭辞（ドメイン名ベース・文字数制限対応済）"
 }
