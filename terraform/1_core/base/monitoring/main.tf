@@ -4,7 +4,7 @@
 # terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
 
 # 新しいproject-factoryモジュールを呼び出す
-module "logsink_project" {
+module "monitoring_project" {
   # 1. 新しいモジュールのパスを指定
   source = "../../../modules/project-factory"
 

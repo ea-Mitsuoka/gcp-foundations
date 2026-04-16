@@ -16,11 +16,6 @@ variable "gcs_backend_bucket" {
 }
 
 # Warning 抑制用
-variable "gcs_backend_bucket" {
-  type    = string
-  default = ""
-}
-
 variable "organization_domain" {
   type    = string
   default = ""

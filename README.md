@@ -8,10 +8,9 @@
 
 本リポジトリの運用に関するあらゆる情報は、以下のドキュメントに集約されています。
 
-1. **[環境構築の全体手順 (新規顧客向け)](docs/procedures/first_env_setup.md)**: 一番最初に実行するセットアップ手順
-1. **[アーキテクチャ設計思想](docs/architecture/architecture.md)**: ディレクトリ構造と各レイヤーの役割
-1. **[フォルダの作成手順](docs/procedures/create_folder.md)**: コンソール/gcloud/Terraformの各手順を網羅
-1. **[プロジェクトの作成手順](docs/procedures/create_project.md)**: コンソール/gcloud/Terraformの各手順を網羅
+1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/first_env_setup.md)**: 一番最初に実行するセットアップ手順
+1. **[フォルダの作成手順](docs/operations/create_folder.md)**: コンソール/gcloud/Terraformの各手順を網羅
+1. **[プロジェクトの作成手順](docs/operations/add_new_project.md)**: コンソール/gcloud/Terraformの各手順を網羅
 1. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
 1. **[顧客引き渡し手順 (納品時)](docs/operations/handover_to_customer.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
@@ -52,7 +51,7 @@ graph TD
 bash terraform/scripts/deploy_all.sh
 ```
 
-※ 事前に `projects_config.csv` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
+※ 事前に `projects_config.xlsx` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
 
 ______________________________________________________________________
 

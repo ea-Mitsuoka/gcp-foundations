@@ -179,8 +179,8 @@ else
     print_success "Bucket created."
 fi
 
-# バージョニングの有効化は、バケットが既存・新規に関わらず必ず実行する（冪等性があるため安全）
-print_info "Ensuring versioning is enabled on the bucket..."
+# バージョニングの有効化（バケット作成直後はIAM伝播待ちのためリトライ付き）
+print_info "Enabling versioning on the bucket (with retry for IAM propagation)..."
 MAX_RETRIES=6
 RETRY_COUNT=0
 while ! gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning >/dev/null 2>&1; do
@@ -192,23 +192,6 @@ while ! gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${
   print_warning "Permission not yet propagated. Retrying in 10 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
   sleep 10
 done
-print_success "GCS bucket versioning is enabled."
-
-print_info "Waiting for IAM propagation to enable versioning (this may take up to a minute)..."
-
-# バージョニングの有効化を最大6回（約60秒間）リトライする
-MAX_RETRIES=6
-RETRY_COUNT=0
-while ! gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning; do
-  RETRY_COUNT=$((RETRY_COUNT+1))
-  if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-    print_error "Failed to enable versioning after $MAX_RETRIES attempts."
-    exit 1
-  fi
-  print_warning "Permission not yet propagated. Retrying in 10 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
-  sleep 10
-done
-
 print_success "GCS bucket created and versioning enabled."
 
 print_info "(3.4/5) Creating service account '${SA_NAME}'..."
