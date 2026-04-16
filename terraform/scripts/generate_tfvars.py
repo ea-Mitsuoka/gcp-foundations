@@ -5,6 +5,8 @@
 # ]
 # ///
 import os
+import shutil
+import glob
 import openpyxl
 
 # domain.envからドメインを読み込む
@@ -38,7 +40,22 @@ if os.path.exists(xlsx_path):
         if not app_name: continue
 
         project_dir = os.path.join(os.path.dirname(__file__), f"../../terraform/4_projects/{app_name}")
-        os.makedirs(project_dir, exist_ok=True)
+        example_dir = os.path.join(os.path.dirname(__file__), "../../terraform/4_projects/example_project")
+        
+        # 新規プロジェクトの場合、example_project から構成ファイルをコピー
+        if not os.path.exists(project_dir):
+            os.makedirs(project_dir, exist_ok=True)
+            for tf_file in glob.glob(os.path.join(example_dir, '*.tf')):
+                shutil.copy(tf_file, project_dir)
+            
+            # backend.tf の prefix (保存先パス) を新プロジェクト用に書き換え
+            backend_path = os.path.join(project_dir, 'backend.tf')
+            if os.path.exists(backend_path):
+                with open(backend_path, 'r') as f:
+                    content = f.read()
+                content = content.replace('prefix = "projects/example_project"', f'prefix = "projects/{app_name}"')
+                with open(backend_path, 'w') as f:
+                    f.write(content)
         
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"

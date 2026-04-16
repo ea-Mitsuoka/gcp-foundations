@@ -7,14 +7,6 @@ locals {
   sanitized_domain = replace(var.organization_domain, ".", "-")
 }
 
-# 外部モジュール（string_utils）の呼び出し
-module "string_utils" {
-  source            = "git::https://github.com/ea-Mitsuoka/terraform-modules.git//string_utils?ref=535a37e77566e68ab35b1f5266cb1872405f15a2"
-  organization_name = local.sanitized_domain
-  env               = var.labels.env
-  app               = var.labels.app
-}
-
 # 新しいproject-factoryモジュールを呼び出す
 module "logsink_project" {
   # 1. 新しいモジュールのパスを指定
@@ -23,7 +15,7 @@ module "logsink_project" {
   # 2. モジュールに必要な変数を渡す（ここで命名規則を定義）
   # 修正点: データソースからではなく、変数を直接使用
   project_id      = "${local.sanitized_domain}-${var.project_name}"
-  name            = "${module.string_utils.sanitized_org_name}-${var.project_name}"
+  name            = "${local.sanitized_domain}-${var.project_name}"
   organization_id = data.google_organization.org.org_id
   labels          = var.labels
   # billing_accountやfolder_idなども必要に応じてここで指定

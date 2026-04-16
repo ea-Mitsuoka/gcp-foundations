@@ -19,9 +19,9 @@ variable "environment" {
 }
 
 variable "folder_id" {
-  type       = string
-  default    = ""
-  escription = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
+  type        = string
+  default     = ""
+  description = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
 }
 
 variable "project_apis" {
