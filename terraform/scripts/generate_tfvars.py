@@ -63,12 +63,28 @@ if os.path.exists(xlsx_path):
         if raw_billing is not None and str(raw_billing).strip().lower() == 'true':
             is_billing_linked = True
 
+        # 空セルが "None" という文字列として出力されるのを防ぐ安全な処理
+        raw_env = row_dict.get('env')
+        env_val = "" if raw_env is None else str(raw_env).strip()
+
+        raw_folder_id = row_dict.get('folder_id')
+        folder_id_val = "" if raw_folder_id is None else str(raw_folder_id).strip()
+
+        # project_apis をカンマ区切りで読み込み、Terraformのリスト形式に変換
+        raw_apis = row_dict.get('project_apis')
+        apis_formatted = '[]'
+        if raw_apis:
+            apis_list = [api.strip() for api in str(raw_apis).split(',') if api.strip()]
+            if apis_list:
+                apis_formatted = '[\n  "' + '",\n  "'.join(apis_list) + '"\n]'
+
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"
 app_name            = "{app_name}"
-environment         = "{row_dict.get('env', '')}"
-folder_id           = "{row_dict.get('folder_id', '')}"
+environment         = "{env_val}"
+folder_id           = "{folder_id_val}"
 billing_linked      = {str(is_billing_linked).lower()}
+project_apis        = {apis_formatted}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)
