@@ -256,7 +256,7 @@ gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="servi
 # 【修正箇所】ロール名のタイポを修正 (serviceusage.admin -> serviceusage.serviceUsageAdmin)
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/serviceusage.serviceUsageAdmin" --quiet
 # 残りの組織レベルの権限付与
-gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/monitoring.viewer" --quiet
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/monitoring.admin" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudasset.owner" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/browser" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/orgpolicy.policyAdmin" --quiet

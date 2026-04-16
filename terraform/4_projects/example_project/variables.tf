@@ -52,3 +52,9 @@ variable "terraform_service_account_email" {
   type        = string
   description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
 }
+
+variable "core_billing_linked" {
+  type        = bool
+  description = "Warning抑制用（共通変数）"
+  default     = false
+}

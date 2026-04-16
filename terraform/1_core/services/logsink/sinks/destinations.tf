@@ -18,7 +18,7 @@ resource "google_storage_bucket" "dynamic_buckets" {
   for_each = local.unique_gcs_buckets
 
   project                     = data.terraform_remote_state.project.outputs.project_id
-  name                        = each.key
+  name                        = "${data.terraform_remote_state.project.outputs.project_id}-${replace(each.key, "_", "-")}"
   location                    = var.gcp_region
   uniform_bucket_level_access = true
 

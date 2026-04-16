@@ -109,7 +109,7 @@ ______________________________________________________________________
 - `roles/logging.admin`: ログ関連リソースの管理
 - `roles/iam.securityAdmin`: IAMポリシーの管理
 - `roles/serviceusage.serviceUsageAdmin`: プロジェクトでのAPI有効化
-- `roles/monitoring.viewer`: モニタリング情報の閲覧
+- `roles/monitoring.admin`: モニタリングの設定
 - `roles/cloudasset.owner`: Cloud Asset Inventoryの管理
 - `roles/browser`: GCPリソースの閲覧
 - `roles/orgpolicy.policyAdmin`: 組織ポリシーの管理 (追加)
