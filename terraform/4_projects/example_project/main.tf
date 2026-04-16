@@ -15,7 +15,7 @@ module "project" {
 }
 
 resource "google_project_service" "apis" {
-  for_each = var.project_apis
+  for_each = var.billing_linked ? var.project_apis : toset([])
 
   project                    = module.project.project_id
   service                    = each.key
