@@ -65,8 +65,6 @@ for dir in "${TARGET_DIRS[@]}"; do
   echo ">>> Deploying: ${dir}"
   cd "${ROOT_DIR}/${dir}"
   
-  # ユーザー要件に基づく統一コマンド
-  set-gcs-bucket-value.sh . || true
   terraform init -backend-config="${ROOT_DIR}/terraform/common.tfbackend" -reconfigure
   
   # terraform.tfvarsが存在する場合のみ読み込むためのハンドリング

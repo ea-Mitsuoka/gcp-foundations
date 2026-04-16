@@ -165,12 +165,7 @@ labels = {
 1. **初期化**:
 
    ```bash
-   terraform init -backend-config="bucket=${BUCKET_NAME}"
-
-   # -reconfigureオプションは、設定変更時に役立ちます
-   terraform init \
-     -reconfigure \
-     -backend-config="bucket=${BUCKET_NAME}"
+   terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
    ```
 
 1. **プラン確認と適用**: `-var-file`フラグを使って、`dev`環境用の設定ファイルを指定します。

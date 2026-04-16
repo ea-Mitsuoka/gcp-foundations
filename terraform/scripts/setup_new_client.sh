@@ -269,6 +269,7 @@ EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
 terraform_service_account_email = "${SA_EMAIL}"
+gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
 EOF
 print_success "common.tfbackend and common.tfvars created successfully."
 echo

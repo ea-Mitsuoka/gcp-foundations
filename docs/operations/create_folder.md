@@ -110,16 +110,13 @@ resource "google_folder" "development" {
 # 1. スクリプトのパスを通す
 export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
 
-# 2. backend用のバケット情報を取得・セット
-set-gcs-bucket-value.sh .
-
-# 3. 初期化
+# 2. 初期化
 terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
 
-# 4. 実行計画の確認
+# 3. 実行計画の確認
 terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 
-# 5. リソースの適用
+# 4. リソースの適用
 terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 ```
 
