@@ -108,29 +108,30 @@ echo $TF_VAR_terraform_service_account_email
 
 ### **ステップ3: Terraformを実行**
 
-1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
+<!-- 1. **Cloud Shellにログイン**: サービスアカウントの借用を設定をする
 
    ```bash
    cd ~/gcp-foundations/terraform/2_folders
    gcloud auth application-default login --impersonate-service-account=${SA_EMAIL}
-   ```
+   ``` -->
 
-1. **初期化**: 新しいディレクトリで作業を始めたので、再度`init`が必要です。
+以下の標準コマンド群をコピー＆ペーストして実行してください。（`deploy_all.sh` を利用して一括デプロイすることも可能です）
 
-   ```bash
-   terraform init -backend-config="bucket=${BUCKET_NAME}"
+```bash
+# 1. スクリプトのパスを通す
+export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
 
-   # -reconfigureオプションは、設定変更時に役立ちます
-   terraform init \
-     -reconfigure \
-     -backend-config="bucket=${BUCKET_NAME}"
-   ```
+# 2. backend用のバケット情報を取得・セット
+set-gcs-bucket-value.sh .
 
-1. **適用**: `plan`で内容を確認し、問題なければ`apply`を実行します。
+# 3. 初期化
+terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
 
-   ```bash
-   terraform plan
-   terraform apply
-   ```
+# 4. 実行計画の確認
+terraform plan -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+
+# 5. リソースの適用
+terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
+```
 
 > **ポイント**: この方法で作成・管理することで、「インフラがコードで定義されている」状態になります。Gitで変更履歴を管理でき、誰がいつ何を変更したかが明確になり、インフラの再現性と信頼性が飛躍的に向上します。

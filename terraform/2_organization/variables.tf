@@ -8,3 +8,8 @@ variable "gcp_region" {
   description = "プロジェクトのデフォルトリージョン。"
   default     = "asia-northeast1"
 }
+
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名。"
+}
