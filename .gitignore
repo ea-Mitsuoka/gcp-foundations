@@ -36,3 +36,4 @@ change.patch
 alert_definitions.csv
 notifications.csv
 .catignore
+gemini/
