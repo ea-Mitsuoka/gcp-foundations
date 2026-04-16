@@ -56,12 +56,19 @@ if os.path.exists(xlsx_path):
                 content = content.replace('prefix = "projects/example_project"', f'prefix = "projects/{app_name}"')
                 with open(backend_path, 'w') as f:
                     f.write(content)
-        
+
+        # Excelのセルが空(None)の場合の型安全なBoolean変換
+        raw_billing = row_dict.get('billing_linked')
+        is_billing_linked = False
+        if raw_billing is not None and str(raw_billing).strip().lower() == 'true':
+            is_billing_linked = True
+
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"
 app_name            = "{app_name}"
 environment         = "{row_dict.get('env', '')}"
 folder_id           = "{row_dict.get('folder_id', '')}"
+billing_linked      = {str(is_billing_linked).lower()}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)

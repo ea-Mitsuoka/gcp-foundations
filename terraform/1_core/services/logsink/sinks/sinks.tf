@@ -6,10 +6,11 @@
 resource "google_logging_organization_sink" "dynamic_sinks" {
   for_each = local.sink_configs
 
-  provider = google-beta
-  name     = "org-${replace(each.key, "_", "-")}-sink"
-  org_id   = data.google_organization.org.org_id
-  filter   = each.value.filter
+  provider         = google-beta
+  name             = "org-${replace(each.key, "_", "-")}-sink"
+  org_id           = data.google_organization.org.org_id
+  filter           = each.value.filter
+  include_children = true
 
   # 宛先の種類に応じて、動的に作成された宛先リソースを参照
   destination = lower(each.value.destination_type) == "bigquery" ? "bigquery.googleapis.com/projects/${data.terraform_remote_state.project.outputs.project_id}/datasets/${google_bigquery_dataset.dynamic_datasets[each.value.destination_parent].dataset_id}" : "storage.googleapis.com/${google_storage_bucket.dynamic_buckets[each.value.destination_parent].name}"

@@ -258,6 +258,7 @@ gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="servi
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/monitoring.viewer" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudasset.owner" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/browser" --quiet
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/orgpolicy.policyAdmin" --quiet
 
 # Allow current user to impersonate the SA
 gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
