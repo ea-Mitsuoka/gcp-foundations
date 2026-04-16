@@ -34,6 +34,15 @@ resource "google_organization_iam_member" "sa_asset_viewer_on_org" {
   member = google_service_account.inactive_check_sa.member
 }
 
+# Cloud Function V2 (Cloud Run) を Scheduler が呼び出すための権限
+resource "google_cloud_run_service_iam_member" "invoker" {
+  project  = google_cloudfunctions2_function.inactive_account_reporter.project
+  location = google_cloudfunctions2_function.inactive_account_reporter.location
+  service  = google_cloudfunctions2_function.inactive_account_reporter.name
+  role     = "roles/run.invoker"
+  member   = google_service_account.inactive_check_sa.member
+}
+
 # monitoringプロジェクトへのカスタム指標書き込み権限 (対象がmonitoringプロジェクトのため、別リソースとして定義)
 resource "google_project_iam_member" "sa_monitoring_metricwriter_on_monitoring" {
   project = data.terraform_remote_state.monitoring_project.outputs.project_id
