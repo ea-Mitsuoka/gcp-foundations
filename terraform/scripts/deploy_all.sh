@@ -7,6 +7,25 @@ set -e
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
+STATE_FILE="${ROOT_DIR}/.deploy_state"
+
+RESUME=false
+if [[ "$1" == "--resume" ]]; then
+  RESUME=true
+elif [[ -f "$STATE_FILE" ]] && [[ -t 0 ]]; then
+  read -p "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    RESUME=true
+  fi
+fi
+
+if [[ "$RESUME" == "false" ]]; then
+  echo "Starting fresh deployment. Clearing previous state..."
+  rm -f "$STATE_FILE"
+  touch "$STATE_FILE"
+else
+  echo "Resuming deployment based on state file..."
+fi
 
 echo "=========================================================="
 echo " Step 1: Generating tfvars from SSOT (domain.env & xlsx)"
@@ -66,6 +85,12 @@ for dir in "${TARGET_DIRS[@]}"; do
     echo "Skipping ${dir} (Directory not found)"
     continue
   fi
+
+  # レジューム（再開）が有効な場合、既に成功したディレクトリはスキップする
+  if [[ "$RESUME" == "true" ]] && grep -Fxq "$dir" "$STATE_FILE"; then
+    echo "⏭️ Skipping ${dir} (Already deployed successfully in previous run)"
+    continue
+  fi
   
   # 課金が未リンクの場合、API有効化を伴う services ディレクトリを安全にスキップ
   if [ "$CORE_BILLING_LINKED" != "true" ] && [[ "$dir" == *"1_core/services"* ]]; then
@@ -84,9 +109,15 @@ for dir in "${TARGET_DIRS[@]}"; do
     TFVARS_ARG="-var-file=terraform.tfvars"
   fi
   
+  # エラー発生時はここでスクリプトが停止し、状態ファイルには未記録となる
   terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" ${TFVARS_ARG} -out=tfplan
   terraform apply -auto-approve tfplan
+  
+  # 成功したら状態ファイルに記録
+  echo "$dir" >> "$STATE_FILE"
   echo "----------------------------------------------------------"
 done
 
 echo "🎉 All deployments completed successfully!"
+# 全て成功した場合は状態ファイルを削除
+rm -f "$STATE_FILE"
