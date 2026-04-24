@@ -22,7 +22,7 @@ data "terraform_remote_state" "vpc_host" {
 }
 
 locals {
-  host_project_id = var.shared_vpc_env == "prod" ? try(data.terraform_remote_state.vpc_host[0].outputs.prod_host_project_id, null) : (var.shared_vpc_env == "dev" ? try(data.terraform_remote_state.vpc_host[0].outputs.dev_host_project_id, null) : null)
+  host_project_id    = var.shared_vpc_env == "prod" ? try(data.terraform_remote_state.vpc_host[0].outputs.prod_host_project_id, null) : (var.shared_vpc_env == "dev" ? try(data.terraform_remote_state.vpc_host[0].outputs.dev_host_project_id, null) : null)
   resolved_folder_id = var.folder_id != "" ? try(data.terraform_remote_state.folders.outputs[format("%s_folder_id", var.folder_id)], var.folder_id) : null
 }
 
@@ -50,6 +50,6 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
   count           = var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
   host_project    = local.host_project_id
   service_project = module.project.project_id
-  
+
   depends_on = [module.project_services]
 }
