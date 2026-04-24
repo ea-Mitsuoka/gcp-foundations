@@ -13,18 +13,3 @@ variable "gcp_region" {
   default     = "asia-northeast1"
 }
 
-# Warning 抑制用
-variable "gcs_backend_bucket" {
-  type    = string
-  default = ""
-}
-
-variable "project_id_prefix" {
-  type    = string
-  default = ""
-}
-
-variable "core_billing_linked" {
-  type    = bool
-  default = false
-}

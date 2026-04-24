@@ -17,33 +17,3 @@ variable "project_apis" {
   ]
 }
 
-# Warning 抑制用
-variable "terraform_service_account_email" {
-  type    = string
-  default = ""
-}
-
-variable "gcs_backend_bucket" {
-  type    = string
-  default = ""
-}
-
-variable "organization_domain" {
-  type    = string
-  default = ""
-}
-
-variable "gcp_region" {
-  type    = string
-  default = ""
-}
-
-variable "project_id_prefix" {
-  type    = string
-  default = ""
-}
-
-variable "core_billing_linked" {
-  type    = bool
-  default = false
-}

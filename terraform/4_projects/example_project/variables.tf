@@ -9,12 +9,6 @@ variable "gcs_backend_bucket" {
   default     = ""
 }
 
-variable "gcp_region" {
-  type        = string
-  description = "GCPリージョン"
-  default     = "asia-northeast1"
-}
-
 variable "project_id_prefix" {
   type        = string
   description = "プロジェクトIDの接頭辞（ドメイン名ベース）"
@@ -53,12 +47,6 @@ variable "terraform_service_account_email" {
   description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
 }
 
-variable "core_billing_linked" {
-  type        = bool
-  description = "Warning抑制用（共通変数）"
-  default     = false
-}
-
 variable "shared_vpc_env" {
   type        = string
   description = "接続する Shared VPC の環境 (prod, dev, none)"
@@ -68,18 +56,6 @@ variable "shared_vpc_env" {
 variable "enable_shared_vpc" {
   type        = bool
   description = "Shared VPC が全体で有効か（共通変数から渡される）"
-  default     = false
-}
-
-variable "monitoring" {
-  type        = bool
-  description = "モニタリングの対象とするか"
-  default     = false
-}
-
-variable "logging" {
-  type        = bool
-  description = "ログ収集の対象とするか"
   default     = false
 }
 
