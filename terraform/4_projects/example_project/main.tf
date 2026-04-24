@@ -2,6 +2,20 @@ data "google_organization" "org" {
   domain = var.organization_domain
 }
 
+data "terraform_remote_state" "vpc_host" {
+  count   = var.enable_shared_vpc && var.shared_vpc_env != "none" ? 1 : 0
+  backend = "gcs"
+  config = {
+    bucket                      = var.gcs_backend_bucket
+    prefix                      = "core/base/vpc-host"
+    impersonate_service_account = var.terraform_service_account_email
+  }
+}
+
+locals {
+  host_project_id = var.shared_vpc_env == "prod" ? try(data.terraform_remote_state.vpc_host[0].outputs.prod_host_project_id, null) : (var.shared_vpc_env == "dev" ? try(data.terraform_remote_state.vpc_host[0].outputs.dev_host_project_id, null) : null)
+}
+
 module "project" {
   source = "../../modules/project-factory"
 
@@ -19,4 +33,12 @@ module "project_services" {
 
   project_id   = module.project.project_id
   project_apis = var.billing_linked ? var.project_apis : toset([])
+}
+
+resource "google_compute_shared_vpc_service_project" "service_project" {
+  count           = var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
+  host_project    = local.host_project_id
+  service_project = module.project.project_id
+  
+  depends_on = [module.project_services]
 }

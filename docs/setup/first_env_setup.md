@@ -20,6 +20,17 @@ ______________________________________________________________________
    `gcloud` CLI, `terraform` CLI, `openssl`, `git`, `uv` (Pythonパッケージマネージャ) がインストールされていることを確認してください。
    ※ `uv` が未インストールの場合は `curl -LsSf https://astral.sh/uv/install.sh | sh` でインストールできます。
 
+1. **Google Groups の事前作成 (必須):**
+   `2_organization` の IAM 設定を適用するため、Google Workspace (または Cloud Identity) 上で以下のメーリングリスト（グループ）を事前に作成しておいてください。
+   - `gcp-organization-admins@<顧客ドメイン>`
+   - `gcp-billing-admins@<顧客ドメイン>`
+   - `gcp-vpc-network-admins@<顧客ドメイン>`
+   - `gcp-hybrid-connectivity-admins@<顧客ドメイン>`
+   - `gcp-logging-monitoring-admins@<顧客ドメイン>`
+   - `gcp-logging-monitoring-viewers@<顧客ドメイン>`
+   - `gcp-security-admins@<顧客ドメイン>`
+   - `gcp-devops@<顧客ドメイン>`
+
 1. **GCPへの認証:**
    顧客のGCP組織に対して**組織管理者**などの強い権限を持つアカウントで`gcloud`にログインします。
 

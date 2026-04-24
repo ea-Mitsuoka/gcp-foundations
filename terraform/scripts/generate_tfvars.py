@@ -83,11 +83,15 @@ organization_domain = "{domain}"
 app_name            = "{app_name}"
 environment         = "{env_val}"
 folder_id           = "{folder_id_val}"
+shared_vpc_env      = "{shared_vpc_env_val}"
 billing_linked      = {str(is_billing_linked).lower()}
 project_apis        = {apis_formatted}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)
     print("Successfully generated tfvars from Spreadsheet (xlsx).")
+else:
+    print("projects_config.xlsx not found. Skipping project tfvars generation.")
+rated tfvars from Spreadsheet (xlsx).")
 else:
     print("projects_config.xlsx not found. Skipping project tfvars generation.")

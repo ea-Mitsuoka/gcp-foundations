@@ -1,0 +1,423 @@
+diff --git a/terraform/1_core/base/vpc-host/backend.tf b/terraform/1_core/base/vpc-host/backend.tf
+new file mode 100644
+index 0000000..f5f80ea
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/backend.tf
+@@ -0,0 +1,5 @@
++terraform {
++  backend "gcs" {
++    prefix = "core/base/vpc-host"
++  }
++}
+diff --git a/terraform/1_core/base/vpc-host/data.tf b/terraform/1_core/base/vpc-host/data.tf
+new file mode 100644
+index 0000000..45b8af8
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/data.tf
+@@ -0,0 +1,12 @@
++data "google_organization" "org" {
++  domain = var.organization_domain
++}
++
++data "terraform_remote_state" "folders" {
++  backend = "gcs"
++  config = {
++    bucket                      = var.gcs_backend_bucket
++    prefix                      = "folders"
++    impersonate_service_account = var.terraform_service_account_email
++  }
++}
+diff --git a/terraform/1_core/base/vpc-host/main.tf b/terraform/1_core/base/vpc-host/main.tf
+new file mode 100644
+index 0000000..9f34d0e
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/main.tf
+@@ -0,0 +1,24 @@
++# --------------------------------------------------------------------------------
++# Shared VPC ホストプロジェクトの作成 (Production & Development)
++# enable_vpc_host_projects が true の場合のみ作成されます
++# --------------------------------------------------------------------------------
++
++module "vpc_host_prod" {
++  source = "../../../modules/project-factory"
++  count  = var.enable_vpc_host_projects ? 1 : 0
++
++  project_id      = "${var.project_id_prefix}-vpc-prod"
++  name            = "${var.project_id_prefix}-vpc-prod"
++  organization_id = data.google_organization.org.org_id
++  folder_id       = data.terraform_remote_state.folders.outputs.production_folder_id
++}
++
++module "vpc_host_dev" {
++  source = "../../../modules/project-factory"
++  count  = var.enable_vpc_host_projects ? 1 : 0
++
++  project_id      = "${var.project_id_prefix}-vpc-dev"
++  name            = "${var.project_id_prefix}-vpc-dev"
++  organization_id = data.google_organization.org.org_id
++  folder_id       = data.terraform_remote_state.folders.outputs.development_folder_id
++}
+diff --git a/terraform/1_core/base/vpc-host/outputs.tf b/terraform/1_core/base/vpc-host/outputs.tf
+new file mode 100644
+index 0000000..366a084
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/outputs.tf
+@@ -0,0 +1,9 @@
++output "prod_host_project_id" {
++  description = "The ID of the Production Shared VPC host project."
++  value       = var.enable_vpc_host_projects ? module.vpc_host_prod[0].project_id : null
++}
++
++output "dev_host_project_id" {
++  description = "The ID of the Development Shared VPC host project."
++  value       = var.enable_vpc_host_projects ? module.vpc_host_dev[0].project_id : null
++}
+diff --git a/terraform/1_core/base/vpc-host/provider.tf b/terraform/1_core/base/vpc-host/provider.tf
+new file mode 100644
+index 0000000..4810d83
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/provider.tf
+@@ -0,0 +1,9 @@
++provider "google" {
++  impersonate_service_account = var.terraform_service_account_email
++  region                      = var.gcp_region
++}
++
++provider "google-beta" {
++  impersonate_service_account = var.terraform_service_account_email
++  region                      = var.gcp_region
++}
+diff --git a/terraform/1_core/base/vpc-host/variables.tf b/terraform/1_core/base/vpc-host/variables.tf
+new file mode 100644
+index 0000000..f40356f
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/variables.tf
+@@ -0,0 +1,31 @@
++variable "organization_domain" {
++  type        = string
++  description = "GCP組織のドメイン名。"
++}
++
++variable "terraform_service_account_email" {
++  type        = string
++  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
++}
++
++variable "gcs_backend_bucket" {
++  type        = string
++  description = "tfstateを保存するGCSバケット。"
++}
++
++variable "gcp_region" {
++  type        = string
++  description = "プロジェクトのデフォルトリージョン。"
++  default     = "asia-northeast1"
++}
++
++variable "project_id_prefix" {
++  type        = string
++  description = "プロジェクトIDの接頭辞（ドメイン名ベース・文字数制限対応済）"
++}
++
++variable "enable_vpc_host_projects" {
++  type        = bool
++  description = "Shared VPC用のホストプロジェクトを作成するかどうか。"
++  default     = false
++}
+diff --git a/terraform/1_core/base/vpc-host/versions.tf b/terraform/1_core/base/vpc-host/versions.tf
+new file mode 100644
+index 0000000..71b72ff
+--- /dev/null
++++ b/terraform/1_core/base/vpc-host/versions.tf
+@@ -0,0 +1,14 @@
++terraform {
++  required_version = "~> 1.14"
++
++  required_providers {
++    google = {
++      source  = "hashicorp/google"
++      version = "~> 6.48.0"
++    }
++    google-beta = {
++      source  = "hashicorp/google-beta"
++      version = "~> 6.48.0"
++    }
++  }
++}
+diff --git a/terraform/1_core/services/vpc-host/backend.tf b/terraform/1_core/services/vpc-host/backend.tf
+new file mode 100644
+index 0000000..a48e96a
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/backend.tf
+@@ -0,0 +1,5 @@
++terraform {
++  backend "gcs" {
++    prefix = "core/services/vpc-host"
++  }
++}
+diff --git a/terraform/1_core/services/vpc-host/data.tf b/terraform/1_core/services/vpc-host/data.tf
+new file mode 100644
+index 0000000..c890085
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/data.tf
+@@ -0,0 +1,8 @@
++data "terraform_remote_state" "vpc_host" {
++  backend = "gcs"
++  config = {
++    bucket                      = var.gcs_backend_bucket
++    prefix                      = "core/base/vpc-host"
++    impersonate_service_account = var.terraform_service_account_email
++  }
++}
+diff --git a/terraform/1_core/services/vpc-host/main.tf b/terraform/1_core/services/vpc-host/main.tf
+new file mode 100644
+index 0000000..a7ee89a
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/main.tf
+@@ -0,0 +1,32 @@
++# --------------------------------------------------------------------------------
++# Shared VPC ネットワークの設定
++# enable_shared_vpc および enable_vpc_host_projects が true の場合のみ実行されます
++# --------------------------------------------------------------------------------
++
++# 1. Compute Engine API の有効化
++resource "google_project_service" "compute_prod" {
++  count              = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
++  project            = data.terraform_remote_state.vpc_host.outputs.prod_host_project_id
++  service            = "compute.googleapis.com"
++  disable_on_destroy = false
++}
++
++resource "google_project_service" "compute_dev" {
++  count              = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
++  project            = data.terraform_remote_state.vpc_host.outputs.dev_host_project_id
++  service            = "compute.googleapis.com"
++  disable_on_destroy = false
++}
++
++# 2. Shared VPC ホストプロジェクト機能の有効化
++resource "google_compute_shared_vpc_host" "host_prod" {
++  count      = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
++  project    = data.terraform_remote_state.vpc_host.outputs.prod_host_project_id
++  depends_on = [google_project_service.compute_prod]
++}
++
++resource "google_compute_shared_vpc_host" "host_dev" {
++  count      = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
++  project    = data.terraform_remote_state.vpc_host.outputs.dev_host_project_id
++  depends_on = [google_project_service.compute_dev]
++}
+diff --git a/terraform/1_core/services/vpc-host/provider.tf b/terraform/1_core/services/vpc-host/provider.tf
+new file mode 100644
+index 0000000..4810d83
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/provider.tf
+@@ -0,0 +1,9 @@
++provider "google" {
++  impersonate_service_account = var.terraform_service_account_email
++  region                      = var.gcp_region
++}
++
++provider "google-beta" {
++  impersonate_service_account = var.terraform_service_account_email
++  region                      = var.gcp_region
++}
+diff --git a/terraform/1_core/services/vpc-host/variables.tf b/terraform/1_core/services/vpc-host/variables.tf
+new file mode 100644
+index 0000000..dd8d7b4
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/variables.tf
+@@ -0,0 +1,32 @@
++variable "organization_domain" {
++  type        = string
++  description = "GCP組織のドメイン名。"
++}
++
++variable "terraform_service_account_email" {
++  type        = string
++  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
++}
++
++variable "gcs_backend_bucket" {
++  type        = string
++  description = "tfstateを保存するGCSバケット。"
++}
++
++variable "gcp_region" {
++  type        = string
++  description = "プロジェクトのデフォルトリージョン。"
++  default     = "asia-northeast1"
++}
++
++variable "enable_vpc_host_projects" {
++  type        = bool
++  description = "Shared VPC用のホストプロジェクトを作成するかどうか。"
++  default     = false
++}
++
++variable "enable_shared_vpc" {
++  type        = bool
++  description = "ホストプロジェクトに対してShared VPC機能を有効化するかどうか。"
++  default     = false
++}
+diff --git a/terraform/1_core/services/vpc-host/versions.tf b/terraform/1_core/services/vpc-host/versions.tf
+new file mode 100644
+index 0000000..71b72ff
+--- /dev/null
++++ b/terraform/1_core/services/vpc-host/versions.tf
+@@ -0,0 +1,14 @@
++terraform {
++  required_version = "~> 1.14"
++
++  required_providers {
++    google = {
++      source  = "hashicorp/google"
++      version = "~> 6.48.0"
++    }
++    google-beta = {
++      source  = "hashicorp/google-beta"
++      version = "~> 6.48.0"
++    }
++  }
++}
+diff --git a/terraform/2_organization/main.tf b/terraform/2_organization/main.tf
+index 1633a73..9384962 100644
+--- a/terraform/2_organization/main.tf
++++ b/terraform/2_organization/main.tf
+@@ -43,3 +43,88 @@ resource "google_organization_policy" "vm_external_ip_access" {
+     }
+   }
+ }
++
++# --------------------------------------------------------------------------------
++# 組織IAM設定 (Organization IAM)
++# 管理用Googleグループに対する一元的な権限付与を行います
++# --------------------------------------------------------------------------------
++
++locals {
++  group_roles = {
++    "gcp-organization-admins" = [
++      "roles/billing.user",                      # 請求先アカウント ユーザー
++      "roles/cloudkms.admin",                    # クラウド KMS 管理者
++      "roles/cloudsupport.admin",                # サポート アカウント管理者
++      "roles/iam.organizationRoleAdmin",         # 組織のロールの管理者
++      "roles/orgpolicy.policyAdmin",             # 組織ポリシー管理者
++      "roles/pubsub.admin",                      # Pub/Sub 管理者
++      "roles/resourcemanager.folderAdmin",       # フォルダ管理者
++      "roles/resourcemanager.organizationAdmin", # 組織管理者
++      "roles/resourcemanager.projectCreator",    # プロジェクト作成者
++      "roles/securitycenter.admin",              # セキュリティ センター管理者
++    ]
++    "gcp-billing-admins" = [
++      "roles/billing.admin",                      # 請求先アカウント管理者
++      "roles/billing.creator",                    # 請求先アカウント作成者
++      "roles/resourcemanager.organizationViewer", # 組織閲覧者
++    ]
++    "gcp-vpc-network-admins" = [
++      "roles/compute.networkAdmin",         # Compute ネットワーク管理者
++      "roles/compute.securityAdmin",        # Compute セキュリティ管理者
++      "roles/compute.xpnAdmin",             # Compute Shared VPC 管理者
++      "roles/resourcemanager.folderViewer", # フォルダ閲覧者
++    ]
++    "gcp-hybrid-connectivity-admins" = [
++      "roles/compute.networkAdmin",         # Compute ネットワーク管理者
++      "roles/resourcemanager.folderViewer", # フォルダ閲覧者
++    ]
++    "gcp-logging-monitoring-admins" = [
++      "roles/logging.admin",    # Logging 管理者
++      "roles/monitoring.admin", # モニタリング管理者
++      "roles/pubsub.admin",     # Pub/Sub 管理者
++    ]
++    "gcp-logging-monitoring-viewers" = [
++      "roles/logging.viewer",    # ログ閲覧者
++      "roles/monitoring.viewer", # モニタリング閲覧者
++    ]
++    "gcp-security-admins" = [
++      "roles/cloudkms.admin",                 # クラウド KMS 管理者
++      "roles/compute.viewer",                 # Compute 閲覧者
++      "roles/container.viewer",               # Kubernetes Engine 閲覧者
++      "roles/iam.organizationRoleViewer",     # 組織のロールの閲覧者
++      "roles/iam.securityAdmin",              # セキュリティ管理者
++      "roles/iam.securityReviewer",           # セキュリティ審査担当者
++      "roles/iam.serviceAccountCreator",      # サービス アカウントの作成
++      "roles/logging.admin",                  # Logging 管理者
++      "roles/logging.configWriter",           # ログ構成書き込み
++      "roles/logging.privateLogViewer",       # プライベート ログ閲覧者
++      "roles/monitoring.admin",               # モニタリング管理者
++      "roles/orgpolicy.policyAdmin",          # 組織ポリシー管理者
++      "roles/resourcemanager.folderIamAdmin", # フォルダ IAM 管理者
++      "roles/securitycenter.admin",           # セキュリティ センター管理者
++    ]
++    "gcp-devops" = [
++      "roles/resourcemanager.folderViewer", # フォルダ閲覧者
++    ]
++  }
++
++  # リソース展開用に「グループ名とロールの組み合わせ」を平坦化（flatten）したリストを作成
++  org_iam_members = flatten([
++    for group, roles in local.group_roles : [
++      for role in roles : {
++        group = group
++        role  = role
++      }
++    ]
++  ])
++}
++
++resource "google_organization_iam_member" "group_bindings" {
++  for_each = {
++    for member in local.org_iam_members : "${member.group}-${member.role}" => member
++  }
++
++  org_id = data.google_organization.org.org_id
++  role   = each.value.role
++  member = "group:${each.value.group}@${var.organization_domain}"
++}
+diff --git a/terraform/3_folders/outputs.tf b/terraform/3_folders/outputs.tf
+new file mode 100644
+index 0000000..75554cd
+--- /dev/null
++++ b/terraform/3_folders/outputs.tf
+@@ -0,0 +1,9 @@
++output "production_folder_id" {
++  description = "The ID of the Production folder."
++  value       = google_folder.production.id
++}
++
++output "development_folder_id" {
++  description = "The ID of the Development folder."
++  value       = google_folder.development.id
++}
+diff --git a/terraform/scripts/deploy_all.sh b/terraform/scripts/deploy_all.sh
+index 9dc667d..51e1c40 100644
+--- a/terraform/scripts/deploy_all.sh
++++ b/terraform/scripts/deploy_all.sh
+@@ -30,6 +30,7 @@ echo "=========================================================="
+ TARGET_DIRS=(
+   "terraform/1_core/base/logsink"
+   "terraform/1_core/base/monitoring"
++  "terraform/1_core/base/vpc-host"
+   "terraform/1_core/services/logsink/google_project_service"
+   "terraform/1_core/services/logsink/iam"
+   "terraform/1_core/services/logsink/datasets"
+@@ -40,6 +41,7 @@ TARGET_DIRS=(
+   "terraform/1_core/services/monitoring/scoping"
+   "terraform/1_core/services/monitoring/1_notification_channels"
+   "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
++  "terraform/1_core/services/vpc-host"
+   "terraform/2_organization"
+   "terraform/3_folders"
+ )
+diff --git a/terraform/scripts/setup_new_client.sh b/terraform/scripts/setup_new_client.sh
+index 5c77cd6..344c6b1 100755
+--- a/terraform/scripts/setup_new_client.sh
++++ b/terraform/scripts/setup_new_client.sh
+@@ -271,6 +271,8 @@ organization_domain             = "${CUSTOMER_DOMAIN}"
+ gcp_region                      = "${GCP_REGION}"
+ project_id_prefix               = "${SHORT_ORG_NAME}"
+ core_billing_linked             = false
++enable_vpc_host_projects        = true
++enable_shared_vpc               = true
+ EOF
+ 
+ cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"

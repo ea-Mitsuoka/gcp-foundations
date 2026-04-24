@@ -42,6 +42,8 @@ TARGET_DIRS=(
   "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
   "terraform/2_organization"
   "terraform/3_folders"
+  "terraform/1_core/base/vpc-host"
+  "terraform/1_core/services/vpc-host"
 )
 
 # 4_projects 配下のプロジェクトディレクトリを動的に検出して追加

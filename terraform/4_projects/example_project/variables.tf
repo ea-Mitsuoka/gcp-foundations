@@ -58,3 +58,15 @@ variable "core_billing_linked" {
   description = "Warning抑制用（共通変数）"
   default     = false
 }
+
+variable "shared_vpc_env" {
+  type        = string
+  description = "接続する Shared VPC の環境 (prod, dev, none)"
+  default     = "none"
+}
+
+variable "enable_shared_vpc" {
+  type        = bool
+  description = "Shared VPC が全体で有効か（共通変数から渡される）"
+  default     = false
+}

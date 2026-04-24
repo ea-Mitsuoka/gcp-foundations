@@ -245,6 +245,7 @@ gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="servi
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/cloudasset.owner" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/browser" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/orgpolicy.policyAdmin" --quiet
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/compute.xpnAdmin" --quiet
 
 # Allow current user to impersonate the SA
 gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
@@ -271,6 +272,8 @@ organization_domain             = "${CUSTOMER_DOMAIN}"
 gcp_region                      = "${GCP_REGION}"
 project_id_prefix               = "${SHORT_ORG_NAME}"
 core_billing_linked             = false
+enable_vpc_host_projects        = ${ENABLE_VPC}
+enable_shared_vpc               = ${ENABLE_VPC}
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
@@ -280,6 +283,11 @@ cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/iam/terraform.tfvars"
 project_id = "${MGMT_PROJECT_ID}"
 EOF
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/google_project_service/terraform.tfvars"
+project_id = "${MGMT_PROJECT_ID}"
+EOF
+print_success "Configuration files and tfvars generated successfully."
+echo
+erraform/0_bootstrap/google_project_service/terraform.tfvars"
 project_id = "${MGMT_PROJECT_ID}"
 EOF
 print_success "Configuration files and tfvars generated successfully."
