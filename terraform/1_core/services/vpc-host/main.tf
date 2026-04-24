@@ -21,17 +21,18 @@ resource "google_project_service" "compute_dev" {
 }
 
 # 2. Shared VPC ホストプロジェクト機能の有効化
-resource "google_compute_shared_vpc_host" "host_prod" {
+resource "google_compute_shared_vpc_host_project" "host_prod" {
   provider   = google-beta
   count      = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
   project    = data.terraform_remote_state.vpc_host.outputs.prod_host_project_id
   depends_on = [google_project_service.compute_prod]
 }
 
-resource "google_compute_shared_vpc_host" "host_dev" {
+resource "google_compute_shared_vpc_host_project" "host_dev" {
   provider   = google-beta
   count      = var.enable_shared_vpc && var.enable_vpc_host_projects ? 1 : 0
   project    = data.terraform_remote_state.vpc_host.outputs.dev_host_project_id
   depends_on = [google_project_service.compute_dev]
 }
+
 
