@@ -9,6 +9,7 @@ on:
       - '**.tfvars'
       - 'gcp_foundations.xlsx'
       - 'domain.env'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
