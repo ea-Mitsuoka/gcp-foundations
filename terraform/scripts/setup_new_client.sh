@@ -70,6 +70,9 @@ fi
 
 read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
 
+read -r -p "Do you want to enable Shared VPC Host Projects in 1_core? (true/false) [default: false]: " ENABLE_VPC
+ENABLE_VPC=${ENABLE_VPC:-false}
+
 if [ -z "$CUSTOMER_DOMAIN" ] || [ -z "$GCP_REGION" ]; then
     print_error "Customer domain and GCP region cannot be empty."
     exit 1
@@ -283,11 +286,6 @@ cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/iam/terraform.tfvars"
 project_id = "${MGMT_PROJECT_ID}"
 EOF
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/google_project_service/terraform.tfvars"
-project_id = "${MGMT_PROJECT_ID}"
-EOF
-print_success "Configuration files and tfvars generated successfully."
-echo
-erraform/0_bootstrap/google_project_service/terraform.tfvars"
 project_id = "${MGMT_PROJECT_ID}"
 EOF
 print_success "Configuration files and tfvars generated successfully."
