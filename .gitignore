@@ -38,3 +38,5 @@ notifications.csv
 .catignore
 gemini/
 koushiki/
+.deploy_state
+
