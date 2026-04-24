@@ -47,6 +47,13 @@ jobs:
       - name: Init TFLint
         run: tflint --init
 
+      - name: Create dummy CSV files for TFLint
+        run: |
+          echo "log_type,filter,destination_type,destination_parent,retention_days" > terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv
+          echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/1_notification_channels/notifications.csv
+          echo "alert_name,alert_display_name,metric_filter,alert_documentation" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv
+          echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv
+
       - name: Run TFLint
         run: tflint --recursive
 
