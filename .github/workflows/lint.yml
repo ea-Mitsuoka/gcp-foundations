@@ -53,6 +53,10 @@ jobs:
           echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/1_notification_channels/notifications.csv
           echo "alert_name,alert_display_name,metric_filter,alert_documentation" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv
           echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv
+          
+          # Also create them in the root since tflint resolves paths relative to where it runs when using --recursive
+          echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
+          echo "alert_name,alert_display_name,metric_filter,alert_documentation" > alert_definitions.csv
 
       - name: Run TFLint
         run: tflint --recursive
