@@ -10,9 +10,17 @@ export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
 STATE_FILE="${ROOT_DIR}/.deploy_state"
 
 RESUME=false
-if [[ "$1" == "--resume" ]]; then
-  RESUME=true
-elif [[ -f "$STATE_FILE" ]] && [[ -t 0 ]]; then
+PLAN_ONLY=false
+
+for arg in "$@"; do
+  if [[ "$arg" == "--resume" ]]; then
+    RESUME=true
+  elif [[ "$arg" == "--plan-only" ]]; then
+    PLAN_ONLY=true
+  fi
+done
+
+if [[ "$RESUME" == "false" && "$PLAN_ONLY" == "false" ]] && [[ -f "$STATE_FILE" ]] && [[ -t 0 ]]; then
   read -p "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
   if [[ "$answer" =~ ^[Yy]$ ]]; then
     RESUME=true
@@ -111,13 +119,23 @@ for dir in "${TARGET_DIRS[@]}"; do
   
   # エラー発生時はここでスクリプトが停止し、状態ファイルには未記録となる
   terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" ${TFVARS_ARG} -out=tfplan
-  terraform apply -auto-approve tfplan
   
-  # 成功したら状態ファイルに記録
-  echo "$dir" >> "$STATE_FILE"
+  if [[ "$PLAN_ONLY" == "false" ]]; then
+    terraform apply -auto-approve tfplan
+    
+    # 成功したら状態ファイルに記録
+    echo "$dir" >> "$STATE_FILE"
+  else
+    echo "⏭️ Plan only mode. Skipping apply."
+  fi
+  
   echo "----------------------------------------------------------"
 done
 
-echo "🎉 All deployments completed successfully!"
-# 全て成功した場合は状態ファイルを削除
-rm -f "$STATE_FILE"
+if [[ "$PLAN_ONLY" == "false" ]]; then
+  echo "🎉 All deployments completed successfully!"
+  # 全て成功した場合は状態ファイルを削除
+  rm -f "$STATE_FILE"
+else
+  echo "🎉 All plans completed successfully!"
+fi

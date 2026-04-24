@@ -1,0 +1,45 @@
+name: Terraform Apply on Merge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - 'gcp_foundations.xlsx'
+      - 'domain.env'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # Required for GCP Workload Identity Federation
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # NOTE: GCP Workload Identity Federation is required for passwordless authentication.
+      # Configure this step with your actual WIF provider and Service Account.
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo'
+      #     service_account: 'terraform-org-manager@your-tfstate-project.iam.gserviceaccount.com'
+
+      - name: Run Terraform Apply via script
+        run: |
+          bash terraform/scripts/deploy_all.sh --resume
+        env:
+          TF_IN_AUTOMATION: "true"
