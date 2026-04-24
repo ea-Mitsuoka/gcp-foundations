@@ -54,6 +54,23 @@ jobs:
       #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo'
       #     service_account: 'terraform-org-manager@your-tfstate-project.iam.gserviceaccount.com'
 
+      - name: Generate Terraform variables and backend config
+        run: |
+          cat <<EOF > terraform/common.tfbackend
+          bucket = "${{ secrets.GCS_BACKEND_BUCKET || 'dummy-bucket-for-ci' }}"
+          EOF
+
+          cat <<EOF > terraform/common.tfvars
+          terraform_service_account_email = "${{ secrets.TF_SERVICE_ACCOUNT_EMAIL || 'dummy-sa@example.com' }}"
+          gcs_backend_bucket              = "${{ secrets.GCS_BACKEND_BUCKET || 'dummy-bucket-for-ci' }}"
+          organization_domain             = "${{ secrets.ORGANIZATION_DOMAIN || 'example.com' }}"
+          gcp_region                      = "${{ secrets.GCP_REGION || 'asia-northeast1' }}"
+          project_id_prefix               = "${{ secrets.PROJECT_ID_PREFIX || 'example' }}"
+          core_billing_linked             = ${{ secrets.CORE_BILLING_LINKED || 'false' }}
+          enable_vpc_host_projects        = ${{ secrets.ENABLE_VPC || 'false' }}
+          enable_shared_vpc               = ${{ secrets.ENABLE_VPC || 'false' }}
+          EOF
+
       - name: Run Terraform Plan via script
         run: |
           bash terraform/scripts/deploy_all.sh --plan-only
