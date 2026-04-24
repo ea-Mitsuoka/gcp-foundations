@@ -109,7 +109,14 @@ for dir in "${TARGET_DIRS[@]}"; do
   echo ">>> Deploying: ${dir}"
   cd "${ROOT_DIR}/${dir}"
   
-  terraform init -backend-config="${ROOT_DIR}/terraform/common.tfbackend" -reconfigure
+  # CI環境などで認証情報がない場合、バックエンドをスキップして検証を継続できるようにする
+  INIT_ARGS="-backend-config=${ROOT_DIR}/terraform/common.tfbackend -reconfigure"
+  if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q . && [[ "${TF_IN_AUTOMATION}" == "true" ]]; then
+    echo "⚠️ No GCP credentials found. Initializing with -backend=false"
+    INIT_ARGS="-backend=false -reconfigure"
+  fi
+
+  terraform init ${INIT_ARGS}
   
   # terraform.tfvarsが存在する場合のみ読み込むためのハンドリング
   TFVARS_ARG=""
@@ -118,15 +125,21 @@ for dir in "${TARGET_DIRS[@]}"; do
   fi
   
   # エラー発生時はここでスクリプトが停止し、状態ファイルには未記録となる
-  terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" ${TFVARS_ARG} -out=tfplan
-  
-  if [[ "$PLAN_ONLY" == "false" ]]; then
-    terraform apply -auto-approve tfplan
-    
-    # 成功したら状態ファイルに記録
-    echo "$dir" >> "$STATE_FILE"
+  # 認証情報がない場合は plan もエラーになるため、CIかつ認証なしの場合は検証(validate)のみに留める
+  if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q . && [[ "${TF_IN_AUTOMATION}" == "true" ]]; then
+    echo "⏭️ No GCP credentials found. Running terraform validate instead of plan."
+    terraform validate
   else
-    echo "⏭️ Plan only mode. Skipping apply."
+    terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" ${TFVARS_ARG} -out=tfplan
+    
+    if [[ "$PLAN_ONLY" == "false" ]]; then
+      terraform apply -auto-approve tfplan
+      
+      # 成功したら状態ファイルに記録
+      echo "$dir" >> "$STATE_FILE"
+    else
+      echo "⏭️ Plan only mode. Skipping apply."
+    fi
   fi
   
   echo "----------------------------------------------------------"
