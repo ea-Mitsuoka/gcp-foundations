@@ -19,7 +19,8 @@ if ! command -v uv &> /dev/null; then
 fi
 
 # uv run を使うことで、requirements.txtやvenvの管理なしにクリーンに実行可能
-uv run "${ROOT_DIR}/terraform/scripts/generate_tfvars.py"
+uv run "${ROOT_DIR}/terraform/scripts/generate_resources.py"
+
 
 echo ""
 echo "=========================================================="

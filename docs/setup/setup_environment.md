@@ -2,7 +2,7 @@
 
 本リポジトリでは、Terraform Workspaceを用いた環境管理は**行いません**。
 
-各環境 (dev, stag, prod) は、Single Source of Truth (SSOT) である `projects_config.xlsx` における**個別の行として定義**され、物理的に別々のディレクトリ (`terraform/4_projects/<app_name>`) として分離・管理されます。
+各環境 (dev, stag, prod) は、Single Source of Truth (SSOT) である `gcp_foundations.xlsx` における**個別の行として定義**され、物理的に別々のディレクトリ (`terraform/4_projects/<app_name>`) として分離・管理されます。
 
 これにより、以下のメリットがあります。
 

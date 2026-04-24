@@ -70,3 +70,22 @@ variable "enable_shared_vpc" {
   description = "Shared VPC が全体で有効か（共通変数から渡される）"
   default     = false
 }
+
+variable "monitoring" {
+  type        = bool
+  description = "モニタリングの対象とするか"
+  default     = false
+}
+
+variable "logging" {
+  type        = bool
+  description = "ログ収集の対象とするか"
+  default     = false
+}
+
+variable "billing_linked" {
+  type        = bool
+  description = "課金アカウントが紐づいているか"
+  default     = false
+}
+

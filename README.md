@@ -51,7 +51,7 @@ graph TD
 bash terraform/scripts/deploy_all.sh
 ```
 
-※ 事前に `projects_config.xlsx` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
+※ 事前に `gcp_foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
 
 ______________________________________________________________________
 

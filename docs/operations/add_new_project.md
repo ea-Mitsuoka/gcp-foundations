@@ -6,7 +6,7 @@
 ## 手順
 
 1. **スプレッドシートの更新**
-   リポジトリルートにある `projects_config.xlsx` を開き、新しく作成したいプロジェクトの情報を新しい行に追記して保存します。
+   リポジトリルートにある `gcp_foundations.xlsx` を開き、新しく作成したいプロジェクトの情報を新しい行に追記して保存します。
    ※ 記載方法の詳細は `docs/reference/spreadsheet_format.md` を参照してください。
 
 1. **デプロイスクリプトの実行**
@@ -16,7 +16,7 @@
    bash terraform/scripts/deploy_all.sh
    ```
 
-スクリプトが自動的に `projects_config.xlsx` を読み取り、必要なTerraformディレクトリの生成、バックエンド設定の置換、変数の注入、およびデプロイまでを全自動で行います。
+スクリプトが自動的に `gcp_foundations.xlsx` を読み取り、必要なTerraformディレクトリの生成、バックエンド設定の置換、変数の注入、およびデプロイまでを全自動で行います。
 
 #### 3. `docs/operations/create_project.md` (「3. Terraformで作成する方法」以降を上書き)
 
@@ -29,7 +29,7 @@
 
 ### **ステップ1：プロジェクト情報の登録**
 
-ルートディレクトリにある `projects_config.xlsx` を開き、新しく作成したいプロジェクトの要件を行として追加します。
+ルートディレクトリにある `gcp_foundations.xlsx` を開き、新しく作成したいプロジェクトの要件を行として追加します。
 初回作成時は、必ず `billing_linked` カラムを `FALSE` としてください。
 
 ### **ステップ2：デプロイの実行（第1段階：プロジェクトの作成）**
@@ -50,7 +50,7 @@ gcloud billing projects link <作成されたプロジェクトID> --billing-acc
 
 ### ステップ4：APIの有効化（第2段階）
 
-projects_config.xlsx の対象プロジェクトの billing_linked を TRUE に変更し、再度デプロイを実行してAPIの有効化など残りの設定を適用します。
+gcp_foundations.xlsx の対象プロジェクトの billing_linked を TRUE に変更し、再度デプロイを実行してAPIの有効化など残りの設定を適用します。
 
 ```bash
 bash terraform/scripts/deploy_all.sh

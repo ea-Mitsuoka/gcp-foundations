@@ -35,7 +35,7 @@
 
 ## 7. **ランダム要素の排除とSSOTの徹底 (New)**
 
-- プロジェクトID等に使われていた `random_id` を削除しました。IaCの冪等性と可読性を高めるため、すべての命名やパラメータはスプレッドシート(CSV)と `domain.env` を唯一の真実の情報源 (Single Source of Truth) とし、そこから `generate_tfvars.py` でトップダウンに伝播させるアーキテクチャに変更しました。これにより初心者がコードを見ても「どこから変数が来ているか」が明確になります。
+- プロジェクトID等に使われていた `random_id` を削除しました。IaCの冪等性と可読性を高めるため、すべての命名やパラメータはスプレッドシート(CSV)と `domain.env` を唯一の真実の情報源 (Single Source of Truth) とし、そこから `generate_resources.py` でトップダウンに伝播させるアーキテクチャに変更しました。これにより初心者がコードを見ても「どこから変数が来ているか」が明確になります。
 - `2_organization` は役割が不明確であったためディレクトリごと削除し、構成をシンプル化しました。
 
 ## 8. **実行コマンドの隠蔽と自動化 (New)**
@@ -55,5 +55,5 @@
 
 ## 11. **最終クリーンアップと負債の返済 (New)**
 
-- アーキテクチャの進化（`uv` の導入や、`generate_tfvars.py` による SSOT の徹底）に伴い、不要となった古いシェルスクリプト（`requirements.txt`, `sync-domain-to-tfvars.sh`, `generate-backend-config.sh` など）を完全に削除しました。
+- アーキテクチャの進化（`uv` の導入や、`generate_resources.py` による SSOT の徹底）に伴い、不要となった古いシェルスクリプト（`requirements.txt`, `sync-domain-to-tfvars.sh`, `generate-backend-config.sh` など）を完全に削除しました。
 - これにより「状態の二重管理」が排除され、運用者が迷うことのない、極めてシンプルで堅牢なリポジトリ構造が完成しました。
