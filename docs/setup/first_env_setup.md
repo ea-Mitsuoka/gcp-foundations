@@ -197,13 +197,50 @@ terraform apply -var-file="$(git rev-parse --show-toplevel)/terraform/common.tfv
 
 ______________________________________________________________________
 
-## ステップ4: 基盤全体の一括デプロイ
+## ステップ4: 基盤全体の一括デプロイ（2段階）
 
 0_bootstrap の適用が完了し、GCP上でTerraformを実行する準備（State管理や権限借用）が整いました。
-最後に、残りのすべてのコアインフラ（ログ集約、監視、組織ポリシー、フォルダ作成など）を一括でデプロイします。
+最後に、残りのすべてのコアインフラ（ログ集約、監視、組織ポリシー、フォルダ作成など）を一括でデプロイしますが、**課金アカウントのリンクを手動で行うため、デプロイは2段階に分けて実行されます。**
 
-このステップでは、リポジトリルートにある `gcp_foundations.xlsx` および `domain.env` を元に、`uv` を用いて自動でリソース定義ファイル（tfvarsなど）を生成し、デプロイを行います。
-Excelファイルを最新の要件に合わせて更新してから実行してください。
+### 4a. 第1段階: 「器」となるプロジェクト等の作成
+
+まず、リポジトリルートにある `gcp_foundations.xlsx` や `domain.env` を元にスクリプトを実行します。この時点では `common.tfvars` の `core_billing_linked` が `false` であるため、APIの有効化を伴う重い処理（`1_core/services/*`）は自動的にスキップされます。
+
+```bash
+bash terraform/scripts/deploy_all.sh
+```
+
+実行後、`1_core/base/*` などの処理が成功し、ログ集約用プロジェクトや監視用プロジェクトがGCP上に作成されます。
+
+### 4b. 【手動操作】課金アカウントのリンク
+
+作成されたコアプロジェクトに対して、**手動で課金アカウントをリンク**します。
+
+1. GCPコンソールの「お支払い（Billing）」画面、または `gcloud` コマンドを使用して、作成された以下のプロジェクトに課金アカウントを紐付けてください。
+   - ログ集約用プロジェクト (例: `[prefix]-logsink`)
+   - 監視用プロジェクト (例: `[prefix]-monitoring`)
+   - （VPC Host機能を有効にした場合）VPC Hostプロジェクト
+
+```bash
+# 例: ログ集約プロジェクトに課金をリンク
+gcloud billing projects link <ログ集約プロジェクトID> --billing-account=<あなたの請求先アカウントID>
+
+# 例: 監視プロジェクトに課金をリンク
+gcloud billing projects link <監視プロジェクトID> --billing-account=<あなたの請求先アカウントID>
+```
+
+### 4c. 第2段階: サービス・APIのデプロイ
+
+課金のリンクが完了したら、APIを有効化するためにフラグを変更して再度デプロイします。
+
+1. リポジトリルートの `terraform/common.tfvars` ファイルをエディタで開きます。
+2. `core_billing_linked = false` となっている箇所を、以下のように `true` に変更して保存します。
+
+   ```hcl
+   core_billing_linked = true
+   ```
+
+3. 再度デプロイスクリプトを実行します。今度はスキップされていた `1_core/services/*` のデプロイが行われ、APIの有効化やログシンクの設定が適用されます。
 
 ```bash
 bash terraform/scripts/deploy_all.sh
