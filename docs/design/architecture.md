@@ -47,6 +47,11 @@ flowchart TD
         Prod -.->|ログ転送| LogSink
         Dev -.->|ログ転送| LogSink
     end
+
+    %% スタイル定義
+    style Org fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style Core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Workloads fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
 ### レイヤー構造 (Deployment Layers)
