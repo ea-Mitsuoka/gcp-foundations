@@ -18,31 +18,35 @@ ______________________________________________________________________
 
 ```mermaid
 flowchart TD
-    %% 管理プロジェクトレイヤー（上側）
-    subgraph Core [共有管理レイヤー]
-        direction LR
-        LogSink[LogSink プロジェクト<br/>ログ集約・監査]
-        Mon[Monitoring プロジェクト<br/>統合監視・アラート]
-        Net[VPC ホスト プロジェクト<br/>共通ネットワーク管理]
+    subgraph Org [Google Cloud Organization]
+        direction TB
+
+        %% 管理プロジェクトレイヤー（上側）
+        subgraph Core [共有管理レイヤー]
+            direction LR
+            LogSink[LogSink プロジェクト<br/>ログ集約・監査]
+            Mon[Monitoring プロジェクト<br/>統合監視・アラート]
+            Net[VPC ホスト プロジェクト<br/>共通ネットワーク管理]
+        end
+
+        %% ワークロードレイヤー（下側）
+        subgraph Workloads [ワークロードレイヤー]
+            direction LR
+            Prod[Production<br/>本番環境プロジェクト]
+            Dev[Development<br/>開発環境プロジェクト]
+        end
+
+        %% 関係性
+        %% 監視・統制（上から下）
+        Mon ==>|監視スコープ設定| Prod
+        Mon ==>|監視スコープ設定| Dev
+        Net --- Prod
+        Net --- Dev
+
+        %% データフロー（下から上へのログ転送などは点線で表現）
+        Prod -.->|ログ転送| LogSink
+        Dev -.->|ログ転送| LogSink
     end
-
-    %% ワークロードレイヤー（下側）
-    subgraph Workloads [ワークロードレイヤー]
-        direction LR
-        Prod[Production<br/>本番環境プロジェクト]
-        Dev[Development<br/>開発環境プロジェクト]
-    end
-
-    %% 関係性
-    %% 監視・統制（上から下）
-    Mon ==>|監視スコープ設定| Prod
-    Mon ==>|監視スコープ設定| Dev
-    Net --- Prod
-    Net --- Dev
-
-    %% データフロー（下から上へのログ転送などは点線で表現）
-    Prod -.->|ログ転送| LogSink
-    Dev -.->|ログ転送| LogSink
 ```
 
 ### レイヤー構造 (Deployment Layers)
