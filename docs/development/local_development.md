@@ -82,27 +82,25 @@ ______________________________________________________________________
 
 ## 4. 開発ワークフロー
 
-コードの変更を行った後は、コミットする前に以下のコマンドを実行してコードの品質を担保してください。これらはGitHub Actions（CI）でもチェックされます。
+本リポジトリには、日々の作業を効率化するための `Makefile` が用意されています。
+コードの変更を行った後は、コミットする前に以下の `make` コマンドを実行してコードの品質を担保してください。これらはGitHub Actions（CI）でもチェックされます。
 
-### Terraformコードのフォーマット
-
+### Terraformコードのフォーマットと静的解析 (Lint)
 ```bash
-cd terraform
-terraform fmt -recursive
+make lint
 ```
-
-### TFLintによる静的解析
-
-```bash
-cd terraform
-tflint --init
-tflint --recursive
-```
+※ 内部で `terraform fmt`, `tflint`, およびシェルスクリプトの `shellcheck` が実行されます。
 
 ### Regoポリシーのチェック
-
 ```bash
-opa check policies/*.rego
+make opa
+```
+※ 内部で `opa check policies/*.rego` が実行されます。
+
+### 自動生成スクリプトの実行
+SSOT (`gcp_foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
+```bash
+make generate
 ```
 
 これらのチェックを通過したことを確認してから、プルリクエスト（PR）を作成してください。

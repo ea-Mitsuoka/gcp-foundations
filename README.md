@@ -6,14 +6,42 @@
 
 ## 📚 ドキュメントインデックス (ここから読み始めてください)
 
-本リポジトリの運用に関するあらゆる情報は、以下のドキュメントに集約されています。
+本リポジトリの設計や運用に関するあらゆる情報は、以下のドキュメントに集約されています。目的別にカテゴリ分けされています。
 
-1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/first_env_setup.md)**: 一番最初に実行するセットアップ手順
-1. **[フォルダの作成手順](docs/operations/create_folder.md)**: コンソール/gcloud/Terraformの各手順を網羅
-1. **[プロジェクトの作成手順](docs/operations/add_new_project.md)**: コンソール/gcloud/Terraformの各手順を網羅
-1. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
-1. **[顧客引き渡し手順 (納品時)](docs/operations/handover_to_customer.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
-1. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの環境構築手順
+### 📌 初期構築・セットアップ (Setup)
+一番最初に実行する環境構築手順や、開発者としての参加手順です。
+1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/first_env_setup.md)**: 基盤のゼロからの構築・デプロイ手順
+2. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSOTベースの管理思想
+3. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの必須ツールのインストールと設定
+
+### ⚙️ 日常運用手順 (Operations)
+日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
+1. **[プロジェクトの作成手順](docs/operations/add_new_project.md)**: Excel (SSOT) への追記から自動生成・デプロイまでのワークフロー
+2. **[プロジェクトの作成方法 (詳細)](docs/operations/create_project.md)**: Terraformを利用した作成の裏側の挙動やコンソール/gcloudの手順
+3. **[フォルダの作成手順](docs/operations/create_folder.md)**: フォルダ作成のベストプラクティス
+4. **[共通モジュールの更新と影響確認](docs/operations/update_modules.md)**: モジュール改修時のデプロイ戦略
+5. **[顧客引き渡し手順 (納品時)](docs/operations/handover_to_customer.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
+
+### 📖 リファレンス・設計資料 (Reference & Architecture)
+本基盤の「なぜそのように設計されたのか」や、各種設定ファイルの詳細な仕様です。
+1. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSOT) の詳細なカラム定義と入力例
+2. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
+3. **[アーキテクチャ図と設計](docs/architecture/architecture.md)**: ネットワークやセキュリティ設計の概要
+4. **[データディクショナリ](docs/architecture/data-dictionary.md)**: Terraform変数の定義や命名規則
+5. **[IAMとロール管理方針](docs/reference/role_management.md)**: カスタムロールや最小権限の原則について
+6. **[非アクティブアカウント監視方針](docs/reference/monitoring_inactive_90_days.md)**: 90日間の未ログイン検知の仕組み
+7. **[ベストプラクティス集](docs/reference/best_practice.md)**: リソース管理時の推奨事項
+
+### 🛠️ 便利な Makefile コマンド
+日々の運用や開発において、パスや長大なコマンドを覚える必要はありません。リポジトリルートで `make` を使用してください。
+
+```bash
+make help       # 利用可能な全コマンドの表示
+make generate   # Excel(SSOT)からTerraform変数や構成を自動生成
+make lint       # Terraform, ShellscriptのLint・フォーマット実行
+make opa        # Regoポリシーの構文チェック
+make deploy     # 基盤全体の一括デプロイ実行
+```
 
 この基盤は、責務の分離と段階的なインフラ構築を重視した**レイヤー構造**を採用しています。各レイヤーは独立したTerraformのルートモジュールとして管理され、下位のレイヤーに依存します。
 

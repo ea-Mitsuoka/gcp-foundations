@@ -40,12 +40,11 @@ git checkout -b fix/correct-iam-permissions
 - `docs: update setup documentation`
 
 ### 4. コード規約と静的解析 (Lint)
-
 すべての変更は、以下のツールによるチェックをパスする必要があります。これらはGitHub ActionsのCIパイプラインでも自動的に検証されます。
+手元で確認する際は、便利な `Makefile` コマンドを利用してください。
 
-- **Terraform フォーマット:** `terraform fmt -recursive` による自動成形を適用すること。
-- **TFLint:** `tflint --recursive` による静的解析でエラーが出ないこと。
-- **OPA:** `.rego` ポリシーファイルの変更は `opa check` で検証されていること。
+- **Terraform フォーマット・Lint & Shellcheck:** `make lint` コマンドを実行し、自動成形と静的解析のエラーを解消してください。
+- **OPA:** `.rego` ポリシーファイルの変更は `make opa` で検証されていること。
 
 ### 5. プルリクエスト（PR）の作成とレビュー
 
