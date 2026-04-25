@@ -21,7 +21,7 @@ for arg in "$@"; do
 done
 
 if [[ "$RESUME" == "false" && "$PLAN_ONLY" == "false" ]] && [[ -f "$STATE_FILE" ]] && [[ -t 0 ]]; then
-  read -rp "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
+  read -r -p "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
   if [[ "$answer" =~ ^[Yy]$ ]]; then
     RESUME=true
   fi
@@ -119,9 +119,9 @@ for dir in "${TARGET_DIRS[@]}"; do
   terraform init "${INIT_ARGS[@]}"
   
   # terraform.tfvarsが存在する場合のみ読み込むためのハンドリング
-  TFVARS_ARG=""
+  TFVARS_ARGS=()
   if [ -f "terraform.tfvars" ]; then
-    TFVARS_ARG="-var-file=terraform.tfvars"
+    TFVARS_ARGS+=("-var-file=terraform.tfvars")
   fi
   
   # エラー発生時はここでスクリプトが停止し、状態ファイルには未記録となる
@@ -130,7 +130,7 @@ for dir in "${TARGET_DIRS[@]}"; do
     echo "⏭️ No GCP credentials found. Running terraform validate instead of plan."
     terraform validate
   else
-    terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" ${TFVARS_ARG} -out=tfplan
+    terraform plan -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -out=tfplan
     
     if [[ "$PLAN_ONLY" == "false" ]]; then
       terraform apply -auto-approve tfplan

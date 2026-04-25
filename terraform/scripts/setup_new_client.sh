@@ -68,6 +68,7 @@ else
     print_success "Created domain.env with domain: $CUSTOMER_DOMAIN"
 fi
 
+print_info "Please provide the following information for the new client."
 read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
 
 read -r -p "Do you want to enable Shared VPC Host Projects in 1_core? (true/false) [default: false]: " ENABLE_VPC
