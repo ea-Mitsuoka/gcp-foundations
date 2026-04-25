@@ -22,6 +22,7 @@ ______________________________________________________________________
 
 1. **Google Groups の事前作成 (必須):**
    `2_organization` の IAM 設定を適用するため、Google Workspace (または Cloud Identity) 上で以下のメーリングリスト（グループ）を事前に作成しておいてください。
+
    - `gcp-organization-admins@<顧客ドメイン>`
    - `gcp-billing-admins@<顧客ドメイン>`
    - `gcp-vpc-network-admins@<顧客ドメイン>`

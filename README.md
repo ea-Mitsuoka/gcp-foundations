@@ -65,6 +65,7 @@ ______________________________________________________________________
 
 - **Google Groups の事前作成 (必須):**
   Google Workspace (または Cloud Identity) 上で、後述の組織IAMに必要な以下のグループ（メーリングリスト）を事前に作成しておいてください。
+
   - `gcp-organization-admins@<顧客ドメイン>`
   - `gcp-billing-admins@<顧客ドメイン>`
   - `gcp-vpc-network-admins@<顧客ドメイン>`
