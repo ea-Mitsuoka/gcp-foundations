@@ -24,6 +24,9 @@ on:
       - '.github/workflows/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ####################################################
   # Job 1: Run format check and static analysis
