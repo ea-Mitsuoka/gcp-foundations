@@ -16,21 +16,18 @@
 
 ### ⚙️ 日常運用手順 (Operations)
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
-1. **[プロジェクトの作成手順 (自動)](docs/operations/project_addition.md)**: Excel (SSOT) への追記から自動生成・デプロイまでのワークフロー
-2. **[プロジェクトの作成手順 (手動)](docs/operations/manual_project_creation.md)**: Terraformを利用した作成の裏側の挙動やコンソール/gcloudの手順
-3. **[フォルダの作成手順](docs/operations/folder_creation.md)**: フォルダ作成のベストプラクティス
-4. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
-5. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
+1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
+2. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
+3. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
+4. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
-本基盤の「なぜそのように設計されたのか」や、各種設定ファイルの詳細な仕様です。
-1. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSOT) の詳細なカラム定義と入力例
-2. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
-3. **[アーキテクチャ図と設計](docs/design/architecture.md)**: ネットワークやセキュリティ設計の概要
+本基盤の設計思想や、詳細な仕様です。
+1. **[アーキテクチャ設計書](docs/design/architecture.md)**: 全体俯瞰図とSSOT・レイヤー構造の解説
+2. **[ベストプラクティス集](docs/reference/best_practices.md)**: インフラ運用とIAM・権限管理の方針
+3. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSOT) のカラム定義
 4. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
-5. **[IAMとロール管理方針](docs/reference/role_management.md)**: カスタムロールや最小権限の原則について
-6. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
-7. **[ベストプラクティス集](docs/reference/best_practice.md)**: リソース管理時の推奨事項
+5. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
 
 ### 🛠️ 便利な Makefile コマンド
 日々の運用や開発において、パスや長大なコマンドを覚える必要はありません。リポジトリルートで `make` を使用してください。
