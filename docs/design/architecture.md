@@ -17,20 +17,32 @@ ______________________________________________________________________
 ## 2. リソース階層と全体像
 
 ```mermaid
-graph TD
-    subgraph Organization [GCP Organization]
-        direction TB
-        subgraph Core_Folder [Folder: Shared / Core]
-            LogSink_Proj[Project: LogSink]
-            Mon_Proj[Project: Monitoring]
-            VPC_Host[Project: VPC-Host]
-        end
-
-        subgraph Workload_Folder [Folder: Workloads]
-            Prod_Folder [Folder: Production]
-            Dev_Folder [Folder: Development]
-        end
+flowchart TD
+    %% 管理プロジェクトレイヤー（上側）
+    subgraph Core [共有管理レイヤー]
+        direction LR
+        LogSink[LogSink プロジェクト<br/>ログ集約・監査]
+        Mon[Monitoring プロジェクト<br/>統合監視・アラート]
+        Net[VPC ホスト プロジェクト<br/>共通ネットワーク管理]
     end
+
+    %% ワークロードレイヤー（下側）
+    subgraph Workloads [ワークロードレイヤー]
+        direction LR
+        Prod[Production<br/>本番環境プロジェクト]
+        Dev[Development<br/>開発環境プロジェクト]
+    end
+
+    %% 関係性
+    %% 監視・統制（上から下）
+    Mon ==>|監視スコープ設定| Prod
+    Mon ==>|監視スコープ設定| Dev
+    Net --- Prod
+    Net --- Dev
+
+    %% データフロー（下から上へのログ転送などは点線で表現）
+    Prod -.->|ログ転送| LogSink
+    Dev -.->|ログ転送| LogSink
 ```
 
 ### レイヤー構造 (Deployment Layers)
