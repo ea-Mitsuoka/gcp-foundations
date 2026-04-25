@@ -9,14 +9,33 @@
    リポジトリルートにある `gcp_foundations.xlsx` を開き、新しく作成したいプロジェクトの情報を新しい行に追記して保存します。
    ※ 記載方法の詳細は `docs/reference/spreadsheet_format.md` を参照してください。
 
-1. **デプロイスクリプトの実行**
-   ターミナルから以下の一括デプロイスクリプトを実行します。
+2. **リソースファイルの自動生成 (Plan前の確認)**
+   `deploy_all.sh` を実行する前に、手動でリソース生成スクリプトを実行し、意図した通りにTerraformコードや `tfvars` が生成されるか確認します。
+   リポジトリルートディレクトリで以下のコマンドを実行してください。
+
+   ```bash
+   uv run terraform/scripts/generate_resources.py
+   ```
+   実行後、`terraform/4_projects/` 配下に新しいプロジェクトのディレクトリが作成され、`terraform.tfvars` に正しい値が設定されていることを確認してください。
+
+3. **差分（Plan）の確認**
+   生成されたコードに問題がないか、対象プロジェクトのディレクトリに移動して `terraform plan` を実行します。
+
+   ```bash
+   cd terraform/4_projects/<新しいプロジェクト名>
+   terraform init -backend-config="$(git rev-parse --show-toplevel)/terraform/common.tfbackend"
+   terraform plan -var-file="$(git rev-parse --show-toplevel)/terraform/common.tfvars"
+   ```
+   ※ エラーがないこと、意図したリソースが作成されることを確認してください。
+
+4. **デプロイスクリプトの実行**
+   Planの結果に問題がなければ、ターミナルから一括デプロイスクリプトを実行して実際の環境に適用します。
 
    ```bash
    bash terraform/scripts/deploy_all.sh
    ```
 
-スクリプトが自動的に `gcp_foundations.xlsx` を読み取り、必要なTerraformディレクトリの生成、バックエンド設定の置換、変数の注入、およびデプロイまでを全自動で行います。
+スクリプトが自動的に変更を検知し、バックエンド設定の置換、変数の注入、およびデプロイまでを順次行います。
 
 #### 3. `docs/operations/create_project.md` (「3. Terraformで作成する方法」以降を上書き)
 
