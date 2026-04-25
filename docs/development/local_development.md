@@ -86,19 +86,25 @@ ______________________________________________________________________
 コードの変更を行った後は、コミットする前に以下の `make` コマンドを実行してコードの品質を担保してください。これらはGitHub Actions（CI）でもチェックされます。
 
 ### Terraformコードのフォーマットと静的解析 (Lint)
+
 ```bash
 make lint
 ```
+
 ※ 内部で `terraform fmt`, `tflint`, およびシェルスクリプトの `shellcheck` が実行されます。
 
 ### Regoポリシーのチェック
+
 ```bash
 make opa
 ```
+
 ※ 内部で `opa check policies/*.rego` が実行されます。
 
 ### 自動生成スクリプトの実行
+
 SSOT (`gcp_foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
+
 ```bash
 make generate
 ```

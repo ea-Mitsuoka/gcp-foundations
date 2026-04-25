@@ -40,6 +40,7 @@ git checkout -b fix/correct-iam-permissions
 - `docs: update setup documentation`
 
 ### 4. コード規約と静的解析 (Lint)
+
 すべての変更は、以下のツールによるチェックをパスする必要があります。これらはGitHub ActionsのCIパイプラインでも自動的に検証されます。
 手元で確認する際は、便利な `Makefile` コマンドを利用してください。
 

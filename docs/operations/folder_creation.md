@@ -3,13 +3,14 @@
 本基盤では、組織内の階層構造（Prod/Dev 等）を管理するために「フォルダ」を使用します。
 IaC による管理を徹底するため、Terraform による作成を推奨します。
 
----
+______________________________________________________________________
 
 ## 1. 推奨手順: Terraform による管理
 
 フォルダの追加・変更は `terraform/3_folders` レイヤーで行います。
 
 ### ステップ 1: `main.tf` の編集
+
 `terraform/3_folders/main.tf` に、新しいフォルダのリソースを定義します。
 
 ```hcl
@@ -20,18 +21,22 @@ resource "google_folder" "new_department" {
 ```
 
 ### ステップ 2: 適用 (Apply)
+
 リポジトリルートでデプロイを実行します。
+
 ```bash
 make deploy
 ```
+
 個別に適用する場合は以下を実行します。
+
 ```bash
 cd terraform/3_folders
 terraform init -backend-config="../common.tfbackend"
 terraform apply -var-file="../common.tfvars"
 ```
 
----
+______________________________________________________________________
 
 ## 2. 参考: 手動・コマンドによる作成
 
