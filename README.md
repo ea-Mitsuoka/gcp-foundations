@@ -2,6 +2,23 @@
 
 このリポジトリは、Terraformを使用してGoogle Cloud Platform (GCP) 環境を体系的に構築・管理するための Infrastructure as Code (IaC) 基盤です。ガバナンスを確保しつつ、セキュアで再利用可能なGCP環境を効率的に展開することを目的とします。初心者でも迷わず、再現性高くセキュアなGCP環境を展開できるように設計されています。
 
+## 🚀 5分でわかるクイックスタート
+
+まずはローカル環境で自動生成と品質チェックを試してみましょう。
+
+```bash
+# 1. リポジトリのクローン
+git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
+cd gcp-foundations
+
+# 2. テンプレートExcelの生成 (uvがインストールされている前提)
+make generate
+
+# 3. 生成されたコードの品質チェック (Linterの実行)
+make lint
+```
+※ 実際のデプロイにはGCP権限と初期セットアップが必要です。詳細は [セットアップガイド](docs/setup/initial_setup.md) を参照してください。
+
 ## 📖 設計思想
 
 ## 📚 ドキュメントインデックス (ここから読み始めてください)
@@ -173,16 +190,16 @@ ______________________________________________________________________
 ```plaintext
 gcp-foundations/
 ├── .github/
-│   └── workflows/          # CI/CDワークフロー (GitHub Actions)
-├── docs/                   # 設計資料、手順書などのドキュメント
-├── policies/               # ポリシー・アズ・コード (Open Policy Agent)
-├── scripts/                # 各種ヘルパースクリプト
-└── terraform/              # Terraformコードのルート
-    ├── 0_bootstrap/        # レイヤー0: Terraform実行基盤
-    ├── 1_core/             # レイヤー1: コアサービス (ログ、監視)
-    ├── 2_organization/     # レイヤー2: 組織全体の設定
-    ├── 3_folders/          # レイヤー3: フォルダ構造
-    ├── 4_projects/         # レイヤー4: プロジェクトファクトリー
-    ├── modules/            # 共通Terraformモジュール
-    └── configs/            # 環境ごとの設定ファイル
+│   └── workflows/          # CI/CDワークフロー (PR時の自動チェック等)
+├── docs/                   # マニュアル・設計資料 (ここを読めばすべてわかる)
+├── policies/               # セキュリティ統制ルール (Rego/OPA)
+├── scripts/                # 運用補助スクリプト
+└── terraform/              # インフラ定義の本体
+    ├── 0_bootstrap/        # L0: 基盤の「鍵」となるtfstate管理用の器
+    ├── 1_core/             # L1: ログ集約・監視・共通NWなどの「心臓部」
+    ├── 2_organization/     # L2: 組織全体に強制するセキュリティポリシー
+    ├── 3_folders/          # L3: 組織図を反映するフォルダ階層 (自動生成)
+    ├── 4_projects/         # L4: 各アプリが動くプロジェクト (自動生成)
+    ├── modules/            # 再利用可能な部品 (プロジェクト、API有効化等)
+    └── configs/            # グローバルな共通変数
 ```
