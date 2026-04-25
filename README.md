@@ -40,6 +40,7 @@ make help       # 利用可能な全コマンドの表示
 make generate   # Excel(SSOT)からTerraform変数や構成を自動生成
 make lint       # Terraform, ShellscriptのLint・フォーマット実行
 make opa        # Regoポリシーの構文チェック
+make test       # モジュールの単体テスト実行
 make deploy     # 基盤全体の一括デプロイ実行
 ```
 
@@ -77,7 +78,7 @@ graph TD
 すべてのリソースのデプロイは、以下のスクリプトを1回叩くだけで完了します。
 
 ```bash
-bash terraform/scripts/deploy_all.sh
+make deploy
 ```
 
 ※ 事前に `gcp_foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
@@ -90,7 +91,7 @@ ______________________________________________________________________
 
 ### 前提条件
 
-- `gcloud` CLI, `terraform` CLI, `git`, `openssl` がローカル環境にインストールされていること。
+- `gcloud` CLI, `terraform` CLI, `git`, `openssl`, `uv` がローカル環境にインストールされていること。
 
 - **Google Groups の事前作成 (必須):**
   Google Workspace (または Cloud Identity) 上で、後述の組織IAMに必要な以下のグループ（メーリングリスト）を事前に作成しておいてください。
