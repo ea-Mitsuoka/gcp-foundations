@@ -21,7 +21,7 @@ for arg in "$@"; do
 done
 
 if [[ "$RESUME" == "false" && "$PLAN_ONLY" == "false" ]] && [[ -f "$STATE_FILE" ]] && [[ -t 0 ]]; then
-  read -p "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
+  read -rp "A previous deployment state was found. Do you want to resume from the last successful layer? (y/N): " answer
   if [[ "$answer" =~ ^[Yy]$ ]]; then
     RESUME=true
   fi
@@ -110,13 +110,13 @@ for dir in "${TARGET_DIRS[@]}"; do
   cd "${ROOT_DIR}/${dir}"
   
   # CI環境などで認証情報がない場合、バックエンドをスキップして検証を継続できるようにする
-  INIT_ARGS="-backend-config=${ROOT_DIR}/terraform/common.tfbackend -reconfigure"
+  INIT_ARGS=("-backend-config=${ROOT_DIR}/terraform/common.tfbackend" "-reconfigure")
   if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q . && [[ "${TF_IN_AUTOMATION}" == "true" ]]; then
     echo "⚠️ No GCP credentials found. Initializing with -backend=false"
-    INIT_ARGS="-backend=false -reconfigure"
+    INIT_ARGS=("-backend=false" "-reconfigure")
   fi
 
-  terraform init ${INIT_ARGS}
+  terraform init "${INIT_ARGS[@]}"
   
   # terraform.tfvarsが存在する場合のみ読み込むためのハンドリング
   TFVARS_ARG=""
