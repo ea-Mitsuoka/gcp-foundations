@@ -10,7 +10,7 @@
 
 ### 📌 初期構築・セットアップ (Setup)
 一番最初に実行する環境構築手順や、開発者としての参加手順です。
-1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/first_env_setup.md)**: 基盤のゼロからの構築・デプロイ手順
+1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/initial_setup.md)**: 基盤のゼロからの構築・デプロイ手順
 2. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSOTベースの管理思想
 3. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの必須ツールのインストールと設定
 
@@ -149,7 +149,7 @@ ______________________________________________________________________
 1. **`0_bootstrap` を適用します。**
    スクリプトの案内に従い、`0_bootstrap`ディレクトリで`terraform init`と`terraform apply`を実行し、Terraformの管理をGCSバックエンドで開始します。
 
-これ以降の`1_core`からの各レイヤーの適用については、`docs/setup/first_env_setup.md`の詳細な手順を参照してください。
+これ以降の`1_core`からの各レイヤーの適用については、`docs/setup/initial_setup.md`の詳細な手順を参照してください。
 
 ## 🤝 コントリビューションとセキュリティ
 
