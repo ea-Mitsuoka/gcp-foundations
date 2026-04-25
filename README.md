@@ -13,6 +13,7 @@
 1. **[プロジェクトの作成手順](docs/operations/add_new_project.md)**: コンソール/gcloud/Terraformの各手順を網羅
 1. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
 1. **[顧客引き渡し手順 (納品時)](docs/operations/handover_to_customer.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
+1. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの環境構築手順
 
 この基盤は、責務の分離と段階的なインフラ構築を重視した**レイヤー構造**を採用しています。各レイヤーは独立したTerraformのルートモジュールとして管理され、下位のレイヤーに依存します。
 
@@ -119,7 +120,14 @@ ______________________________________________________________________
 1. **`0_bootstrap` を適用します。**
    スクリプトの案内に従い、`0_bootstrap`ディレクトリで`terraform init`と`terraform apply`を実行し、Terraformの管理をGCSバックエンドで開始します。
 
-これ以降の`1_core`からの各レイヤーの適用については、`docs/procedures/first_env_setup.md`の詳細な手順を参照してください。
+これ以降の`1_core`からの各レイヤーの適用については、`docs/setup/first_env_setup.md`の詳細な手順を参照してください。
+
+## 🤝 コントリビューションとセキュリティ
+
+本プロジェクトへの貢献方法やバグ報告のルールについては、以下のドキュメントを必ずご確認ください。
+
+- **[貢献ガイドライン (CONTRIBUTING.md)](CONTRIBUTING.md)**: PRの作成手順やコーディング規約、行動規範について。
+- **[セキュリティポリシー (SECURITY.md)](SECURITY.md)**: 脆弱性の報告方法やシークレット管理の原則について。
 
 ## CI/CDによる自動化
 
