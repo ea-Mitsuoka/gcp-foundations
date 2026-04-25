@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -76,7 +76,7 @@ jobs:
       matrix: ${{ steps.discover.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build validation matrix
         id: discover
@@ -107,7 +107,7 @@ jobs:
       matrix: ${{ steps.discover.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build docs matrix
         id: discover
@@ -137,7 +137,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create dummy CSV for validation
         if: matrix.working-directory == 'terraform/1_core/services/logsink/sinks'
@@ -179,7 +179,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover-modules.outputs.matrix) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check module README
         uses: terraform-docs/gh-actions@v1
@@ -201,7 +201,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover-modules.outputs.matrix) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -222,7 +222,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2
@@ -240,7 +240,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Shellcheck
         uses: ludeeus/action-shellcheck@master
