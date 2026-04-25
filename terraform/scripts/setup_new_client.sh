@@ -151,6 +151,19 @@ else
     print_success "Project created."
 fi
 
+# --- (追加) 手動での請求先アカウント紐づけ待ち ---
+echo
+print_warning "-------------------- MANUAL ACTION REQUIRED --------------------"
+print_info "GCP requires an active billing account to enable APIs and create GCS buckets."
+print_info "Please open a NEW terminal window and run the following command,"
+print_info "replacing <YOUR_BILLING_ID> with the actual Billing Account ID:"
+echo
+echo "  gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=<YOUR_BILLING_ID>"
+echo
+print_warning "----------------------------------------------------------------"
+read -r -p "Press [Enter] AFTER you have successfully linked the billing account..."
+echo
+
 print_info "(3.2/5) Enabling necessary APIs on the project..."
 gcloud services enable \
   cloudresourcemanager.googleapis.com \
@@ -162,19 +175,6 @@ gcloud services enable \
   logging.googleapis.com \
   --project="${MGMT_PROJECT_ID}"
 print_success "APIs enabled."
-
-# --- (追加) 手動での請求先アカウント紐づけ待ち ---
-echo
-print_warning "-------------------- MANUAL ACTION REQUIRED --------------------"
-print_info "GCP requires an active billing account to create GCS buckets."
-print_info "Please open a NEW terminal window and run the following command,"
-print_info "replacing <YOUR_BILLING_ID> with the actual Billing Account ID:"
-echo
-echo "  gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=<YOUR_BILLING_ID>"
-echo
-print_warning "----------------------------------------------------------------"
-read -r -p "Press [Enter] AFTER you have successfully linked the billing account..."
-echo
 
 print_info "(3.3/5) Creating GCS bucket 'gs://${GCS_BUCKET_TFSTATE}'..."
 if gcloud storage buckets describe "gs://${GCS_BUCKET_TFSTATE}" >/dev/null 2>&1; then

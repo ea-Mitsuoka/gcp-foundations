@@ -69,7 +69,7 @@ bash terraform/scripts/setup_new_client.sh
 
 ```text
 -------------------- MANUAL ACTION REQUIRED --------------------
-GCP requires an active billing account to create GCS buckets.
+GCP requires an active billing account to enable APIs and create GCS buckets.
 Please open a NEW terminal window and run the following command,
 replacing <YOUR_BILLING_ID> with the actual Billing Account ID:
 
