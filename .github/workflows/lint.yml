@@ -210,3 +210,37 @@ jobs:
       - name: Terraform Test
         run: terraform test
         working-directory: ${{ matrix.working-directory }}
+
+  ####################################################
+  # Job 7: Check OPA policies (Rego)
+  ####################################################
+  opa-check:
+    name: OPA Policy Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Run OPA Check
+        run: opa check policies/*.rego
+
+  ####################################################
+  # Job 8: Shellcheck for Bash scripts
+  ####################################################
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './terraform/scripts'
+          severity: style
