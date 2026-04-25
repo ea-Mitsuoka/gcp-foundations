@@ -1,12 +1,12 @@
 package gcp.policies
 
-import future.keywords.in
+import rego.v1
 
 # 必須ラベルのリストを定義
-required_labels = {"env", "owner"}
+required_labels := {"env", "owner"}
 
 # denyルール：一つでも違反があればエラーメッセージを返す
-deny[msg] {
+deny contains msg if {
   # Terraform planに含まれる全リソース変更をチェック
   some change in input.resource_changes
 
