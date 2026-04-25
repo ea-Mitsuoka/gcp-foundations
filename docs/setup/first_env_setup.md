@@ -234,13 +234,14 @@ gcloud billing projects link <監視プロジェクトID> --billing-account=<あ
 課金のリンクが完了したら、APIを有効化するためにフラグを変更して再度デプロイします。
 
 1. リポジトリルートの `terraform/common.tfvars` ファイルをエディタで開きます。
-2. `core_billing_linked = false` となっている箇所を、以下のように `true` に変更して保存します。
+
+1. `core_billing_linked = false` となっている箇所を、以下のように `true` に変更して保存します。
 
    ```hcl
    core_billing_linked = true
    ```
 
-3. 再度デプロイスクリプトを実行します。今度はスキップされていた `1_core/services/*` のデプロイが行われ、APIの有効化やログシンクの設定が適用されます。
+1. 再度デプロイスクリプトを実行します。今度はスキップされていた `1_core/services/*` のデプロイが行われ、APIの有効化やログシンクの設定が適用されます。
 
 ```bash
 bash terraform/scripts/deploy_all.sh
