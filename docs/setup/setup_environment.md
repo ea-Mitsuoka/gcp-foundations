@@ -9,4 +9,4 @@
 - 各環境の構成コードが物理的に分離されるため、変更時の影響範囲が明確になります。
 - 環境ごとの状態 (State) が別のパスで管理され、設定ミスの波及を防ぎます。
 
-詳細は、`docs/operations/add_new_project.md` を参照してください。
+詳細は、`docs/operations/project_addition.md` を参照してください。

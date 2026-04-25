@@ -16,11 +16,11 @@
 
 ### ⚙️ 日常運用手順 (Operations)
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
-1. **[プロジェクトの作成手順](docs/operations/add_new_project.md)**: Excel (SSOT) への追記から自動生成・デプロイまでのワークフロー
-2. **[プロジェクトの作成方法 (詳細)](docs/operations/create_project.md)**: Terraformを利用した作成の裏側の挙動やコンソール/gcloudの手順
-3. **[フォルダの作成手順](docs/operations/create_folder.md)**: フォルダ作成のベストプラクティス
-4. **[共通モジュールの更新と影響確認](docs/operations/update_modules.md)**: モジュール改修時のデプロイ戦略
-5. **[顧客引き渡し手順 (納品時)](docs/operations/handover_to_customer.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
+1. **[プロジェクトの作成手順 (自動)](docs/operations/project_addition.md)**: Excel (SSOT) への追記から自動生成・デプロイまでのワークフロー
+2. **[プロジェクトの作成手順 (手動)](docs/operations/manual_project_creation.md)**: Terraformを利用した作成の裏側の挙動やコンソール/gcloudの手順
+3. **[フォルダの作成手順](docs/operations/folder_creation.md)**: フォルダ作成のベストプラクティス
+4. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
+5. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
 本基盤の「なぜそのように設計されたのか」や、各種設定ファイルの詳細な仕様です。
@@ -29,7 +29,7 @@
 3. **[アーキテクチャ図と設計](docs/design/architecture.md)**: ネットワークやセキュリティ設計の概要
 4. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 5. **[IAMとロール管理方針](docs/reference/role_management.md)**: カスタムロールや最小権限の原則について
-6. **[非アクティブアカウント監視方針](docs/reference/monitoring_inactive_90_days.md)**: 90日間の未ログイン検知の仕組み
+6. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
 7. **[ベストプラクティス集](docs/reference/best_practice.md)**: リソース管理時の推奨事項
 
 ### 🛠️ 便利な Makefile コマンド
