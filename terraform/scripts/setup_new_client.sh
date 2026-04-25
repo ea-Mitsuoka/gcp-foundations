@@ -71,7 +71,10 @@ fi
 read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
 
 read -r -p "Do you want to enable Shared VPC Host Projects in 1_core? (true/false) [default: false]: " ENABLE_VPC
-ENABLE_VPC=${ENABLE_VPC:-false}
+ENABLE_VPC=$(echo "${ENABLE_VPC:-false}" | tr '[:upper:]' '[:lower:]')
+
+read -r -p "Do you want to enable VPC Service Controls (VPC-SC)? (true/false) [default: false]: " ENABLE_VPC_SC
+ENABLE_VPC_SC=$(echo "${ENABLE_VPC_SC:-false}" | tr '[:upper:]' '[:lower:]')
 
 if [ -z "$CUSTOMER_DOMAIN" ] || [ -z "$GCP_REGION" ]; then
     print_error "Customer domain and GCP region cannot be empty."
@@ -249,6 +252,7 @@ gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="servi
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/browser" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/orgpolicy.policyAdmin" --quiet
 gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/compute.xpnAdmin" --quiet
+gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/accesscontextmanager.policyAdmin" --quiet
 
 # Allow current user to impersonate the SA
 gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
@@ -277,6 +281,7 @@ project_id_prefix               = "${SHORT_ORG_NAME}"
 core_billing_linked             = false
 enable_vpc_host_projects        = ${ENABLE_VPC}
 enable_shared_vpc               = ${ENABLE_VPC}
+enable_vpc_sc                   = ${ENABLE_VPC_SC}
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"

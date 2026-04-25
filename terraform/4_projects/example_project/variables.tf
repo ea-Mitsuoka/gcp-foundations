@@ -36,6 +36,12 @@ variable "project_apis" {
   default     = []
 }
 
+variable "vpc_sc" {
+  type        = bool
+  description = "このプロジェクトをVPC Service Controlsの境界に含めるかどうか。"
+  default     = false
+}
+
 variable "labels" {
   type        = map(string)
   description = "プロジェクトに付与するラベル。"

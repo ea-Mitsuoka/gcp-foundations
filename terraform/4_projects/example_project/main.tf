@@ -11,6 +11,16 @@ data "terraform_remote_state" "folders" {
   }
 }
 
+data "terraform_remote_state" "organization" {
+  count   = var.vpc_sc ? 1 : 0
+  backend = "gcs"
+  config = {
+    bucket                      = var.gcs_backend_bucket
+    prefix                      = "organization"
+    impersonate_service_account = var.terraform_service_account_email
+  }
+}
+
 data "terraform_remote_state" "vpc_host" {
   count   = var.enable_shared_vpc && var.shared_vpc_env != "none" ? 1 : 0
   backend = "gcs"
@@ -52,4 +62,12 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
   service_project = module.project.project_id
 
   depends_on = [module.project_services]
+}
+
+resource "google_access_context_manager_service_perimeter_resource" "service_perimeter_resource" {
+  count          = var.vpc_sc && try(data.terraform_remote_state.organization[0].outputs.service_perimeter_name, null) != null ? 1 : 0
+  perimeter_name = data.terraform_remote_state.organization[0].outputs.service_perimeter_name
+  resource       = "projects/${module.project.project_number}"
+
+  depends_on = [module.project]
 }

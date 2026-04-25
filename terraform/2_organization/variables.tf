@@ -14,3 +14,9 @@ variable "organization_domain" {
   description = "GCP組織のドメイン名。"
 }
 
+variable "enable_vpc_sc" {
+  type        = bool
+  description = "VPC Service Controls を有効にするかどうか。"
+  default     = false
+}
+

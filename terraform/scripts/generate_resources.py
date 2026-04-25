@@ -28,10 +28,10 @@ def generate_resources():
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
-        ws.append(["resource_type", "parent_name", "resource_name", "shared_vpc", "monitoring", "logging", "billing_linked", "project_apis"])
-        ws.append(["folder", "organization_id", "shared", False, False, False, False, ""])
-        ws.append(["folder", "shared", "production", False, False, False, False, ""])
-        ws.append(["project", "production", "prd-app-01", True, True, True, True, "compute.googleapis.com,container.googleapis.com"])
+        ws.append(["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"])
+        ws.append(["folder", "organization_id", "shared", False, False, False, False, False, ""])
+        ws.append(["folder", "shared", "production", False, False, False, False, False, ""])
+        ws.append(["project", "production", "prd-app-01", True, True, True, True, True, "compute.googleapis.com,container.googleapis.com"])
 
         wb.save(xlsx_path)
         print("Template created! Please edit it and run this script again.")
@@ -121,6 +121,7 @@ def generate_resources():
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
 
         shared_vpc = is_true(proj.get('shared_vpc'))
+        vpc_sc = is_true(proj.get('vpc_sc'))
         monitoring = is_true(proj.get('monitoring'))
         logging = is_true(proj.get('logging'))
         billing_linked = is_true(proj.get('billing_linked'))
@@ -132,12 +133,14 @@ def generate_resources():
             if apis_list:
                 apis_formatted = '[\n  "' + '",\n  "'.join(apis_list) + '"\n]'
 
-        shared_vpc_env_val = "prod" if shared_vpc else "none"
-        
         env_val = "prod"
         if app_name.startswith('prd-'): env_val = "prod"
         elif app_name.startswith('stg-'): env_val = "stag"
         elif app_name.startswith('dev-'): env_val = "dev"
+
+        shared_vpc_env_val = "none"
+        if shared_vpc:
+            shared_vpc_env_val = "dev" if env_val == "dev" else "prod"
 
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"
@@ -145,6 +148,7 @@ app_name            = "{app_name}"
 environment         = "{env_val}"
 folder_id           = "{folder_id_val}"
 shared_vpc_env      = "{shared_vpc_env_val}"
+vpc_sc              = {str(vpc_sc).lower()}
 monitoring          = {str(monitoring).lower()}
 logging             = {str(logging).lower()}
 billing_linked      = {str(billing_linked).lower()}
