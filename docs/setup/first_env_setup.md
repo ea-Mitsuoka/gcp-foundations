@@ -207,7 +207,7 @@ ______________________________________________________________________
 まず、リポジトリルートにある `gcp_foundations.xlsx` や `domain.env` を元にスクリプトを実行します。この時点では `common.tfvars` の `core_billing_linked` が `false` であるため、APIの有効化を伴う重い処理（`1_core/services/*`）は自動的にスキップされます。
 
 ```bash
-bash terraform/scripts/deploy_all.sh
+make deploy
 ```
 
 実行後、`1_core/base/*` などの処理が成功し、ログ集約用プロジェクトや監視用プロジェクトがGCP上に作成されます。
@@ -244,7 +244,7 @@ gcloud billing projects link <監視プロジェクトID> --billing-account=<あ
 1. 再度デプロイスクリプトを実行します。今度はスキップされていた `1_core/services/*` のデプロイが行われ、APIの有効化やログシンクの設定が適用されます。
 
 ```bash
-bash terraform/scripts/deploy_all.sh
+make deploy
 ```
 
 スクリプトが成功し 🎉 All deployments completed successfully! と表示されれば、初期環境のセットアップはすべて完了です！

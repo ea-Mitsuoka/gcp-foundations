@@ -34,7 +34,7 @@
    Planの結果に問題がなければ、ターミナルから一括デプロイスクリプトを実行して実際の環境に適用します。
 
    ```bash
-   bash terraform/scripts/deploy_all.sh
+   make deploy
    ```
 
 スクリプトが自動的に変更を検知し、バックエンド設定の置換、変数の注入、およびデプロイまでを順次行います。
@@ -58,7 +58,7 @@
 スクリプトを実行し、プロジェクトの「器」だけを作成します。
 
 ```bash
-bash terraform/scripts/deploy_all.sh
+make deploy
 ````
 
 ### ステップ3：課金アカウントのリンク（手動）
@@ -74,5 +74,5 @@ gcloud billing projects link <作成されたプロジェクトID> --billing-acc
 gcp_foundations.xlsx の対象プロジェクトの billing_linked を TRUE に変更し、再度デプロイを実行してAPIの有効化など残りの設定を適用します。
 
 ```bash
-bash terraform/scripts/deploy_all.sh
+make deploy
 ```
