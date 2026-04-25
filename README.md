@@ -26,8 +26,8 @@
 本基盤の「なぜそのように設計されたのか」や、各種設定ファイルの詳細な仕様です。
 1. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSOT) の詳細なカラム定義と入力例
 2. **[変更履歴と設計意図](docs/reference/code_refactoring_summary.md)**: 過去の改修履歴と、「なぜその設計にしたのか」の理由
-3. **[アーキテクチャ図と設計](docs/architecture/architecture.md)**: ネットワークやセキュリティ設計の概要
-4. **[データディクショナリ](docs/architecture/data-dictionary.md)**: Terraform変数の定義や命名規則
+3. **[アーキテクチャ図と設計](docs/design/architecture.md)**: ネットワークやセキュリティ設計の概要
+4. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 5. **[IAMとロール管理方針](docs/reference/role_management.md)**: カスタムロールや最小権限の原則について
 6. **[非アクティブアカウント監視方針](docs/reference/monitoring_inactive_90_days.md)**: 90日間の未ログイン検知の仕組み
 7. **[ベストプラクティス集](docs/reference/best_practice.md)**: リソース管理時の推奨事項
