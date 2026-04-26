@@ -45,15 +45,10 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
-
 1. **[ネットワークとセキュリティの詳細設定](docs/reference/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
-
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
-
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
-
 1. **[後任者・リカバリガイド](docs/operations/recovery_and_succession.md)**: 設定ファイルの復元と安全な引き継ぎ
-
 1. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
