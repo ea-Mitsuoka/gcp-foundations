@@ -1,0 +1,66 @@
+name: Infrastructure Drift Detection
+
+on:
+  schedule:
+    # 毎週日曜日 00:00 UTC (日本時間 09:00) に実行
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    # 手動実行も可能
+
+permissions:
+  contents: read
+  id-token: write # GCP WIF 用
+
+jobs:
+  detect-drift:
+    name: Detect Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # NOTE: 実際の運用には GCP Workload Identity Federation の設定が必要です
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}'
+      #     service_account: '${{ secrets.TF_SERVICE_ACCOUNT_EMAIL }}'
+
+      - name: Generate Terraform configuration from Secrets
+        run: |
+          cat <<EOF > terraform/common.tfbackend
+          bucket = "${{ secrets.GCS_BACKEND_BUCKET || 'dummy-bucket-for-ci' }}"
+          EOF
+
+          cat <<EOF > terraform/common.tfvars
+          terraform_service_account_email = "${{ secrets.TF_SERVICE_ACCOUNT_EMAIL || 'dummy-sa@example.com' }}"
+          gcs_backend_bucket              = "${{ secrets.GCS_BACKEND_BUCKET || 'dummy-bucket-for-ci' }}"
+          organization_domain             = "${{ secrets.ORGANIZATION_DOMAIN || 'example.com' }}"
+          gcp_region                      = "${{ secrets.GCP_REGION || 'asia-northeast1' }}"
+          project_id_prefix               = "${{ secrets.PROJECT_ID_PREFIX || 'example' }}"
+          core_billing_linked             = ${{ secrets.CORE_BILLING_LINKED || 'true' }}
+          enable_vpc_host_projects        = ${{ secrets.ENABLE_VPC || 'true' }}
+          enable_shared_vpc               = ${{ secrets.ENABLE_VPC || 'true' }}
+          enable_simplified_admin_groups  = ${{ secrets.ENABLE_SIMPLIFIED_GROUPS || 'false' }}
+          EOF
+
+      - name: Run Drift Detection (Plan Only)
+        run: |
+          # deploy_all.sh --plan-only を実行
+          # 差異がある場合に終了コードを非ゼロにするには、スクリプト側の対応が必要ですが、
+          # まずは実行ログで差異を確認できる状態にします。
+          bash terraform/scripts/deploy_all.sh --plan-only
+        env:
+          TF_IN_AUTOMATION: "true"
+
+      - name: Notify on Drift
+        if: failure()
+        run: |
+          echo "Infrastructure drift detected! Please check the GitHub Actions log and reconcile changes."
+          # ここに Slack 通知などのロジックを追加可能
