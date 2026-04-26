@@ -47,6 +47,7 @@ make lint
 一番最初に実行する環境構築手順や、開発者としての参加手順です。
 
 1. **[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)**: 基盤のゼロからの構築・デプロイ手順
+1. **[Google グループ作成ガイド](docs/setup/google_groups_creation.md)**: Cloud セットアップを活用した効率的なグループ作成
 1. **[スプレッドシート・ワークショップ・ガイド](docs/operations/spreadsheet_session_guide.md)**: 顧客と一緒に設計図を完成させるためのガイド
 1. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSOTベースの管理思想
 1. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの必須ツールのインストールと設定
@@ -56,6 +57,7 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
+1. **[トラブルシューティング・ガイド](docs/operations/troubleshooting.md)**: 構築・運用中によくある問題と解決策
 1. **[ネットワークとセキュリティの詳細設定](docs/reference/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
