@@ -83,3 +83,29 @@ variable "enable_org_policies" {
   default     = false
 }
 
+# --- common.tfvars variables ---
+
+variable "gcp_region" {
+  type        = string
+  description = "デフォルトのGCPリージョン。"
+}
+
+variable "core_billing_linked" {
+  type        = bool
+  description = "コアプロジェクトの課金アカウントが紐づいているか。"
+}
+
+variable "enable_vpc_host_projects" {
+  type        = bool
+  description = "共有VPCホストプロジェクトを有効にするか。"
+}
+
+variable "enable_vpc_sc" {
+  type        = bool
+  description = "VPC Service Controlsを有効にするか。"
+}
+
+variable "enable_simplified_admin_groups" {
+  type        = bool
+  description = "簡素化された管理グループ（9つではなく2つ）を有効にするか。"
+}

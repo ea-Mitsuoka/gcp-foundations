@@ -26,3 +26,35 @@ variable "enable_shared_vpc" {
   description = "ホストプロジェクトに対してShared VPC機能を有効化するかどうか。"
   default     = false
 }
+
+# --- common.tfvars variables ---
+
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名。"
+}
+
+variable "project_id_prefix" {
+  type        = string
+  description = "プロジェクトIDの接頭辞。"
+}
+
+variable "core_billing_linked" {
+  type        = bool
+  description = "コアプロジェクトの課金アカウントが紐づいているか。"
+}
+
+variable "enable_vpc_sc" {
+  type        = bool
+  description = "VPC Service Controlsを有効にするか。"
+}
+
+variable "enable_org_policies" {
+  type        = bool
+  description = "組織ポリシーを有効にするか。"
+}
+
+variable "enable_simplified_admin_groups" {
+  type        = bool
+  description = "簡素化された管理グループ（9つではなく2つ）を有効にするか。"
+}
