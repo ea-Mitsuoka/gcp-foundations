@@ -26,3 +26,9 @@ variable "enable_org_policies" {
   default     = false
 }
 
+variable "enable_simplified_admin_groups" {
+  type        = bool
+  description = "管理グループを2つ（組織管理者・請求管理者）に集約するかどうか。trueの場合、組織管理者にセキュリティ等の全権限が集約されます。"
+  default     = false
+}
+

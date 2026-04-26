@@ -19,4 +19,5 @@ variable "enable_vpc_host_projects" { type = bool }
 variable "enable_shared_vpc" { type = bool }
 variable "enable_vpc_sc" { type = bool }
 variable "enable_org_policies" { type = bool }
+variable "enable_simplified_admin_groups" { type = bool }
 

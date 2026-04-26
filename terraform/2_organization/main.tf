@@ -54,7 +54,8 @@ resource "google_organization_policy" "vm_external_ip_access" {
 # --------------------------------------------------------------------------------
 
 locals {
-  group_roles = {
+  # 役割ごとの標準的なロール定義
+  raw_roles = {
     "gcp-organization-admins" = [
       "roles/billing.user",                      # 請求先アカウント ユーザー
       "roles/cloudkms.admin",                    # クラウド KMS 管理者
@@ -116,6 +117,18 @@ locals {
       "roles/resourcemanager.folderViewer", # フォルダ閲覧者
     ]
   }
+
+  # 集約モード (enable_simplified_admin_groups = true) の場合のグループ構成
+  # 組織管理者に請求以外の全てのロールを統合します
+  simplified_group_roles = {
+    "gcp-organization-admins" = distinct(flatten([
+      for name, roles in local.raw_roles : roles if name != "gcp-billing-admins"
+    ]))
+    "gcp-billing-admins" = local.raw_roles["gcp-billing-admins"]
+  }
+
+  # フラグに応じて使用するマップを選択
+  group_roles = var.enable_simplified_admin_groups ? local.simplified_group_roles : local.raw_roles
 
   # リソース展開用に「グループ名とロールの組み合わせ」を平坦化（flatten）したリストを作成
   org_iam_members = flatten([
