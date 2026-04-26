@@ -38,6 +38,7 @@ resource "terraform_data" "variable_validation" {
     var.enable_vpc_host_projects,
     var.enable_shared_vpc,
     var.enable_vpc_sc,
-    var.enable_org_policies
+    var.enable_org_policies,
+    var.enable_simplified_admin_groups
   ]
 }
