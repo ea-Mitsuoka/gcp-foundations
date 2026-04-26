@@ -12,7 +12,7 @@ data "terraform_remote_state" "folders" {
 }
 
 data "terraform_remote_state" "organization" {
-  count   = var.vpc_sc ? 1 : 0
+  count   = var.vpc_sc != "" ? 1 : 0
   backend = "gcs"
   config = {
     bucket                      = var.gcs_backend_bucket
@@ -34,6 +34,12 @@ data "terraform_remote_state" "vpc_host" {
 locals {
   host_project_id    = var.shared_vpc_env == "prod" ? try(data.terraform_remote_state.vpc_host[0].outputs.prod_host_project_id, null) : (var.shared_vpc_env == "dev" ? try(data.terraform_remote_state.vpc_host[0].outputs.dev_host_project_id, null) : null)
   resolved_folder_id = var.folder_id != "" ? try(data.terraform_remote_state.folders.outputs[format("%s_folder_id", var.folder_id)], var.folder_id) : null
+
+  # VPC-SC Perimeter ID の引き当て
+  perimeter_id = var.vpc_sc != "" ? try(data.terraform_remote_state.organization[0].outputs.service_perimeter_ids[var.vpc_sc], null) : null
+
+  # Shared VPC Subnet ID の引き当て
+  subnet_id = var.shared_vpc_subnet != "" ? try(data.terraform_remote_state.vpc_host[0].outputs.shared_vpc_subnet_ids[var.shared_vpc_subnet], null) : null
 }
 
 module "project" {
