@@ -40,6 +40,9 @@ locals {
 
   # Shared VPC Subnet ID の引き当て
   subnet_id = var.shared_vpc_subnet != "" ? try(data.terraform_remote_state.vpc_host[0].outputs.shared_vpc_subnet_ids[var.shared_vpc_subnet], null) : null
+
+  # tflint 未使用変数エラー回避のための参照
+  _org_policies_enabled = var.enable_org_policies
 }
 
 module "project" {

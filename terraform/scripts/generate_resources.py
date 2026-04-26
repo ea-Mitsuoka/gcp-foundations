@@ -59,8 +59,8 @@ def generate_resources():
         ws5.append(["production", "gcp.resourceLocations", True, "asia-northeast1"])
 
         wb.save(xlsx_path)
-        print("Template created! Please edit it and run this script again.")
-        return
+        print("Template created! Proceeding with initial generation...")
+        # return せずに続行
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     
