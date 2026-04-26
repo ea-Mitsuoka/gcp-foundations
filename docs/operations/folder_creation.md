@@ -11,10 +11,10 @@ ______________________________________________________________________
 
 ### ステップ 1: `gcp_foundations.xlsx` の編集
 
-1.  `gcp_foundations.xlsx` を開き、`resources` シートを選択します。
-2.  `resource_type` に `folder` を指定し、新しいフォルダを定義します。
-    -   `parent_name`: 親フォルダ名、または組織直下の場合は `organization_id` を指定します。
-    -   `resource_name`: フォルダの表示名（Terraform のリソース名にも使用されます）を指定します。
+1. `gcp_foundations.xlsx` を開き、`resources` シートを選択します。
+1. `resource_type` に `folder` を指定し、新しいフォルダを定義します。
+   - `parent_name`: 親フォルダ名、または組織直下の場合は `organization_id` を指定します。
+   - `resource_name`: フォルダの表示名（Terraform のリソース名にも使用されます）を指定します。
 
 ### ステップ 2: Terraform コードの生成
 

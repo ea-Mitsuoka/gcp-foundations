@@ -4,10 +4,10 @@
 
 ## 🌟 主な特長
 
--   **階層構造の自動生成**: Excel (SSOT) に定義するだけで、GCP 組織直下のフォルダ構造やプロジェクトを自動作成。
--   **ネットワークとセキュリティの統合管理**: Shared VPC のサブネット、VPC Service Controls (VPC-SC) の境界・アクセスレベルを Excel 上で一元管理。
--   **段階的な組織ポリシーの適用**: 移行プロジェクトに配慮し、初期状態では組織ポリシーを無効化した状態で作成可能。準備が整い次第、Excel の定義に基づき段階的にガードレールを適用できます。
--   **Terraform による透過的な管理**: 全ての設定は Terraform コードへ変換され、ステート管理されるため、IaC としての整合性を維持。
+- **階層構造の自動生成**: Excel (SSOT) に定義するだけで、GCP 組織直下のフォルダ構造やプロジェクトを自動作成。
+- **ネットワークとセキュリティの統合管理**: Shared VPC のサブネット、VPC Service Controls (VPC-SC) の境界・アクセスレベルを Excel 上で一元管理。
+- **段階的な組織ポリシーの適用**: 移行プロジェクトに配慮し、初期状態では組織ポリシーを無効化した状態で作成可能。準備が整い次第、Excel の定義に基づき段階的にガードレールを適用できます。
+- **Terraform による透過的な管理**: 全ての設定は Terraform コードへ変換され、ステート管理されるため、IaC としての整合性を維持。
 
 ## 🚀 5分でわかるクイックスタート
 
@@ -24,6 +24,7 @@ make generate
 # 3. 生成されたコードの品質チェック (Linterの実行)
 make lint
 ```
+
 ※ 実際のデプロイにはGCP権限と初期セットアップが必要です。詳細は [セットアップガイド](docs/setup/initial_setup.md) を参照してください。
 
 ## 📚 ドキュメントインデックス (ここから読み始めてください)
@@ -44,11 +45,15 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
+
 1. **[ネットワークとセキュリティの詳細設定](docs/reference/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
 
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
+
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
+
 1. **[後任者・リカバリガイド](docs/operations/recovery_and_succession.md)**: 設定ファイルの復元と安全な引き継ぎ
+
 1. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
