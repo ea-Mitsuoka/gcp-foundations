@@ -1,85 +1,97 @@
-# 初期環境セットアップ手順
+# 初期環境セットアップガイド (ミーティング・セッション用)
 
-本ドキュメントでは、新しい GCP 組織に対して「GCP Foundations」基盤をゼロから構築する手順を説明します。
+本ドキュメントは、新しい GCP 組織に対して「GCP Foundations」を構築する際の、顧客（オーナー）と構築者による共同作業のガイドです。
+
+画面共有をしながら、本ドキュメントの手順に沿って意思決定と操作を進めてください。
 
 ______________________________________________________________________
 
-## 1. 事前準備 (Prerequisites)
+## 1. 構築完了後のイメージ (Target Architecture)
 
-### 1.1. ツールのインストール
+本手順が完了すると、GCP 組織内に以下の構造が自動生成されます。
 
-作業環境に必要なツール（`gcloud`, `terraform`, `uv` 等）のインストールについては、以下のドキュメントを参照して完了させてください。
-
-- **[ローカル開発環境セットアップガイド](../development/local_development.md)**
-
-### 1.2. 管理グループの作成 (Google Groups)
-
-IAM 統制のため、以下のグループを事前に作成しておく必要があります。
-
-- `gcp-organization-admins@<your-domain>`
-- `gcp-security-admins@<your-domain>`
-- `gcp-network-admins@<your-domain>`
-- `gcp-billing-admins@<your-domain>`
-
-### 1.3. GCP 認証
-
-組織管理者権限を持つアカウントでログインします。
-
-```bash
-gcloud auth login
-gcloud auth application-default login
+```mermaid
+graph TD
+    Org[GCP Organization] --> Seed[Management Project]
+    Seed --> Bucket[GCS Bucket: tfstate]
+    Seed --> SA[Service Account: org-manager]
+    
+    Org --> Shared[Folder: shared]
+    Shared --> Prod[Folder: production]
+    Shared --> Dev[Folder: development]
+    
+    Prod --> VPC_P[Project: Host VPC Prod]
+    Dev --> VPC_D[Project: Host VPC Dev]
 ```
 
 ______________________________________________________________________
 
-## 2. 基盤の構築ステップ
+## 2. 事前準備 (Preparation)
 
-### ステップ 1: シードリソースの作成と初期設定
+セッションを開始する前に、以下の準備が完了していることを確認してください。
 
-自動化スクリプトを実行し、管理用プロジェクトの作成、権限付与、および初期設定ファイルの生成を行います。
+- [ ] **権限**: 顧客の作業者が「組織管理者」および「請求先アカウント管理者」権限を持っていること。
+- [ ] **グループ**: Google Groups（`gcp-organization-admins` 等）が作成済みであること。
+- [ ] **認証**: 構築者の環境で `gcloud auth login` が完了していること。
+
+______________________________________________________________________
+
+## 3. セットアップ・セッションの流れ
+
+### ステップ 1: 初期リソースの自動作成
+
+構築者がシェルスクリプトを実行し、ターミナル上で設定値を入力していきます。
 
 ```bash
 bash terraform/scripts/setup_new_client.sh
 ```
 
-このスクリプトは**対話形式**で進行します。以下の設定項目について質問されるため、要件に合わせて回答してください。
-- **Shared VPC**: 共通 VPC 基盤を構築するかどうか。
-- **VPC Service Controls (VPC-SC)**: セキュリティ境界を有効にするかどうか。
-- **Organization Policies**: 組織ポリシーを最初から有効にするかどうか（既存プロジェクトの移行がある場合は `false` 推奨）。
+#### 💡 顧客との意思決定ポイント
+スクリプト実行中、以下の項目について質問されます。顧客の要件に合わせて回答を選択してください。
 
-※ 途中で課金アカウントのリンクを求められるので、指示に従ってください。
+| 項目 | 説明 | 選択の目安 |
+| :--- | :--- | :--- |
+| **Shared VPC** | ネットワークを中央管理し、各プロジェクトに共有するか。 | **推奨: true**。管理が効率化され、セキュリティが向上します。 |
+| **VPC-SC** | セキュリティ境界で API アクセスを制限するか。 | 非常に厳しい機密情報を扱う場合は true。初期は false でも可。 |
+| **Org Policies** | 組織全体にガードレール（外部IP禁止等）を課すか。 | **移行作業がある場合は false** を推奨。後から有効化可能です。 |
 
-### ステップ 2: SSOT (Excel) の初期化
+---
 
-スクリプト完了後、基盤構成の定義ファイル（Excel）を生成・確認します。
+### ステップ 2: 課金アカウントのリンク (顧客作業)
+
+スクリプトの途中で、GCP の仕様により**顧客側での手動操作**が必要になります。
+
+1. 画面に表示される `gcloud billing projects link ...` コマンドを（または GCP コンソールで）実行してください。
+2. 完了後、構築者が [Enter] を押してスクリプトを続行します。
+
+---
+
+### ステップ 3: 定義ファイルの確認 (SSOT)
+
+構成の「設計図」となる Excel ファイルを生成します。
 
 ```bash
 make generate
 ```
 
-生成された `gcp_foundations.xlsx` を開き、必要なフォルダ構造やポリシーが定義されているか確認してください。
+`gcp_foundations.xlsx` を開き、フォルダ構造や適用されるポリシーに齟齬がないか、顧客と一緒に最終確認を行います。
 
-### ステップ 3: Layer 0 (Bootstrap) の適用
+---
 
+### ステップ 4: インフラの展開 (Deployment)
 
-```bash
-cd terraform/0_bootstrap
-terraform init -backend-config="../common.tfbackend"
-terraform apply -var-file="../common.tfvars" -var-file="terraform.tfvars"
-```
-
-### ステップ 3: コア基盤の一括展開
-
-リポジトリルートに戻り、全レイヤーをデプロイします。
+最終的なデプロイを実行します。
 
 ```bash
-make deploy
+# Layer 0 の適用
+cd terraform/0_bootstrap && terraform init && terraform apply
+
+# 全レイヤーの一括適用
+cd ../../ && make deploy
 ```
 
 ______________________________________________________________________
 
-## 3. 次のステップ
+## 4. 完了後の引き継ぎ
 
-構築完了後は、以下の手順でアプリケーション用プロジェクトを追加できます。
-
-- **[プロジェクトのライフサイクル管理](../operations/project_lifecycle.md)**
+構築完了後、プロジェクトの追加・削除などの日常的な運用については **[プロジェクトのライフサイクル管理](../operations/project_lifecycle.md)** を参照してください。
