@@ -21,6 +21,7 @@ variable "enable_vpc_sc" { type = bool }
 variable "enable_org_policies" { type = bool }
 
 locals {
+  # tflint-ignore: terraform_unused_declarations
   # tflint 対策
   _common_vars = [
     var.terraform_service_account_email,

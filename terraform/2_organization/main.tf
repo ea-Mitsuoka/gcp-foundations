@@ -1,5 +1,6 @@
 # 組織情報を取得
 locals {
+  # tflint-ignore: terraform_unused_declarations
   # tflint 未使用変数エラー回避のための参照
   _org_policies_enabled = var.enable_org_policies
 }
