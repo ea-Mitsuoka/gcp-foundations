@@ -158,42 +158,37 @@ ______________________________________________________________________
 
 ### 手順
 
-1. **リポジトリをクローンします。**
+1. **リポジトリをクローンし、ディレクトリに移動します。**
 
    ```bash
    git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
    cd gcp-foundations
    ```
 
-1. **便利なエイリアスとパスを設定（推奨）**
-
-   以下のコマンドを実行して、エイリアスとパスを設定します。
+1. **初期構築コマンドを実行します。**
 
    ```bash
-   # エイリアスの設定
-   alias git-root='echo "$(git rev-parse --show-toplevel)"'
-
-   # スクリプトへのパスを通す
-   export PATH="$(git rev-parse --show-toplevel)/terraform/scripts:$PATH"
+   make install  # 依存関係のインストール
+   make setup    # シードリソース（管理プロジェクト・バケット）の作成
    ```
 
-   この設定はターミナルセッションを閉じるとリセットされるため、.bashrcや.zshrcに追記することを推奨します。
-
-1. **自動化スクリプトを実行します。(要動作確認)**
-   `setup_new_client.sh` スクリプトが、対話形式で必要な情報を質問し、tfstate管理基盤の構築を自動で行います。
-
-   ```bash
-   chmod +x terraform/scripts/setup_new_client.sh
-   ./terraform/scripts/setup_new_client.sh
-   ```
+   `make setup` スクリプトが対話形式で必要な情報を質問し、tfstate管理基盤の構築を自動で行います。
 
 1. **手動で課金アカウントをリンクします。**
-   スクリプトの最後に表示される`gcloud billing projects link ...`コマンドを実行し、管理用プロジェクトに課金アカウントを手動で紐付けます。これは、権限の都合上、手動での実行が必須となっています。
 
-1. **`0_bootstrap` を適用します。**
-   スクリプトの案内に従い、`0_bootstrap`ディレクトリで`terraform init`と`terraform apply`を実行し、Terraformの管理をGCSバックエンドで開始します。
+   スクリプトの最後に表示される `gcloud billing projects link ...` コマンドを、指示に従って実行してください。
+   ※ 権限の仕様上、このステップのみ手動での実行が必須となっています。
 
-これ以降の`1_core`からの各レイヤーの適用については、`docs/setup/initial_setup.md`の詳細な手順を参照してください。
+1. **`0_bootstrap` を適用し、Terraform管理を開始します。**
+
+   ```bash
+   cd terraform/0_bootstrap
+   terraform init -backend-config="../common.tfbackend"
+   terraform apply -var-file="../common.tfvars"
+   ```
+
+これ以降の各レイヤーの展開については、**[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)** を参照してください。
+
 
 ## 🤝 コントリビューションとセキュリティ
 
