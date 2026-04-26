@@ -4,7 +4,7 @@
 
 ## 🌟 主な特長
 
-- **階層構造の自動生成**: Excel (SSOT) に定義するだけで、GCP 組織直下のフォルダ構造やプロジェクトを自動作成。
+- **階層構造の自動生成**: Excel (SSoT) に定義するだけで、GCP 組織直下のフォルダ構造やプロジェクトを自動作成。
 - **ネットワークとセキュリティの統合管理**: Shared VPC のサブネット、VPC Service Controls (VPC-SC) の境界・アクセスレベルを Excel 上で一元管理。
 - **段階的な組織ポリシーの適用**: 移行プロジェクトに配慮し、初期状態では組織ポリシーを無効化した状態で作成可能。準備が整い次第、Excel の定義に基づき段階的にガードレールを適用できます。
 - **Terraform による透過的な管理**: 全ての設定は Terraform コードへ変換され、ステート管理されるため、IaC としての整合性を維持。
@@ -49,14 +49,14 @@ make lint
 1. **[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)**: 基盤のゼロからの構築・デプロイ手順
 1. **[Google グループ作成ガイド](docs/setup/google_groups_creation.md)**: Cloud セットアップを活用した効率的なグループ作成
 1. **[スプレッドシート・ワークショップ・ガイド](docs/operations/spreadsheet_session_guide.md)**: 顧客と一緒に設計図を完成させるためのガイド
-1. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSOTベースの管理思想
+1. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSoTベースの管理思想
 1. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの必須ツールのインストールと設定
 
 ### ⚙️ 日常運用手順 (Operations)
 
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
-1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
+1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSoT）に基づく作成・運用・管理
 1. **[トラブルシューティング・ガイド](docs/operations/troubleshooting.md)**: 構築・運用中によくある問題と解決策
 1. **[ネットワークとセキュリティの詳細設定](docs/reference/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
@@ -68,9 +68,9 @@ make lint
 
 本基盤の設計思想や、詳細な仕様です。
 
-1. **[アーキテクチャ設計書](docs/design/architecture.md)**: 全体俯瞰図とSSOT・レイヤー構造の解説
+1. **[アーキテクチャ設計書](docs/design/architecture.md)**: 全体俯瞰図とSSoT・レイヤー構造の解説
 1. **[ベストプラクティス集](docs/reference/best_practices.md)**: インフラ運用とIAM・権限管理の方針
-1. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSOT) のカラム定義
+1. **[スプレッドシートの仕様書](docs/reference/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSoT) のカラム定義
 1. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 1. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
 
@@ -81,7 +81,7 @@ make lint
 ```bash
 make help       # 利用可能な全コマンドの表示
 make setup      # 初期構築（管理用プロジェクト・tfstateバケットの作成）
-make generate   # Excel(SSOT)からTerraform変数や構成を自動生成
+make generate   # Excel(SSoT)からTerraform変数や構成を自動生成
 make lint       # Terraform, ShellscriptのLint・フォーマット実行
 make opa        # Regoポリシーの構文チェック
 make test       # モジュールの単体テスト実行
@@ -128,7 +128,7 @@ graph TD
 make deploy
 ```
 
-※ 事前に `gcp_foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSOT) を最新化してください。
+※ 事前に `gcp_foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSoT) を最新化してください。
 
 ______________________________________________________________________
 

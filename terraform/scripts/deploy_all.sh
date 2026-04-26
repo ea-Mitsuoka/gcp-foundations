@@ -36,7 +36,7 @@ else
 fi
 
 echo "=========================================================="
-echo " Step 1: Generating tfvars from SSOT (domain.env & xlsx)"
+echo " Step 1: Generating tfvars from SSoT (domain.env & xlsx)"
 echo "=========================================================="
 
 if ! command -v uv &> /dev/null; then

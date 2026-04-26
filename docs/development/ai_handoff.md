@@ -16,7 +16,7 @@
 
 ### ステップ 1: アーキテクチャの全体俯瞰
 - **`README.md`**: 全体のディレクトリ構造とレイヤー（0〜4）の役割。
-- **`docs/design/architecture.md`**: Excel を「唯一の正解 (SSOT)」とするフロー。
+- **`docs/design/architecture.md`**: Excel を「唯一の正解 (SSoT)」とするフロー。
 - **`docs/reference/best_practices.md`**: 権限管理（Impersonation, Group-based IAM）の原則。
 
 ### ステップ 2: 自動生成エンジンの解析（最重要）
@@ -37,7 +37,7 @@
 - **`docs/operations/troubleshooting.md`**: 過去のナレッジと解決策のコンテキスト。
 
 **【AIへの行動指針（ガードレール）】**
-1. **SSOT 優先**: 安易な Terraform 手動修正は避け、常に「Excel への反映 → `make generate`」という正規フローを優先せよ。
+1. **SSoT 優先**: 安易な Terraform 手動修正は避け、常に「Excel への反映 → `make generate`」という正規フローを優先せよ。
 2. **レイヤー依存の意識**: プロジェクト（L4）を作る前に、フォルダ（L3）や共通NW（L1）が必要であることを常に意識せよ。
 3. **セキュリティ第一**: JSON キーを生成せず、グループとサービスアカウント借用による管理を徹底せよ。
 4. **現場のコツを尊重**: Cloud セットアップを「グループ作成機」として使うなどの実戦的な割り切りを理解し、そのワークフローを守れ。

@@ -103,7 +103,7 @@ make opa
 
 ### 自動生成スクリプトの実行
 
-SSOT (`gcp_foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
+SSoT (`gcp_foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
 
 ```bash
 make generate
@@ -127,7 +127,7 @@ graph TD
     E -->|make lint| F[5. プルリクエスト作成]
 ```
 
-### ステップ 1: Excel (SSOT) の更新
+### ステップ 1: Excel (SSoT) の更新
 
 すべての変更はスプレッドシートから始まります。直接 Terraform ファイルを書き換えるのではなく、Excel に目的の構成を記載してください。
 

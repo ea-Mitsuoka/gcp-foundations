@@ -19,7 +19,7 @@ gcloud billing projects link ${PROJECT_ID} \
 
 ## プロジェクト命名
 
-プロジェクトの命名は、Single Source of Truth (SSOT) の原則に基づき、ルートディレクトリの domain.env で定義されたドメイン名から自動的に算出されます。
+プロジェクトの命名は、Single Source of Truth (SSoT) の原則に基づき、ルートディレクトリの domain.env で定義されたドメイン名から自動的に算出されます。
 外部モジュール等への依存はなく、ドメイン名のドットをハイフンに変換した文字列が接頭辞として付与されます。
 
 例: domain.env に domain="example.com" が設定されている場合

@@ -8,7 +8,7 @@ ______________________________________________________________________
 
 本基盤は、大規模な組織運用に耐えうる「堅牢性」と、誰が実行しても同じ結果が得られる「再現性」を重視して設計されています。
 
-- **Single Source of Truth (SSOT)**: すべての構成（プロジェクト名、API、IAM等）はスプレッドシート (`gcp_foundations.xlsx`) で一元管理されます。
+- **Single Source of Truth (SSoT)**: すべての構成（プロジェクト名、API、IAM等）はスプレッドシート (`gcp_foundations.xlsx`) で一元管理されます。
 - **自動生成エンジンの設計思想**: なぜ Python と Terraform を組み合わせているのか、その[詳細な設計思想](generator_philosophy.md)を解説。
 - **ランダム要素の排除**: プロジェクト ID 等に `random_id` を使用せず、命名規則に基づいた確定的な ID を付与することで、冪等性を担保します。
 - **宣言的なインフラ管理**: `csvdecode` や `for_each` を活用し、データからリソースを動的に生成します。外部スクリプトへの依存を最小限に抑え、Terraform ネイティブな記述を優先します。
@@ -21,7 +21,7 @@ ______________________________________________________________________
 
 ```mermaid
 flowchart LR
-    XLSX[gcp_foundations.xlsx<br/>設計図/SSOT] -->|make generate| TF[Auto-generated TF<br/>auto_*.tf / tfvars]
+    XLSX[gcp_foundations.xlsx<br/>設計図/SSoT] -->|make generate| TF[Auto-generated TF<br/>auto_*.tf / tfvars]
     TF -->|make deploy| GCP[Google Cloud<br/>Resources]
     
     subgraph Layers [Terraform Layers]

@@ -1,6 +1,6 @@
 # プロジェクト構成用スプレッドシート (gcp_foundations.xlsx) の仕様
 
-この基盤では、`gcp_foundations.xlsx` を Single Source of Truth (SSOT) とし、このExcelファイルに定義を行うことで、GCPのフォルダ、プロジェクト、ネットワーク（サブネット）、セキュリティ境界（VPC-SC）、組織ポリシーが自動生成される仕組みを採用しています。
+この基盤では、`gcp_foundations.xlsx` を Single Source of Truth (SSoT) とし、このExcelファイルに定義を行うことで、GCPのフォルダ、プロジェクト、ネットワーク（サブネット）、セキュリティ境界（VPC-SC）、組織ポリシーが自動生成される仕組みを採用しています。
 
 ## 配置場所
 
