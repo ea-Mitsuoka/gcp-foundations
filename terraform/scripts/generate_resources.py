@@ -11,6 +11,11 @@ import openpyxl
 import json
 from openpyxl import Workbook
 
+def sanitize_id(name):
+    """TerraformのリソースIDとして使用可能な文字列に変換する"""
+    if not name: return "unknown"
+    return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
+
 def generate_resources():
     # 1. domainの取得
     domain_env_path = os.path.join(os.path.dirname(__file__), '../../domain.env')
@@ -60,7 +65,6 @@ def generate_resources():
 
         wb.save(xlsx_path)
         print("Template created! Proceeding with initial generation...")
-        # return せずに続行
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     
@@ -151,14 +155,15 @@ def generate_resources():
         f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
         for folder_name, parent_name in folders.items():
             if not folder_name: continue
+            fid = sanitize_id(folder_name)
             parent_str = str(parent_name).strip()
-            parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{parent_str}.name"
-            f.write(f'resource "google_folder" "{folder_name}" {{\n')
+            parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{sanitize_id(parent_str)}.name"
+            f.write(f'resource "google_folder" "{fid}" {{\n')
             f.write(f'  display_name        = "{folder_name}"\n')
             f.write(f'  parent              = {parent_expr}\n')
             f.write(f'  deletion_protection = false\n')
             f.write(f'}}\n\n')
-            f.write(f'output "{folder_name}_folder_id" {{\n  value = google_folder.{folder_name}.id\n}}\n\n')
+            f.write(f'output "{fid}_folder_id" {{\n  value = google_folder.{fid}.id\n}}\n\n')
 
     # 5. VPC-SCのtfファイル生成 (2_organization/auto_vpc_sc.tf)
     vpc_sc_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_vpc_sc.tf')
@@ -168,7 +173,8 @@ def generate_resources():
         for al in access_levels:
             name = al.get('access_level_name')
             if not name: continue
-            f.write(f'resource "google_access_context_manager_access_level" "{name}" {{\n')
+            sid = sanitize_id(name)
+            f.write(f'resource "google_access_context_manager_access_level" "{sid}" {{\n')
             f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
             f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{name}"\n')
             f.write(f'  title  = "{name}"\n')
@@ -180,14 +186,15 @@ def generate_resources():
                 members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
                 f.write(f'      members = {json.dumps(members)}\n')
             f.write(f'    }}\n  }}\n}}\n\n')
-            access_level_ids[name] = f"google_access_context_manager_access_level.{name}.name"
+            access_level_ids[name] = f"google_access_context_manager_access_level.{sid}.name"
 
         perimeter_ids = {}
         for p in perimeters:
             name = p.get('perimeter_name')
             if not name: continue
+            sid = sanitize_id(name)
             services = [s.strip() for s in str(p.get('restricted_services', '')).split(',') if s.strip()]
-            f.write(f'resource "google_access_context_manager_service_perimeter" "{name}" {{\n')
+            f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n')
             f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
             f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{name}"\n')
             f.write(f'  title  = "{name}"\n')
@@ -195,7 +202,7 @@ def generate_resources():
             f.write(f'    restricted_services = {json.dumps(services)}\n')
             f.write(f'  }}\n')
             f.write(f'  lifecycle {{\n    ignore_changes = [status[0].resources]\n  }}\n}}\n\n')
-            perimeter_ids[name] = f"google_access_context_manager_service_perimeter.{name}.name"
+            perimeter_ids[name] = f"google_access_context_manager_service_perimeter.{sid}.name"
 
         f.write(f'output "service_perimeter_ids" {{\n  value = {{\n')
         for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
@@ -213,8 +220,9 @@ def generate_resources():
             env = str(sn.get('host_project_env', '')).strip().lower()
             name = sn.get('subnet_name')
             if not name or env not in ['prod', 'dev']: continue
+            sid = sanitize_id(name)
             module_name = f"vpc_host_{env}"
-            f.write(f'resource "google_compute_subnetwork" "{name}" {{\n')
+            f.write(f'resource "google_compute_subnetwork" "{sid}" {{\n')
             f.write(f'  name          = "{name}"\n')
             f.write(f'  ip_cidr_range = "{sn.get("ip_cidr_range")}"\n')
             f.write(f'  region        = "{sn.get("region")}"\n')
@@ -222,7 +230,7 @@ def generate_resources():
             f.write(f'  project       = module.{module_name}[0].project_id\n')
             f.write(f'  private_ip_google_access = true\n')
             f.write(f'}}\n\n')
-            subnet_ids[name] = f"google_compute_subnetwork.{name}.id"
+            subnet_ids[name] = f"google_compute_subnetwork.{sid}.id"
         
         f.write(f'output "shared_vpc_subnet_ids" {{\n  value = {{\n')
         for k, v in subnet_ids.items(): f.write(f'    "{k}" = {v}\n')
@@ -236,8 +244,9 @@ def generate_resources():
         for p in org_policies:
             if p.get('target_name') != 'organization_id': continue
             pid = p.get('policy_id')
+            sid = sanitize_id(pid)
             enforce = is_true_policy(p.get('enforce'))
-            f.write(f'resource "google_org_policy_policy" "{pid.replace(".", "_")}" {{\n')
+            f.write(f'resource "google_org_policy_policy" "{sid}" {{\n')
             f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
             f.write(f'  name   = "organizations/${{data.google_organization.org.org_id}}/policies/{pid}"\n')
             f.write(f'  parent = "organizations/${{data.google_organization.org.org_id}}"\n')
@@ -258,11 +267,12 @@ def generate_resources():
             target = p.get('target_name')
             if target == 'organization_id' or target not in folders: continue
             pid = p.get('policy_id')
+            sid = sanitize_id(f"{target}_{pid}")
             enforce = is_true_policy(p.get('enforce'))
-            f.write(f'resource "google_org_policy_policy" "{target}_{pid.replace(".", "_")}" {{\n')
+            f.write(f'resource "google_org_policy_policy" "{sid}" {{\n')
             f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
-            f.write(f'  name   = "folders/${{google_folder.{target}.name}}/policies/{pid}"\n')
-            f.write(f'  parent = "folders/${{google_folder.{target}.name}}"\n')
+            f.write(f'  name   = "folders/${{google_folder.{sanitize_id(target)}.name}}/policies/{pid}"\n')
+            f.write(f'  parent = "folders/${{google_folder.{sanitize_id(target)}.name}}"\n')
             f.write(f'  spec {{\n')
             if p.get('allow_list'):
                 f.write(f'    rules {{\n      values {{\n')
@@ -289,8 +299,9 @@ def generate_resources():
             for p in org_policies:
                 if p.get('target_name') != app_name: continue
                 pid = p.get('policy_id')
+                sid = sanitize_id(pid)
                 enforce = is_true_policy(p.get('enforce'))
-                f.write(f'resource "google_org_policy_policy" "{pid.replace(".", "_")}" {{\n')
+                f.write(f'resource "google_org_policy_policy" "{sid}" {{\n')
                 f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
                 f.write(f'  name   = "projects/${{module.project.project_id}}/policies/{pid}"\n')
                 f.write(f'  parent = "projects/${{module.project.project_id}}"\n')

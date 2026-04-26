@@ -86,7 +86,7 @@ resource "google_access_context_manager_service_perimeter_resource" "service_per
 resource "google_compute_subnetwork_iam_member" "subnet_user" {
   count      = var.billing_linked && local.subnet_id != null ? 1 : 0
   project    = local.host_project_id
-  region     = element(split("/", local.subnet_id), 3) # IDからリージョンを抽出
+  region     = try(element(split("/", local.subnet_id), 3), "asia-northeast1")
   subnetwork = local.subnet_id
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:${module.project.project_number}@cloudservices.gserviceaccount.com"

@@ -77,6 +77,10 @@ ENABLE_VPC=$(echo "${ENABLE_VPC:-false}" | tr '[:upper:]' '[:lower:]')
 read -r -p "Do you want to enable VPC Service Controls (VPC-SC)? (true/false) [default: false]: " ENABLE_VPC_SC
 ENABLE_VPC_SC=$(echo "${ENABLE_VPC_SC:-false}" | tr '[:upper:]' '[:lower:]')
 
+print_info "Organization Policies can be restrictive. If you plan to migrate existing projects into this organization, it is recommended to keep them disabled initially."
+read -r -p "Do you want to enable Organization Policies? (true/false) [default: false]: " ENABLE_ORG_POLICIES
+ENABLE_ORG_POLICIES=$(echo "${ENABLE_ORG_POLICIES:-false}" | tr '[:upper:]' '[:lower:]')
+
 if [ -z "$CUSTOMER_DOMAIN" ] || [ -z "$GCP_REGION" ]; then
     print_error "Customer domain and GCP region cannot be empty."
     exit 1
