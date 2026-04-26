@@ -37,9 +37,15 @@ variable "project_apis" {
 }
 
 variable "vpc_sc" {
-  type        = bool
-  description = "このプロジェクトをVPC Service Controlsの境界に含めるかどうか。"
-  default     = false
+  type        = string
+  description = "このプロジェクトを所属させる VPC Service Controls の境界名。空文字の場合は対象外。"
+  default     = ""
+}
+
+variable "shared_vpc_subnet" {
+  type        = string
+  description = "接続する Shared VPC のサブネット名。空文字の場合は対象外。"
+  default     = ""
 }
 
 variable "labels" {

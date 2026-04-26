@@ -124,6 +124,7 @@ def generate_resources():
         f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
         
         # Access Levels
+        access_level_ids = {}
         for al in access_levels:
             name = al.get('access_level_name')
             if not name: continue
@@ -139,8 +140,10 @@ def generate_resources():
                 members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
                 f.write(f'      members = {json.dumps(members)}\n')
             f.write(f'    }}\n  }}\n}}\n\n')
+            access_level_ids[name] = f"google_access_context_manager_access_level.{name}.name"
 
         # Perimeters
+        perimeter_ids = {}
         for p in perimeters:
             name = p.get('perimeter_name')
             if not name: continue
@@ -153,11 +156,21 @@ def generate_resources():
             f.write(f'    restricted_services = {json.dumps(services)}\n')
             f.write(f'  }}\n')
             f.write(f'  lifecycle {{\n    ignore_changes = [status[0].resources]\n  }}\n}}\n\n')
+            perimeter_ids[name] = f"google_access_context_manager_service_perimeter.{name}.name"
+
+        # Outputs
+        f.write(f'output "service_perimeter_ids" {{\n  value = {{\n')
+        for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write(f'  }}\n}}\n\n')
+        f.write(f'output "access_level_ids" {{\n  value = {{\n')
+        for k, v in access_level_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write(f'  }}\n}}\n\n')
 
     # 6. Shared VPC Subnetsのtfファイル生成 (1_core/base/vpc-host/auto_subnets.tf)
     subnets_tf_path = os.path.join(os.path.dirname(__file__), '../1_core/base/vpc-host/auto_subnets.tf')
     with open(subnets_tf_path, 'w') as f:
         f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+        subnet_ids = {}
         for sn in subnets:
             env = str(sn.get('host_project_env', '')).strip().lower()
             name = sn.get('subnet_name')
@@ -171,6 +184,12 @@ def generate_resources():
             f.write(f'  project       = module.{module_name}[0].project_id\n')
             f.write(f'  private_ip_google_access = true\n')
             f.write(f'}}\n\n')
+            subnet_ids[name] = f"google_compute_subnetwork.{name}.id"
+        
+        # Outputs
+        f.write(f'output "shared_vpc_subnet_ids" {{\n  value = {{\n')
+        for k, v in subnet_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write(f'  }}\n}}\n\n')
 
     # 7. プロジェクトのtfvars生成 (4_projects/*)
     example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
@@ -203,8 +222,12 @@ def generate_resources():
         parent_folder = str(proj.get('parent_name', '')).strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
 
-        shared_vpc = is_true(proj.get('shared_vpc'))
-        vpc_sc = is_true(proj.get('vpc_sc'))
+        vpc_sc_val = str(proj.get('vpc_sc', '')).strip()
+        if vpc_sc_val.lower() in ['false', 'none', '']: vpc_sc_val = ""
+        
+        shared_vpc_sn_val = str(proj.get('shared_vpc', '')).strip()
+        if shared_vpc_sn_val.lower() in ['false', 'none', '']: shared_vpc_sn_val = ""
+
         monitoring = is_true(proj.get('monitoring'))
         logging = is_true(proj.get('logging'))
         billing_linked = is_true(proj.get('billing_linked'))
@@ -222,7 +245,7 @@ def generate_resources():
         elif app_name.startswith('dev-'): env_val = "dev"
 
         shared_vpc_env_val = "none"
-        if shared_vpc:
+        if shared_vpc_sn_val:
             shared_vpc_env_val = "dev" if env_val == "dev" else "prod"
 
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
@@ -231,7 +254,8 @@ app_name            = "{app_name}"
 environment         = "{env_val}"
 folder_id           = "{folder_id_val}"
 shared_vpc_env      = "{shared_vpc_env_val}"
-vpc_sc              = {str(vpc_sc).lower()}
+shared_vpc_subnet   = "{shared_vpc_sn_val}"
+vpc_sc              = "{vpc_sc_val}"
 monitoring          = {str(monitoring).lower()}
 logging             = {str(logging).lower()}
 billing_linked      = {str(billing_linked).lower()}
