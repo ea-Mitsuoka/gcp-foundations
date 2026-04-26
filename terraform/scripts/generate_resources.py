@@ -26,70 +26,153 @@ def generate_resources():
     if not os.path.exists(xlsx_path):
         print(f"{xlsx_path} not found. Creating a template...")
         wb = Workbook()
+        
+        # 1. resources
         ws = wb.active
         ws.title = "resources"
         ws.append(["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"])
-        ws.append(["folder", "organization_id", "shared", False, False, False, False, False, ""])
-        ws.append(["folder", "shared", "production", False, False, False, False, False, ""])
-        ws.append(["project", "production", "prd-app-01", True, True, True, True, True, "compute.googleapis.com,container.googleapis.com"])
+        ws.append(["folder", "organization_id", "shared", "", "", False, False, False, ""])
+        ws.append(["folder", "shared", "production", "", "", False, False, False, ""])
+        ws.append(["project", "production", "prd-app-01", "prd-subnet-01", "default_perimeter", True, True, True, "compute.googleapis.com,container.googleapis.com"])
+
+        # 2. vpc_sc_perimeters
+        ws2 = wb.create_sheet("vpc_sc_perimeters")
+        ws2.append(["perimeter_name", "title", "restricted_services"])
+        ws2.append(["default_perimeter", "Default Security Perimeter", "storage.googleapis.com,bigquery.googleapis.com,compute.googleapis.com"])
+
+        # 3. vpc_sc_access_levels
+        ws3 = wb.create_sheet("vpc_sc_access_levels")
+        ws3.append(["access_level_name", "ip_subnetworks", "members"])
+        ws3.append(["office_ip_only", "1.2.3.4/32", "user:admin@example.com"])
+
+        # 4. shared_vpc_subnets
+        ws4 = wb.create_sheet("shared_vpc_subnets")
+        ws4.append(["host_project_env", "subnet_name", "region", "ip_cidr_range"])
+        ws4.append(["prod", "prd-subnet-01", "asia-northeast1", "10.0.1.0/24"])
+        ws4.append(["dev", "dev-subnet-01", "asia-northeast1", "10.1.1.0/24"])
 
         wb.save(xlsx_path)
         print("Template created! Please edit it and run this script again.")
         return
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
-    if 'resources' not in wb.sheetnames:
-        print("Error: 'resources' sheet not found in the spreadsheet.")
-        return
     
-    sheet = wb['resources']
+    # --- データのパース ---
     
-    headers = [cell.value for cell in sheet[1]]
-    if not headers or 'resource_type' not in headers:
-        print("Error: Invalid headers in 'resources' sheet.")
-        return
-
+    # 1. フォルダとプロジェクト (resources)
     folders = {}
     projects = []
+    if 'resources' in wb.sheetnames:
+        ws = wb['resources']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            row_dict = dict(zip(headers, row))
+            res_type = str(row_dict.get('resource_type', '')).strip().lower()
+            if res_type == 'folder':
+                folders[row_dict.get('resource_name')] = row_dict.get('parent_name')
+            elif res_type == 'project':
+                projects.append(row_dict)
 
-    # 3. データのパース
-    for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
-        if not any(row): continue
-        row_dict = dict(zip(headers, row))
-        
-        res_type = str(row_dict.get('resource_type', '')).strip().lower()
-        if res_type == 'folder':
-            folders[row_dict.get('resource_name')] = row_dict.get('parent_name')
-        elif res_type == 'project':
-            projects.append(row_dict)
+    # 2. VPC-SC Perimeters
+    perimeters = []
+    if 'vpc_sc_perimeters' in wb.sheetnames:
+        ws = wb['vpc_sc_perimeters']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            perimeters.append(dict(zip(headers, row)))
+
+    # 3. VPC-SC Access Levels
+    access_levels = []
+    if 'vpc_sc_access_levels' in wb.sheetnames:
+        ws = wb['vpc_sc_access_levels']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            access_levels.append(dict(zip(headers, row)))
+
+    # 4. Shared VPC Subnets
+    subnets = []
+    if 'shared_vpc_subnets' in wb.sheetnames:
+        ws = wb['shared_vpc_subnets']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            subnets.append(dict(zip(headers, row)))
+
+    # --- TFファイル生成 ---
 
     # 4. フォルダのtfファイル生成 (3_folders/auto_folders.tf)
     folders_tf_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_folders.tf')
     with open(folders_tf_path, 'w') as f:
         f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
-        
         for folder_name, parent_name in folders.items():
             if not folder_name: continue
-            
             parent_str = str(parent_name).strip()
-            if parent_str == 'organization_id':
-                parent_expr = "data.google_organization.org.name"
-            else:
-                parent_expr = f"google_folder.{parent_str}.name"
-
+            parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{parent_str}.name"
             f.write(f'resource "google_folder" "{folder_name}" {{\n')
             f.write(f'  display_name        = "{folder_name}"\n')
             f.write(f'  parent              = {parent_expr}\n')
             f.write(f'  deletion_protection = false\n')
             f.write(f'}}\n\n')
-            
-            f.write(f'output "{folder_name}_folder_id" {{\n')
-            f.write(f'  value = google_folder.{folder_name}.id\n')
+            f.write(f'output "{folder_name}_folder_id" {{\n  value = google_folder.{folder_name}.id\n}}\n\n')
+
+    # 5. VPC-SCのtfファイル生成 (2_organization/auto_vpc_sc.tf)
+    vpc_sc_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_vpc_sc.tf')
+    with open(vpc_sc_tf_path, 'w') as f:
+        f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+        
+        # Access Levels
+        for al in access_levels:
+            name = al.get('access_level_name')
+            if not name: continue
+            f.write(f'resource "google_access_context_manager_access_level" "{name}" {{\n')
+            f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
+            f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{name}"\n')
+            f.write(f'  title  = "{name}"\n')
+            f.write(f'  basic {{\n    conditions {{\n')
+            if al.get('ip_subnetworks'):
+                ips = [ip.strip() for ip in str(al['ip_subnetworks']).split(',') if ip.strip()]
+                f.write(f'      ip_subnetworks = {json.dumps(ips)}\n')
+            if al.get('members'):
+                members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
+                f.write(f'      members = {json.dumps(members)}\n')
+            f.write(f'    }}\n  }}\n}}\n\n')
+
+        # Perimeters
+        for p in perimeters:
+            name = p.get('perimeter_name')
+            if not name: continue
+            services = [s.strip() for s in str(p.get('restricted_services', '')).split(',') if s.strip()]
+            f.write(f'resource "google_access_context_manager_service_perimeter" "{name}" {{\n')
+            f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
+            f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{name}"\n')
+            f.write(f'  title  = "{name}"\n')
+            f.write(f'  status {{\n')
+            f.write(f'    restricted_services = {json.dumps(services)}\n')
+            f.write(f'  }}\n')
+            f.write(f'  lifecycle {{\n    ignore_changes = [status[0].resources]\n  }}\n}}\n\n')
+
+    # 6. Shared VPC Subnetsのtfファイル生成 (1_core/base/vpc-host/auto_subnets.tf)
+    subnets_tf_path = os.path.join(os.path.dirname(__file__), '../1_core/base/vpc-host/auto_subnets.tf')
+    with open(subnets_tf_path, 'w') as f:
+        f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+        for sn in subnets:
+            env = str(sn.get('host_project_env', '')).strip().lower()
+            name = sn.get('subnet_name')
+            if not name or env not in ['prod', 'dev']: continue
+            module_name = f"vpc_host_{env}"
+            f.write(f'resource "google_compute_subnetwork" "{name}" {{\n')
+            f.write(f'  name          = "{name}"\n')
+            f.write(f'  ip_cidr_range = "{sn.get("ip_cidr_range")}"\n')
+            f.write(f'  region        = "{sn.get("region")}"\n')
+            f.write(f'  network       = google_compute_network.vpc_{env}[0].id\n')
+            f.write(f'  project       = module.{module_name}[0].project_id\n')
+            f.write(f'  private_ip_google_access = true\n')
             f.write(f'}}\n\n')
 
-    print(f"✅ Generated auto_folders.tf in 3_folders")
-
-    # 5. プロジェクトのtfvars生成 (4_projects/*)
+    # 7. プロジェクトのtfvars生成 (4_projects/*)
     example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
     
     for proj in projects:
