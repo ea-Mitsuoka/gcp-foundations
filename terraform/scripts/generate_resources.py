@@ -9,12 +9,25 @@ import shutil
 import glob
 import openpyxl
 import json
+import sys
 from openpyxl import Workbook
+from openpyxl.worksheet.datavalidation import DataValidation
 
 def sanitize_id(name):
     """TerraformのリソースIDとして使用可能な文字列に変換する"""
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
+
+def add_validation(ws, col_letter, formula, title, prompt):
+    """Excelシートにデータ入力規則（プルダウン）を追加する"""
+    dv = DataValidation(type="list", formula1=formula, allow_blank=True)
+    dv.errorTitle = "入力エラー"
+    dv.error = f"{title}の選択肢から選んでください。"
+    dv.promptTitle = title
+    dv.prompt = prompt
+    ws.add_data_validation(dv)
+    # 2行目から100行目まで適用
+    dv.add(f"{col_letter}2:{col_letter}100")
 
 def generate_resources():
     # 1. domainの取得
@@ -30,16 +43,23 @@ def generate_resources():
     # 2. xlsxファイルの読み込み/作成
     xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp_foundations.xlsx')
     if not os.path.exists(xlsx_path):
-        print(f"{xlsx_path} not found. Creating a template...")
+        print(f"{xlsx_path} not found. Creating a template with data validation...")
         wb = Workbook()
         
         # 1. resources
         ws = wb.active
         ws.title = "resources"
-        ws.append(["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"])
+        headers = ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"]
+        ws.append(headers)
         ws.append(["folder", "organization_id", "shared", "", "", False, False, False, ""])
         ws.append(["folder", "shared", "production", "", "", False, False, False, ""])
         ws.append(["project", "production", "prd-app-01", "prd-subnet-01", "default_perimeter", True, True, True, "compute.googleapis.com,container.googleapis.com"])
+
+        # 入力規則の追加
+        add_validation(ws, "A", '"folder,project"', "リソースタイプ", "リソースの種別を選択")
+        add_validation(ws, "F", '"True,False"', "モニタリング", "有効にする場合はTrue")
+        add_validation(ws, "G", '"True,False"', "ロギング", "有効にする場合はTrue")
+        add_validation(ws, "H", '"True,False"', "課金リンク", "有効にする場合はTrue")
 
         # 2. vpc_sc_perimeters
         ws2 = wb.create_sheet("vpc_sc_perimeters")
@@ -56,12 +76,14 @@ def generate_resources():
         ws4.append(["host_project_env", "subnet_name", "region", "ip_cidr_range"])
         ws4.append(["prod", "prd-subnet-01", "asia-northeast1", "10.0.1.0/24"])
         ws4.append(["dev", "dev-subnet-01", "asia-northeast1", "10.1.1.0/24"])
+        add_validation(ws4, "A", '"prod,dev"', "環境", "本番(prod)か開発(dev)かを選択")
 
         # 5. org_policies
         ws5 = wb.create_sheet("org_policies")
         ws5.append(["target_name", "policy_id", "enforce", "allow_list"])
         ws5.append(["organization_id", "compute.disableExternalIPProxy", True, ""])
         ws5.append(["production", "gcp.resourceLocations", True, "asia-northeast1"])
+        add_validation(ws5, "C", '"True,False"', "強制", "ポリシーを強制するか")
 
         wb.save(xlsx_path)
         print("Template created! Proceeding with initial generation...")
@@ -89,15 +111,53 @@ def generate_resources():
         wb.save(xlsx_path)
         print(f"✅ Spreadsheet {xlsx_path} updated with missing sheets.")
 
-    # --- データのパース ---
+    # --- データのパースとバリデーション ---
+    errors = []
     
+    def validate_row(row_dict, required_keys, sheet_name, row_idx):
+        for key in required_keys:
+            if not row_dict.get(key):
+                errors.append(f"[{sheet_name}] {row_idx}行目: 必須項目 '{key}' が空です。")
+
     # 1. フォルダとプロジェクト (resources)
     folders = {}
     projects = []
     if 'resources' in wb.sheetnames:
         ws = wb['resources']
         headers = [cell.value for cell in ws[1]]
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not any(row): continue
+            row_dict = dict(zip(headers, row))
+            validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name'], 'resources', idx)
+            
+            res_type = str(row_dict.get('resource_type', '')).strip().lower()
+            if res_type not in ['folder', 'project']:
+                errors.append(f"[resources] {idx}行目: 不正な resource_type '{res_type}' です。'folder' または 'project' を指定してください。")
+            
+            if res_type == 'folder':
+                folders[row_dict.get('resource_name')] = row_dict.get('parent_name')
+            elif res_type == 'project':
+                projects.append(row_dict)
+
+    # 親子関係のバリデーション（親が存在するか）
+    for name, parent in folders.items():
+        if parent != 'organization_id' and parent not in folders:
+            errors.append(f"[resources] フォルダ '{name}' の親 '{parent}' が見つかりません。")
+    
+    for proj in projects:
+        parent = proj.get('parent_name')
+        if parent != 'organization_id' and parent not in folders:
+            errors.append(f"[resources] プロジェクト '{proj.get('resource_name')}' の親 '{parent}' が見つかりません。")
+
+    # エラーがあれば停止
+    if errors:
+        print("\n❌ Excelのバリデーションエラーが見つかりました:")
+        for err in errors:
+            print(f"  - {err}")
+        print("\n修正して再度実行してください。")
+        sys.exit(1)
+
+    # --- TFファイル生成 ---
             if not any(row): continue
             row_dict = dict(zip(headers, row))
             res_type = str(row_dict.get('resource_type', '')).strip().lower()
