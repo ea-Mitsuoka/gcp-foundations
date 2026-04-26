@@ -34,8 +34,36 @@ flowchart LR
     TF -.-> Layers
 ```
 
+### リソース階層図 (Resource Hierarchy)
+
 ```mermaid
-... (既存の図) ...
+graph TD
+    ORG[GCP Organization]
+    
+    subgraph L1_Core [Layer 1: Core Services]
+        CP[Common Projects<br/>logsink, monitoring, vpc-host]
+    end
+    
+    subgraph L3_Folders [Layer 3: Folders]
+        F_SH[Shared Folder]
+        F_PRD[Production Folder]
+        F_STG[Staging Folder]
+        F_DEV[Development Folder]
+    end
+    
+    subgraph L4_Projects [Layer 4: Projects]
+        P_APP[Application Projects]
+    end
+
+    ORG --> F_SH
+    ORG --> F_PRD
+    ORG --> F_STG
+    ORG --> F_DEV
+    
+    F_SH --> CP
+    F_PRD --> P_APP
+    F_STG --> P_APP
+    F_DEV --> P_APP
 ```
 
 ### レイヤー構造 (Deployment Layers)
