@@ -21,7 +21,7 @@
 
 ### ステップ 2: 自動生成エンジンの解析（最重要）
 - **`terraform/scripts/generate_resources.py`**: Excel をどうパースし、整合性を検証し、各レイヤーの `.tf` や `tfvars` に変換しているか。その「変換ロジック」を完全に理解せよ。
-- **`docs/reference/spreadsheet_format.md`**: 各カラムの定義と制約の確認。
+- **`docs/setup/spreadsheet_format.md`**: 各カラムの定義と制約の確認。
 
 ### ステップ 3: 現場の知恵と IAM 戦略
 - **`docs/setup/google_groups_creation.md`**: Google Workspace の権限問題を回避するために「Cloud セットアップ」をグループ作成機として使う戦略的意図。
