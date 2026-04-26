@@ -1,6 +1,6 @@
 # GCP Foundations Makefile
 
-.PHONY: help install generate lint opa test deploy clean
+.PHONY: help install generate lint opa test deploy delivery clean
 
 help:
 	@echo "Available commands:"
@@ -10,6 +10,7 @@ help:
 	@echo "  make opa       - Run OPA policy checks"
 	@echo "  make test      - Run terraform tests in modules directory"
 	@echo "  make deploy    - Run the global deployment script"
+	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
 	@echo "  make clean     - Remove local terraform state and cache files"
 
 install:
@@ -34,6 +35,9 @@ test:
 
 deploy:
 	bash terraform/scripts/deploy_all.sh
+
+delivery:
+	bash terraform/scripts/handover.sh
 
 clean:
 	find terraform -type d -name ".terraform" -exec rm -rf {} +
