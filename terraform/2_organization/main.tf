@@ -107,6 +107,11 @@ locals {
       "roles/resourcemanager.folderIamAdmin", # フォルダ IAM 管理者
       "roles/securitycenter.admin",           # セキュリティ センター管理者
     ]
+    "gcp-developers" = [
+      "roles/browser",                            # ブラウザ
+      "roles/viewer",                             # 閲覧者
+      "roles/resourcemanager.organizationViewer", # 組織閲覧者
+    ]
     "gcp-devops" = [
       "roles/resourcemanager.folderViewer", # フォルダ閲覧者
     ]

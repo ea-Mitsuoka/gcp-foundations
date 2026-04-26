@@ -39,10 +39,15 @@ ______________________________________________________________________
 
 - [ ] **特権管理者**: 顧客の作業者が Cloud Identity / Google Workspace の特権管理者（またはグループ作成権限を持つ管理者）であること。
 - [ ] **Google Groups**: 以下の管理用グループが作成済みであること。
-  - `gcp-organization-admins@<domain>`
-  - `gcp-security-admins@<domain>`
-  - `gcp-network-admins@<domain>`
-  - `gcp-billing-admins@<domain>`
+  - `gcp-organization-admins@<domain>`: 組織管理者（組織に属するすべてのリソースを管理）
+  - `gcp-billing-admins@<domain>`: 請求管理者（請求先アカウント設定と使用状況の監視）
+  - `gcp-vpc-network-admins@<domain>`: ネットワーク管理者（VPC ネットワーク、サブネット、FW）
+  - `gcp-hybrid-connectivity-admins@<domain>`: ハイブリッド接続管理者（Cloud VPN、Cloud Router 等）
+  - `gcp-logging-monitoring-admins@<domain>`: ロギング / モニタリング管理者（Cloud Logging/Monitoring 全機能）
+  - `gcp-logging-monitoring-viewers@<domain>`: ロギング / モニタリング閲覧者（ログ・データの読み取り専用権限）
+  - `gcp-security-admins@<domain>`: セキュリティ管理者（組織全体のセキュリティ ポリシー管理）
+  - `gcp-developers@<domain>`: 開発者（アプリケーションの設計、コーディング、テスト担当）
+  - `gcp-devops@<domain>`: DevOps 従事者（CI/CD パイプライン、システム プロビジョニング管理）
 - [ ] **権限付与**: 構築者（または作業用 SA）に対して、一時的に組織レベルの「組織管理者」および「請求先アカウント管理者」権限が付与されていること。
 
 ### 2.3 環境・認証

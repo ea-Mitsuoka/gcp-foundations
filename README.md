@@ -148,6 +148,7 @@ ______________________________________________________________________
   - `gcp-logging-monitoring-admins@<顧客ドメイン>`
   - `gcp-logging-monitoring-viewers@<顧客ドメイン>`
   - `gcp-security-admins@<顧客ドメイン>`
+  - `gcp-developers@<顧客ドメイン>`
   - `gcp-devops@<顧客ドメイン>`
 
 - 顧客のGCP組織に対する**組織管理者**などの強い権限を持つアカウントで、`gcloud`にログイン済みであること。
