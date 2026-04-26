@@ -32,29 +32,3 @@ variable "enable_simplified_admin_groups" {
   default     = false
 }
 
-# --- common.tfvars variables ---
-
-variable "gcs_backend_bucket" {
-  type        = string
-  description = "Terraformの状態ファイルを保存するGCSバケット名。"
-}
-
-variable "project_id_prefix" {
-  type        = string
-  description = "プロジェクトIDの接頭辞。"
-}
-
-variable "core_billing_linked" {
-  type        = bool
-  description = "コアプロジェクトの課金アカウントが紐づいているか。"
-}
-
-variable "enable_vpc_host_projects" {
-  type        = bool
-  description = "共有VPCホストプロジェクトを有効にするか。"
-}
-
-variable "enable_shared_vpc" {
-  type        = bool
-  description = "共有VPC機能を有効にするか。"
-}
