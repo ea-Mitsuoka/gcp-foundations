@@ -5,77 +5,61 @@
 
 ## 1. 初期セットアップ変数 (Interactive Input)
 
-基盤構築の「初日」に `setup_new_client.sh` を通じて対話形式で入力する最上位のパラメータです。ここで入力された値は `domain.env` および各種 `.tfvars` に記録され、永続化されます。
+基盤構築の「初日」に `make setup`（内部的に `setup_new_client.sh`）を通じて対話形式で入力する最上位のパラメータです。
 
 | 物理名 (変数名) | 論理名 | 必須 | 型 | 設定例 | 備考 |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| `CUSTOMER_DOMAIN` | 顧客プライマリドメイン | 必須 | String | `adradarstore.online` | 管理対象となるGCP組織のドメイン。プロジェクト命名規則の起点となります。 |
-| `GCP_REGION` | デフォルトGCPリージョン | 必須 | String | `asia-northeast1` | GCSバケット、Cloud Functions、BigQueryなどを配置する基準リージョンです。 |
+| `CUSTOMER_DOMAIN` | 顧客プライマリドメイン | 必須 | String | `example.com` | 管理対象となるGCP組織のドメイン。 |
+| `GCP_REGION` | デフォルトGCPリージョン | 必須 | String | `asia-northeast1` | インフラ全体の基準リージョン。 |
+| `ENABLE_VPC` | Shared VPC 有効化 | 任意 | Boolean | `true` | 共通 VPC ネットワーク基盤を構築するか。 |
+| `ENABLE_VPC_SC` | VPC-SC 有効化 | 任意 | Boolean | `false` | セキュリティ境界（Perimeter）を有効にするか。 |
+| `ENABLE_ORG_POLICIES`| 組織ポリシー 有効化 | 任意 | Boolean | `false` | 組織全体のガードレールを有効にするか。 |
 
 ______________________________________________________________________
 
 ## 2. プロジェクト構成データ (SSOT)
 
-顧客や運用担当者が日常的な運用（Day 2オペレーション）でプロジェクトを払い出すために更新する、メインの管理ファイルです。
+メインの管理ファイルである `gcp_foundations.xlsx` で定義するパラメータです。
 
-### ファイル: `gcp_foundations.xlsx`
+### シート: `resources` (プロジェクト/フォルダ一覧)
 
-| 物理名 (カラム名) | 論理名 | 必須 | 型 | 設定例 | 備考 |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `app_name` | アプリケーション名 | 必須 | String | `web-frontend` | 作成されるTerraformのディレクトリ名、およびプロジェクトIDの一部になります。 |
-| `env` | 環境名 | 必須 | String | `dev` | `dev`, `stag`, `prod` など。プロジェクトIDの一部になります。 |
-| `folder_id` | 親フォルダID | 任意 | String | `123456789012` | プロジェクトの配置先。空欄の場合は組織の直下に作成されます。 |
-| `billing_linked` | 課金リンク状態フラグ | 必須 | Boolean | `FALSE` | 手動で課金アカウントをリンクしたかを示すトグル。`TRUE` でAPI有効化処理が走ります。 |
-| `project_apis` | 有効化APIリスト | 任意 | String | `compute.googleapis.com,...` | プロジェクトで有効化したいGCP APIのリスト（複数ある場合はカンマ区切り）。 |
+| 物理名 (カラム名) | 論理名 | 型 | 設定例 | 備考 |
+| :--- | :--- | :--- | :--- | :--- |
+| `resource_type` | リソース種別 | String | `project` | `folder` または `project` を指定。 |
+| `parent_name` | 親リソース名 | String | `shared` | 親フォルダ名、または組織直下なら `organization_id`。 |
+| `resource_name` | リソース名 | String | `prd-app-01` | フォルダ表示名、またはアプリ名。 |
+| `shared_vpc` | 使用サブネット名 | String | `prd-subnet-01` | `shared_vpc_subnets` シートで定義した名前。 |
+| `vpc_sc` | 所属境界名 | String | `default_perimeter` | `vpc_sc_perimeters` シートで定義した名前。 |
+| `monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
+| `logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
+| `billing_linked` | 課金リンク完了フラグ | Boolean | `FALSE` | **TRUE** に変更すると API 有効化が実行されます。 |
+| `project_apis` | 有効化 API リスト | String | `compute.googleapis.com` | カンマ区切りの API リスト。 |
+
+### その他の詳細設定シート
+- **`shared_vpc_subnets`**: サブネット名、IP範囲、リージョンの定義。
+- **`vpc_sc_perimeters`**: サービス境界名、保護対象サービスの定義。
+- **`vpc_sc_access_levels`**: ホワイトリスト（IP/SA）の定義。
+- **`org_policies`**: 適用先、ポリシーID、強制/許可リストの定義。
 
 ______________________________________________________________________
 
-## 3. ログ・監視定義データ (CSV)
-
-組織全体のログ集約ルール、および監視・アラートのルールを定義するファイル群です。これらを更新してスクリプトを回すことで、組織全体のガバナンス状態をアップデートできます。
-
-### 3-1. 組織ログシンク構成 (`1_core/services/logsink/sinks/gcp_log_sink_config.csv`)
-
-| 物理名 (カラム名) | 論理名 | 必須 | 型 | 設定例 | 備考 |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `log_type` | ログ種別 | 必須 | String | `管理アクティビティ監査ログ` | 運用者が判別しやすい日本語のログ種別名。 |
-| `filter` | ログ抽出フィルタ | 必須 | String | `protoPayload.methodName="..."` | Cloud Logging の高度なフィルタリングクエリ。 |
-| `destination_type` | 宛先リソース種別 | 必須 | String | `BigQuery` | `BigQuery` または `Cloud Storage` のいずれかを指定。 |
-| `destination_parent` | 宛先リソース名 | 必須 | String | `admin_activity_audit_logs` | 保存先バケット名やデータセット名のベースとなる識別子。 |
-| `retention_days` | ログ保持期間（日） | 必須 | Integer| `400` | この日数に基づき、GCSのライフサイクルやBQテーブル有効期限が自動設定されます。 |
-
-### 3-2. アラートポリシー定義 (`1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv`)
-
-| 物理名 (カラム名) | 論理名 | 必須 | 型 | 設定例 | 備考 |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `alert_name` | アラートID | 必須 | String | `critical_error_alert` | システム内部での一意な識別子（英数字・スネークケース推奨）。 |
-| `alert_display_name` | アラート表示名 | 必須 | String | `システム重大エラー検知` | Cloud Monitoring のコンソール画面に表示される名前。 |
-| `metric_filter` | アラート発報フィルタ | 必須 | String | `severity >= ERROR` | アラートのトリガーとなるログのフィルタ条件。 |
-| `alert_documentation`| アラート対応手順 | 任意 | String | `エラーログを確認して...` | 通知の本文に含まれるテキスト（Markdown対応）。運用者の初動手順を記載します。 |
-
-### 3-3. 通知チャネル構成 (`.../logsink_log_alerts/notifications.csv`)
-
-| 物理名 (カラム名) | 論理名 | 必須 | 型 | 設定例 | 備考 |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| `user_email` | 通知先メールアドレス | 必須 | String | `admin@example.com` | アラートの送信先となるメールアドレス。 |
-| `receive_alerts` | 通知有効化フラグ | 必須 | Boolean| `TRUE` | このメールアドレスへの通知を有効にするかのトグルスイッチ（TRUE/FALSE）。 |
-| `project_id` | 監視対象プロジェクトID | 必須 | String | `example-logsink` | アラートを検知する対象のプロジェクトID。 |
-| `alert_name` | 受信アラートID | 必須 | String | `critical_error_alert` | 受け取りたいアラートのID（`alert_definitions.csv` の `alert_name` と完全一致させる）。 |
+## 3. ログ・アラート定義データ (CSV)
+（※ 詳細な仕様や記入方法については、**[スプレッドシートの仕様書](../reference/spreadsheet_format.md)** を参照してください）
 
 ______________________________________________________________________
 
 ## 4. システム自動連携変数 (System-Managed)
 
-自動化スクリプトによって生成され、Terraformの実行コンテキストに注入される変数群です。**人間が手動で編集・管理する必要はありませんが、アーキテクチャの内部結合を担う重要なパラメータです。**
+自動化スクリプト（`make setup` / `make generate`）によって生成され、`common.tfvars` に出力される共通変数です。
 
-### ファイル: `common.tfvars` / 各ディレクトリの `terraform.tfvars`
-
-| 物理名 (変数名) | 論理名 | 生成元 | 型 | 設定例/備考 |
-| :--- | :--- | :--- | :--- | :--- |
-| `terraform_service_account_email`| TF実行用SAアドレス | `setup_new_client.sh` | String | Terraformが権限を借用（Impersonation）するSA。 |
-| `gcs_backend_bucket` | tfstate保存バケット | `setup_new_client.sh` | String | Terraformの `.tfstate` を一元管理するGCSバケット名。 |
-| `organization_domain`| 組織ドメイン名 | `setup_new_client.sh` | String | 組織のリソース検索などに使用されるドメイン情報。 |
-| `gcp_region` | デフォルトGCPリージョン | `setup_new_client.sh` | String | インフラ全体の基準となるGCPリージョン。 |
-| `project_id_prefix` | プロジェクト接頭辞 | `setup_new_client.sh` | String | GCPのプロジェクトID 30文字制限を回避するため、ドメイン名から自動算出された安全な接頭辞。 |
-| `core_billing_linked`| コア課金リンク状態フラグ| `setup_new_client.sh` | Boolean| `logsink` と `monitoring` の課金がリンクされたかを示すトグル（唯一、初期構築時に人間が一度だけ `true` に書き換える）。 |
-| `project_id` | 管理用プロジェクトID | `setup_new_client.sh` | String | `0_bootstrap` 配下の `terraform.tfvars` にのみ出力される、TF管理用プロジェクトのID。 |
+| 物理名 (変数名) | 論理名 | 型 | 説明 |
+| :--- | :--- | :--- | :--- |
+| `terraform_service_account_email`| TF実行用SA | String | 管理用サービスアカウントのメールアドレス。 |
+| `gcs_backend_bucket` | tfstateバケット | String | 状態ファイルを保存する GCS バケット。 |
+| `organization_domain`| 組織ドメイン | String | 顧客のプライマリドメイン名。 |
+| `gcp_region` | 基準リージョン | String | インフラ全体のデフォルトリージョン。 |
+| `project_id_prefix` | プロジェクト接頭辞 | String | ドメインから算出された安全な接頭辞。 |
+| `core_billing_linked`| コア課金完了フラグ | Boolean | 共通基盤プロジェクトの課金準備が整ったか。 |
+| `enable_shared_vpc` | Shared VPC グローバル | Boolean | 全体で Shared VPC 機能を使うか。 |
+| `enable_vpc_sc` | VPC-SC グローバル | Boolean | 全体で VPC-SC 機能を使うか。 |
+| `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |
