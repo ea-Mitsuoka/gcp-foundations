@@ -30,3 +30,9 @@ variable "auto_create_network" {
   description = "If true, the default network will be created. Defaults to false."
   default     = false
 }
+
+variable "deletion_protection" {
+  type        = bool
+  description = "Whether or not to allow Terraform to destroy the project. Default is true."
+  default     = true
+}
