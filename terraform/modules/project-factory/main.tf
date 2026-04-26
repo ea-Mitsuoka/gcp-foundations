@@ -8,7 +8,7 @@ resource "google_project" "this" {
   # billing_account = var.billing_account
   labels              = { for k, v in var.labels : k => v if v != "" && v != null }
   auto_create_network = var.auto_create_network
-  deletion_protection = var.deletion_protection
+  deletion_policy     = var.deletion_protection ? "PREVENT" : "DELETE"
 
   # 差分を無視するための設定を追加
   lifecycle {

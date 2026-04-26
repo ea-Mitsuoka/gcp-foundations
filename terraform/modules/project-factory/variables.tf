@@ -33,6 +33,6 @@ variable "auto_create_network" {
 
 variable "deletion_protection" {
   type        = bool
-  description = "Whether or not to allow Terraform to destroy the project. Default is true."
+  description = "Whether or not to protect the project from deletion. Internally mapped to google_project's deletion_policy (PREVENT/DELETE). Default is true."
   default     = true
 }
