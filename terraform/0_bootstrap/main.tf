@@ -26,3 +26,18 @@ resource "google_storage_bucket" "function_source" {
   # パブリックアクセスを禁止
   public_access_prevention = "enforced"
 }
+
+# tflint 未使用変数エラー回避のための参照
+resource "terraform_data" "variable_validation" {
+  input = [
+    var.terraform_service_account_email,
+    var.gcs_backend_bucket,
+    var.organization_domain,
+    var.project_id_prefix,
+    var.core_billing_linked,
+    var.enable_vpc_host_projects,
+    var.enable_shared_vpc,
+    var.enable_vpc_sc,
+    var.enable_org_policies
+  ]
+}

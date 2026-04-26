@@ -20,19 +20,3 @@ variable "enable_shared_vpc" { type = bool }
 variable "enable_vpc_sc" { type = bool }
 variable "enable_org_policies" { type = bool }
 
-locals {
-  # tflint-ignore: terraform_unused_declarations
-  # tflint 対策
-  _common_vars = [
-    var.terraform_service_account_email,
-    var.gcs_backend_bucket,
-    var.organization_domain,
-    var.project_id_prefix,
-    var.core_billing_linked,
-    var.enable_vpc_host_projects,
-    var.enable_shared_vpc,
-    var.enable_vpc_sc,
-    var.enable_org_policies
-  ]
-}
-
