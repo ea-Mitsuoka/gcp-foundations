@@ -13,6 +13,8 @@ import sys
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 
+import csv
+
 def sanitize_id(name):
     """TerraformのリソースIDとして使用可能な文字列に変換する"""
     if not name: return "unknown"
@@ -85,6 +87,16 @@ def generate_resources():
         ws5.append(["production", "gcp.resourceLocations", True, "asia-northeast1"])
         add_validation(ws5, "C", '"True,False"', "強制", "ポリシーを強制するか")
 
+        # 6. notifications
+        ws6 = wb.create_sheet("notifications")
+        ws6.append(["alert_name", "user_email", "receive_alerts", "project_id"])
+        ws6.append(["error_log_alert", "admin@example.com", True, "logsink-project-id"])
+
+        # 7. alert_definitions
+        ws7 = wb.create_sheet("alert_definitions")
+        ws7.append(["alert_name", "alert_display_name", "metric_filter", "alert_documentation"])
+        ws7.append(["error_log_alert", "Error Log Alert", 'severity="ERROR"', "Documentation for error log alert"])
+
         wb.save(xlsx_path)
         print("Template created! Proceeding with initial generation...")
 
@@ -96,7 +108,9 @@ def generate_resources():
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
-        "org_policies": ["target_name", "policy_id", "enforce", "allow_list"]
+        "org_policies": ["target_name", "policy_id", "enforce", "allow_list"],
+        "notifications": ["alert_name", "user_email", "receive_alerts", "project_id"],
+        "alert_definitions": ["alert_name", "alert_display_name", "metric_filter", "alert_documentation"]
     }
 
     updated = False
@@ -171,15 +185,7 @@ def generate_resources():
         print("\n修正して再度実行してください。")
         sys.exit(1)
 
-    # --- TFファイル生成 ---
-            if not any(row): continue
-            row_dict = dict(zip(headers, row))
-            res_type = str(row_dict.get('resource_type', '')).strip().lower()
-            if res_type == 'folder':
-                folders[row_dict.get('resource_name')] = row_dict.get('parent_name')
-            elif res_type == 'project':
-                projects.append(row_dict)
-
+    # --- データの読み込み ---
     # 2. VPC-SC Perimeters
     perimeters = []
     if 'vpc_sc_perimeters' in wb.sheetnames:
@@ -450,6 +456,35 @@ project_apis        = {apis_formatted}
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)
             
+    # 9. Monitoring CSV generation
+    def export_to_csv(sheet_name, target_paths):
+        if sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            headers = [cell.value for cell in ws[1]]
+            rows = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not any(row): continue
+                rows.append(dict(zip(headers, row)))
+            
+            if headers:
+                for path in target_paths:
+                    full_path = os.path.join(os.path.dirname(__file__), path)
+                    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                    with open(full_path, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.DictWriter(f, fieldnames=headers)
+                        writer.writeheader()
+                        if rows:
+                            writer.writerows(rows)
+                    print(f"✅ Generated {full_path}")
+
+    export_to_csv("notifications", [
+        '../1_core/services/monitoring/1_notification_channels/notifications.csv',
+        '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv'
+    ])
+    export_to_csv("alert_definitions", [
+        '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'
+    ])
+
     print(f"✅ Generated tfvars and auto_org_policies.tf for all layers")
 
 if __name__ == "__main__":

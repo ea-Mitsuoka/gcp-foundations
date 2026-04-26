@@ -10,7 +10,7 @@ ______________________________________________________________________
 
 ## シート定義
 
-以下の5つのシートを使用して構成を定義します。
+以下の7つのシートを使用して構成を定義します。
 
 ### 1. `resources` シート
 
@@ -69,6 +69,28 @@ VPC Service Controls のサービス境界を定義します。
 | **policy_id** | ポリシーの名前（ID） | `compute.disableExternalIPProxy` |
 | **enforce** | 強制するかどうか（ブール値。TRUEで制限有効） | `TRUE`, `FALSE` |
 | **allow_list** | 許可リスト（カンマ区切り。ロケーション制限等で使用） | `asia-northeast1`, `us-central1` |
+
+### 6. `notifications` シート
+
+モニタリングアラートの通知先（メールアドレス等）を定義します。
+
+| 列名 | 説明 | 例 |
+| :--- | :--- | :--- |
+| **alert_name** | アラートの識別名（`alert_definitions`シートと紐付け） | `error_log_alert` |
+| **user_email** | 通知先のメールアドレス | `admin@example.com` |
+| **receive_alerts** | 通知を受け取るか（ブール値。TRUEで有効） | `TRUE`, `FALSE` |
+| **project_id** | 通知対象のログが存在するプロジェクトID | `logsink-project-id` |
+
+### 7. `alert_definitions` シート
+
+ログベースのアラート（Error検知等）の条件を定義します。
+
+| 列名 | 説明 | 例 |
+| :--- | :--- | :--- |
+| **alert_name** | アラートの一意な名前（`notifications`シートで参照） | `error_log_alert` |
+| **alert_display_name** | コンソールに表示されるアラート名 | `Error Log Alert` |
+| **metric_filter** | ログをフィルタリングするクエリ | `severity="ERROR"` |
+| **alert_documentation** | アラート通知に含まれるドキュメント/説明 | `Documentation for error log alert` |
 
 ______________________________________________________________________
 
