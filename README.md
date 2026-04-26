@@ -43,8 +43,10 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
+1. **[ネットワークとセキュリティの詳細設定](docs/operations/network_and_security_config.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
+1. **[後任者・リカバリガイド](docs/operations/recovery_and_succession.md)**: 設定ファイルの復元と安全な引き継ぎ
 1. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
@@ -63,11 +65,13 @@ make lint
 
 ```bash
 make help       # 利用可能な全コマンドの表示
+make setup      # 初期構築（管理用プロジェクト・tfstateバケットの作成）
 make generate   # Excel(SSOT)からTerraform変数や構成を自動生成
 make lint       # Terraform, ShellscriptのLint・フォーマット実行
 make opa        # Regoポリシーの構文チェック
 make test       # モジュールの単体テスト実行
 make deploy     # 基盤全体の一括デプロイ実行
+make delivery   # 納品用リポジトリの作成 (Git履歴リセット)
 ```
 
 ## 📖 設計思想
