@@ -140,7 +140,7 @@ ______________________________________________________________________
 
 - `gcloud` CLI, `terraform` CLI, `git`, `openssl`, `uv` がローカル環境にインストールされていること。
 
-- **Google Groups の事前作成 (必須):**
+- **Google Groups の事前作成 (必須):** ([Googleグループ作成ガイド](docs/setup/google_groups_creation.md) 参照)
   Google Workspace (または Cloud Identity) 上で、後述の組織IAMに必要な以下のグループ（メーリングリスト）を事前に作成しておいてください。
 
   - `gcp-organization-admins@<顧客ドメイン>`
