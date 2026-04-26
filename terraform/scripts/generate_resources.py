@@ -119,7 +119,8 @@ def generate_resources():
             if not row_dict.get(key):
                 errors.append(f"[{sheet_name}] {row_idx}行目: 必須項目 '{key}' が空です。")
 
-    # 1. フォルダとプロジェクト (resources)
+    # 1. フォルダとプロジェクト (resources) の読み込み
+    all_resource_names = set() # 重複チェック用
     folders = {}
     projects = []
     if 'resources' in wb.sheetnames:
@@ -130,24 +131,37 @@ def generate_resources():
             row_dict = dict(zip(headers, row))
             validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name'], 'resources', idx)
             
+            res_name = str(row_dict.get('resource_name', '')).strip()
             res_type = str(row_dict.get('resource_type', '')).strip().lower()
+
+            if res_name in all_resource_names:
+                errors.append(f"[resources] {idx}行目: リソース名 '{res_name}' が重複しています。")
+            all_resource_names.add(res_name)
+
             if res_type not in ['folder', 'project']:
                 errors.append(f"[resources] {idx}行目: 不正な resource_type '{res_type}' です。'folder' または 'project' を指定してください。")
             
             if res_type == 'folder':
-                folders[row_dict.get('resource_name')] = row_dict.get('parent_name')
+                folders[res_name] = str(row_dict.get('parent_name', '')).strip()
             elif res_type == 'project':
                 projects.append(row_dict)
 
-    # 親子関係のバリデーション（親が存在するか）
+    # 2. 親子関係の一括バリデーション（全データの読み込み完了後に実施）
+    # 全ての有効な親候補（組織、または定義済みのフォルダ）のリストを作成
+    valid_parents = set(folders.keys())
+    valid_parents.add('organization_id')
+
     for name, parent in folders.items():
-        if parent != 'organization_id' and parent not in folders:
+        if parent not in valid_parents:
             errors.append(f"[resources] フォルダ '{name}' の親 '{parent}' が見つかりません。")
+        if name == parent:
+            errors.append(f"[resources] フォルダ '{name}' が自分自身を親に指定しています。")
     
     for proj in projects:
-        parent = proj.get('parent_name')
-        if parent != 'organization_id' and parent not in folders:
-            errors.append(f"[resources] プロジェクト '{proj.get('resource_name')}' の親 '{parent}' が見つかりません。")
+        p_name = proj.get('resource_name')
+        parent = str(proj.get('parent_name', '')).strip()
+        if parent not in valid_parents:
+            errors.append(f"[resources] プロジェクト '{p_name}' の親 '{parent}' が見つかりません。")
 
     # エラーがあれば停止
     if errors:
