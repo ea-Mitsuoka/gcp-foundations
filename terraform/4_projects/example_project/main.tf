@@ -65,9 +65,19 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
 }
 
 resource "google_access_context_manager_service_perimeter_resource" "service_perimeter_resource" {
-  count          = var.vpc_sc && try(data.terraform_remote_state.organization[0].outputs.service_perimeter_name, null) != null ? 1 : 0
-  perimeter_name = data.terraform_remote_state.organization[0].outputs.service_perimeter_name
+  count          = local.perimeter_id != null ? 1 : 0
+  perimeter_name = local.perimeter_id
   resource       = "projects/${module.project.project_number}"
 
   depends_on = [module.project]
+}
+
+# サブネットの利用権限付与 (Shared VPC)
+resource "google_compute_subnetwork_iam_member" "subnet_user" {
+  count      = var.billing_linked && local.subnet_id != null ? 1 : 0
+  project    = local.host_project_id
+  region     = element(split("/", local.subnet_id), 3) # IDからリージョンを抽出
+  subnetwork = local.subnet_id
+  role       = "roles/compute.networkUser"
+  member     = "serviceAccount:${module.project.project_number}@cloudservices.gserviceaccount.com"
 }
