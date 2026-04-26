@@ -11,21 +11,31 @@
 
 ## 🚀 5分でわかるクイックスタート
 
-まずはローカル環境で自動生成と品質チェックを試してみましょう。
+まずはローカル環境で自動生成と品質チェックの流れを体験してみましょう。
 
 ```bash
 # 1. リポジトリのクローン
 git clone https://github.com/ea-Mitsuoka/gcp-foundations.git
 cd gcp-foundations
 
-# 2. テンプレートExcelの生成 (uvがインストールされている前提)
+# 2. 必要なツールのインストール (uv環境の同期)
+make install
+
+# 3. Excel設計図からTerraform構成を出力 (初回はテンプレート作成)
 make generate
 
-# 3. 生成されたコードの品質チェック (Linterの実行)
+# 4. 生成されたコードの品質チェック
 make lint
 ```
 
-※ 実際のデプロイにはGCP権限と初期セットアップが必要です。詳細は [セットアップガイド](docs/setup/initial_setup.md) を参照してください。
+### 🛠️ 実際の構築を始める場合
+実際のGCP環境へのデプロイは、以下の3ステップで行います。
+
+1. **`make setup`**: GCP組織に管理プロジェクトやtfstate保存用バケットを作成。
+2. **Excelの編集**: `gcp_foundations.xlsx` にフォルダやプロジェクトを定義。
+3. **`make deploy`**: 依存関係を考慮して全レイヤーを自動デプロイ。
+
+詳細は **[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)** を参照してください。
 
 ## 📚 ドキュメントインデックス (ここから読み始めてください)
 
