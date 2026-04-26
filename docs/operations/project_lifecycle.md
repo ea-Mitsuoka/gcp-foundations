@@ -68,6 +68,8 @@ gcloud billing projects link ${PROJECT_ID} --billing-account=${BILLING_ACCOUNT_I
 1. [リソースの管理](https://console.cloud.google.com/cloud-resource-manager)ページへ。
 1. **[プロジェクトを作成]** をクリックし、名称・フォルダ・請求先を選択。
 
+> **重要**: 緊急時に手動でプロジェクトを作成した場合でも、必ず後で `gcp_foundations.xlsx` にその情報を追記し、`make generate` を実行して構成を同期させてください。これを怠ると、次回の `make deploy` 時にリソースの乖離（ドリフト）や意図しない削除が発生する原因となります。
+
 ______________________________________________________________________
 
 ## 3. 注意事項と運用ルール
