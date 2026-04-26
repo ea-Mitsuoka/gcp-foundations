@@ -34,7 +34,8 @@ make lint
 
 一番最初に実行する環境構築手順や、開発者としての参加手順です。
 
-1. **[環境構築の全体手順 (新規顧客向け)](docs/setup/initial_setup.md)**: 基盤のゼロからの構築・デプロイ手順
+1. **[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)**: 基盤のゼロからの構築・デプロイ手順
+1. **[スプレッドシート・ワークショップ・ガイド](docs/operations/spreadsheet_session_guide.md)**: 顧客と一緒に設計図を完成させるためのガイド
 1. **[複数環境の管理と方針](docs/setup/setup_environment.md)**: Workspaceを利用しないSSOTベースの管理思想
 1. **[ローカル開発環境セットアップガイド](docs/development/local_development.md)**: 開発者向けの必須ツールのインストールと設定
 
@@ -43,7 +44,8 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSOT）に基づく作成・運用・管理
-1. **[ネットワークとセキュリティの詳細設定](docs/operations/network_and_security_config.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
+1. **[ネットワークとセキュリティの詳細設定](docs/reference/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
+
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
 1. **[後任者・リカバリガイド](docs/operations/recovery_and_succession.md)**: 設定ファイルの復元と安全な引き継ぎ
