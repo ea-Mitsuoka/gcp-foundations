@@ -43,9 +43,34 @@ VPC-SC の詳細設定は以下の 2 つのシートで行います。
 
 設定後、`make generate` を実行すると `terraform/2_organization/auto_vpc_sc.tf` が生成されます。
 
+## 3. 組織ポリシー (Organization Policy) の管理
+
+本基盤では、組織全体のガードレールとなる組織ポリシーを `gcp_foundations.xlsx` で管理します。
+
+### 3.1 段階的な適用 (Migration Friendly)
+
+既存のプロジェクトを組織へ移行する場合など、初期状態でポリシーが適用されていると移行がブロックされることがあります。そのため、本基盤ではグローバルな有効化スイッチを備えています。
+
+1.  **`terraform/common.tfvars` の `enable_org_policies`**:
+    -   `false` (デフォルト): 組織ポリシーは一切適用されません。移行作業時に推奨されます。
+    -   `true`: Excel で定義されたポリシーが有効化されます。
+
+### 3.2 サービスポリシーの定義 (`org_policies`)
+
+適用したいルールを `org_policies` シートで定義します。
+
+| カラム名 | 説明 | 例 |
+| :--- | :--- | :--- |
+| **target_name** | 適用先（`organization_id`, フォルダ名, プロジェクト名） | `shared`, `organization_id` |
+| **policy_id** | ポリシーの名前（ID） | `compute.disableExternalIPProxy` |
+| **enforce** | 強制するかどうか (`TRUE` / `FALSE`) | `TRUE` |
+| **allow_list** | 許可値のリスト（カンマ区切り。ロケーション制限等で使用） | `asia-northeast1` |
+
+設定後、`make generate` を実行すると、各レイヤーに `auto_org_policies.tf` が生成されます。
+
 ______________________________________________________________________
 
-## 3. プロジェクトへの紐付け
+## 4. プロジェクトへの紐付け
 
 `resources` シートの各プロジェクトの行で、上記で定義した名前を指定することで適用されます。
 

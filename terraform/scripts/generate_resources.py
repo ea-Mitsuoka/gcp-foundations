@@ -8,6 +8,7 @@ import os
 import shutil
 import glob
 import openpyxl
+import json
 from openpyxl import Workbook
 
 def generate_resources():
@@ -50,6 +51,12 @@ def generate_resources():
         ws4.append(["host_project_env", "subnet_name", "region", "ip_cidr_range"])
         ws4.append(["prod", "prd-subnet-01", "asia-northeast1", "10.0.1.0/24"])
         ws4.append(["dev", "dev-subnet-01", "asia-northeast1", "10.1.1.0/24"])
+
+        # 5. org_policies
+        ws5 = wb.create_sheet("org_policies")
+        ws5.append(["target_name", "policy_id", "enforce", "allow_list"])
+        ws5.append(["organization_id", "compute.disableExternalIPProxy", True, ""])
+        ws5.append(["production", "gcp.resourceLocations", True, "asia-northeast1"])
 
         wb.save(xlsx_path)
         print("Template created! Please edit it and run this script again.")
@@ -101,7 +108,21 @@ def generate_resources():
             if not any(row): continue
             subnets.append(dict(zip(headers, row)))
 
+    # 5. Org Policies
+    org_policies = []
+    if 'org_policies' in wb.sheetnames:
+        ws = wb['org_policies']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            org_policies.append(dict(zip(headers, row)))
+
     # --- TFファイル生成 ---
+
+    def is_true_policy(val):
+        if val is None: return False
+        if isinstance(val, bool): return val
+        return str(val).strip().lower() == 'true'
 
     # 4. フォルダのtfファイル生成 (3_folders/auto_folders.tf)
     folders_tf_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_folders.tf')
@@ -122,8 +143,6 @@ def generate_resources():
     vpc_sc_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_vpc_sc.tf')
     with open(vpc_sc_tf_path, 'w') as f:
         f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
-        
-        # Access Levels
         access_level_ids = {}
         for al in access_levels:
             name = al.get('access_level_name')
@@ -142,7 +161,6 @@ def generate_resources():
             f.write(f'    }}\n  }}\n}}\n\n')
             access_level_ids[name] = f"google_access_context_manager_access_level.{name}.name"
 
-        # Perimeters
         perimeter_ids = {}
         for p in perimeters:
             name = p.get('perimeter_name')
@@ -158,7 +176,6 @@ def generate_resources():
             f.write(f'  lifecycle {{\n    ignore_changes = [status[0].resources]\n  }}\n}}\n\n')
             perimeter_ids[name] = f"google_access_context_manager_service_perimeter.{name}.name"
 
-        # Outputs
         f.write(f'output "service_perimeter_ids" {{\n  value = {{\n')
         for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
         f.write(f'  }}\n}}\n\n')
@@ -186,12 +203,55 @@ def generate_resources():
             f.write(f'}}\n\n')
             subnet_ids[name] = f"google_compute_subnetwork.{name}.id"
         
-        # Outputs
         f.write(f'output "shared_vpc_subnet_ids" {{\n  value = {{\n')
         for k, v in subnet_ids.items(): f.write(f'    "{k}" = {v}\n')
         f.write(f'  }}\n}}\n\n')
 
-    # 7. プロジェクトのtfvars生成 (4_projects/*)
+    # 7. 組織ポリシーの生成 (各レイヤー)
+    # 2_organization/auto_org_policies.tf
+    org_policy_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_org_policies.tf')
+    with open(org_policy_path, 'w') as f:
+        f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+        for p in org_policies:
+            if p.get('target_name') != 'organization_id': continue
+            pid = p.get('policy_id')
+            enforce = is_true_policy(p.get('enforce'))
+            f.write(f'resource "google_org_policy_policy" "{pid.replace(".", "_")}" {{\n')
+            f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
+            f.write(f'  name   = "organizations/${{data.google_organization.org.org_id}}/policies/{pid}"\n')
+            f.write(f'  parent = "organizations/${{data.google_organization.org.org_id}}"\n')
+            f.write(f'  spec {{\n')
+            if p.get('allow_list'):
+                f.write(f'    rules {{\n      values {{\n')
+                f.write(f'        allowed_values = {json.dumps([v.strip() for v in str(p["allow_list"]).split(",")])}\n')
+                f.write(f'      }}\n    }}\n')
+            else:
+                f.write(f'    rules {{\n      enforce = "{str(enforce).lower()}"\n    }}\n')
+            f.write(f'  }}\n}}\n\n')
+
+    # 3_folders/auto_org_policies.tf
+    folder_policy_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_org_policies.tf')
+    with open(folder_policy_path, 'w') as f:
+        f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+        for p in org_policies:
+            target = p.get('target_name')
+            if target == 'organization_id' or target not in folders: continue
+            pid = p.get('policy_id')
+            enforce = is_true_policy(p.get('enforce'))
+            f.write(f'resource "google_org_policy_policy" "{target}_{pid.replace(".", "_")}" {{\n')
+            f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
+            f.write(f'  name   = "folders/${{google_folder.{target}.name}}/policies/{pid}"\n')
+            f.write(f'  parent = "folders/${{google_folder.{target}.name}}"\n')
+            f.write(f'  spec {{\n')
+            if p.get('allow_list'):
+                f.write(f'    rules {{\n      values {{\n')
+                f.write(f'        allowed_values = {json.dumps([v.strip() for v in str(p["allow_list"]).split(",")])}\n')
+                f.write(f'      }}\n    }}\n')
+            else:
+                f.write(f'    rules {{\n      enforce = "{str(enforce).lower()}"\n    }}\n')
+            f.write(f'  }}\n}}\n\n')
+
+    # 8. プロジェクトのtfvars生成 (4_projects/*)
     example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
     
     for proj in projects:
@@ -200,19 +260,39 @@ def generate_resources():
         app_name = str(app_name).strip()
 
         project_dir = os.path.join(os.path.dirname(__file__), f"../4_projects/{app_name}")
-        
-        if not os.path.exists(project_dir):
-            os.makedirs(project_dir, exist_ok=True)
-            for tf_file in glob.glob(os.path.join(example_dir, '*.tf')):
+        os.makedirs(project_dir, exist_ok=True)
+
+        # プロジェクト用の auto_org_policies.tf 生成
+        with open(os.path.join(project_dir, 'auto_org_policies.tf'), 'w') as f:
+            f.write("# 自動生成されたファイルです。手動で編集しないでください。\n\n")
+            for p in org_policies:
+                if p.get('target_name') != app_name: continue
+                pid = p.get('policy_id')
+                enforce = is_true_policy(p.get('enforce'))
+                f.write(f'resource "google_org_policy_policy" "{pid.replace(".", "_")}" {{\n')
+                f.write(f'  count  = var.enable_org_policies ? 1 : 0\n')
+                f.write(f'  name   = "projects/${{module.project.project_id}}/policies/{pid}"\n')
+                f.write(f'  parent = "projects/${{module.project.project_id}}"\n')
+                f.write(f'  spec {{\n')
+                if p.get('allow_list'):
+                    f.write(f'    rules {{\n      values {{\n')
+                    f.write(f'        allowed_values = {json.dumps([v.strip() for v in str(p["allow_list"]).split(",")])}\n')
+                    f.write(f'      }}\n    }}\n')
+                else:
+                    f.write(f'    rules {{\n      enforce = "{str(enforce).lower()}"\n    }}\n')
+                f.write(f'  }}\n}}\n\n')
+
+        # 既存ファイルのコピーとbackend修正 (初回のみ)
+        for tf_file in glob.glob(os.path.join(example_dir, '*.tf')):
+            target_file = os.path.join(project_dir, os.path.basename(tf_file))
+            if not os.path.exists(target_file):
                 shutil.copy(tf_file, project_dir)
-            
-            backend_path = os.path.join(project_dir, 'backend.tf')
-            if os.path.exists(backend_path):
-                with open(backend_path, 'r') as f:
-                    content = f.read()
-                content = content.replace('prefix = "projects/example_project"', f'prefix = "projects/{app_name}"')
-                with open(backend_path, 'w') as f:
-                    f.write(content)
+                if os.path.basename(tf_file) == 'backend.tf':
+                    with open(target_file, 'r') as f:
+                        content = f.read()
+                    content = content.replace('prefix = "projects/example_project"', f'prefix = "projects/{app_name}"')
+                    with open(target_file, 'w') as f:
+                        f.write(content)
 
         def is_true(val):
             if val is None: return False
@@ -264,7 +344,7 @@ project_apis        = {apis_formatted}
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)
             
-    print(f"✅ Generated tfvars for projects")
+    print(f"✅ Generated tfvars and auto_org_policies.tf for all layers")
 
 if __name__ == "__main__":
     generate_resources()

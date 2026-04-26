@@ -13,3 +13,9 @@ variable "gcp_region" {
   default     = "asia-northeast1"
 }
 
+variable "enable_org_policies" {
+  type        = bool
+  description = "組織ポリシーを適用するかどうか。"
+  default     = false
+}
+

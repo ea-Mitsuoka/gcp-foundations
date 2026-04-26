@@ -53,6 +53,16 @@ VPC Service Controls のサービス境界を定義します。
 | **ip_subnetworks** | 許可するIP範囲（カンマ区切り） | `1.2.3.4/32` |
 | **members** | 許可するユーザー/サービスアカウント（カンマ区切り） | `user:admin@example.com` |
 
+### 5. `org_policies` シート
+フォルダやプロジェクトに対して強制または許可する「組織ポリシー」を定義します。
+
+| 列名 | 説明 | 例 |
+| :--- | :--- | :--- |
+| **target_name** | 適用先リソース名（`organization_id` または `resources`シートで定義した名称） | `organization_id`, `shared`, `prd-app-01` |
+| **policy_id** | ポリシーの名前（ID） | `compute.disableExternalIPProxy` |
+| **enforce** | 強制するかどうか（ブール値。TRUEで制限有効） | `TRUE`, `FALSE` |
+| **allow_list** | 許可リスト（カンマ区切り。ロケーション制限等で使用） | `asia-northeast1`, `us-central1` |
+
 ## 入力方法と具体例
 
 ### resources シートの例

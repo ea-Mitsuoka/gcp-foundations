@@ -283,6 +283,7 @@ core_billing_linked             = false
 enable_vpc_host_projects        = ${ENABLE_VPC}
 enable_shared_vpc               = ${ENABLE_VPC}
 enable_vpc_sc                   = ${ENABLE_VPC_SC}
+enable_org_policies             = false
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
