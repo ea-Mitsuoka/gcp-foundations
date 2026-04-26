@@ -1,26 +1,32 @@
 # フォルダ作成の手順
 
 本基盤では、組織内の階層構造（Prod/Dev 等）を管理するために「フォルダ」を使用します。
-IaC による管理を徹底するため、Terraform による作成を推奨します。
+原則として、`gcp_foundations.xlsx` を用いた IaC による自動管理を行います。
 
 ______________________________________________________________________
 
-## 1. 推奨手順: Terraform による管理
+## 1. 推奨手順: Excel による管理
 
-フォルダの追加・変更は `terraform/3_folders` レイヤーで行います。
+フォルダの追加・変更はプロジェクトルートにある `gcp_foundations.xlsx` で定義します。
 
-### ステップ 1: `main.tf` の編集
+### ステップ 1: `gcp_foundations.xlsx` の編集
 
-`terraform/3_folders/main.tf` に、新しいフォルダのリソースを定義します。
+1.  `gcp_foundations.xlsx` を開き、`resources` シートを選択します。
+2.  `resource_type` に `folder` を指定し、新しいフォルダを定義します。
+    -   `parent_name`: 親フォルダ名、または組織直下の場合は `organization_id` を指定します。
+    -   `resource_name`: フォルダの表示名（Terraform のリソース名にも使用されます）を指定します。
 
-```hcl
-resource "google_folder" "new_department" {
-  display_name = "Department-X"
-  parent       = "organizations/${var.organization_id}"
-}
+### ステップ 2: Terraform コードの生成
+
+以下のコマンドを実行し、Excel の定義から Terraform ファイル（`auto_folders.tf`）を自動生成します。
+
+```bash
+make generate
 ```
 
-### ステップ 2: 適用 (Apply)
+> **注意**: `terraform/3_folders/auto_folders.tf` は自動生成されるファイルです。手動で編集しないでください。
+
+### ステップ 3: 適用 (Apply)
 
 リポジトリルートでデプロイを実行します。
 
@@ -28,7 +34,7 @@ resource "google_folder" "new_department" {
 make deploy
 ```
 
-個別に適用する場合は以下を実行します。
+個別にフォルダレイヤーのみ適用する場合は以下を実行します。
 
 ```bash
 cd terraform/3_folders
