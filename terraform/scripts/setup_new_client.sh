@@ -283,7 +283,7 @@ core_billing_linked             = false
 enable_vpc_host_projects        = ${ENABLE_VPC}
 enable_shared_vpc               = ${ENABLE_VPC}
 enable_vpc_sc                   = ${ENABLE_VPC_SC}
-enable_org_policies             = false
+enable_org_policies             = ${ENABLE_ORG_POLICIES}
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
@@ -296,4 +296,11 @@ cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/google_project_service/terraform
 project_id = "${MGMT_PROJECT_ID}"
 EOF
 print_success "Configuration files and tfvars generated successfully."
+
+echo
+print_warning "-------------------- NEXT STEPS --------------------"
+print_info "1. Run 'make generate' to create/update the SSOT spreadsheet (gcp_foundations.xlsx)."
+print_info "2. Open the spreadsheet and define your folders, projects, subnets, and policies."
+print_info "3. Follow 'docs/setup/initial_setup.md' to deploy the environment."
+print_warning "----------------------------------------------------"
 echo

@@ -64,6 +64,27 @@ def generate_resources():
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     
+    # --- 欠落しているシートの自動追加 ---
+    required_sheets = {
+        "resources": ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"],
+        "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
+        "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
+        "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
+        "org_policies": ["target_name", "policy_id", "enforce", "allow_list"]
+    }
+
+    updated = False
+    for sname, headers in required_sheets.items():
+        if sname not in wb.sheetnames:
+            print(f"Adding missing sheet: {sname}")
+            ws = wb.create_sheet(sname)
+            ws.append(headers)
+            updated = True
+    
+    if updated:
+        wb.save(xlsx_path)
+        print(f"✅ Spreadsheet {xlsx_path} updated with missing sheets.")
+
     # --- データのパース ---
     
     # 1. フォルダとプロジェクト (resources)
