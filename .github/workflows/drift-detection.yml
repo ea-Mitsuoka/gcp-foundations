@@ -63,4 +63,6 @@ jobs:
         if: failure()
         run: |
           echo "Infrastructure drift detected! Please check the GitHub Actions log and reconcile changes."
-          # ここに Slack 通知などのロジックを追加可能
+          # TODO: Implement notification logic for operational teams.
+          # Example: Use 'rtCamp/action-slack-notify' for Slack or 'imjohnbo/ok-to-test' for Issue creation.
+          # Requires: Setting up secrets (e.g., SLACK_WEBHOOK) in the repository settings.
