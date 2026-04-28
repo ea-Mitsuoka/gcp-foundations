@@ -23,7 +23,9 @@ ______________________________________________________________________
 #### 症状: `terraform apply` 中に「API [service] not enabled」というエラー
 
 - **原因**: プロジェクトで必要な API が有効になっていません。
-- **対策**: Excel (SSoT) の `project_apis` 列に必要な API が記載されているか確認し、`make generate` を実行した後に再度 `apply` してください。または、課金アカウントが正しくリンクされているか確認してください。
+- **対策**:
+  - **管理プロジェクト (Core/Org等) の場合**: `terraform/1_core/services/...` 配下の `variables.tf` 等に必要な API が記載されているか確認してください。
+  - **アプリケーションプロジェクト (L4) の場合**: 本基盤は L4 プロジェクトの API 有効化を管理していません。現場の IaC または手動で API を有効化してください。
 
 #### 症状: 共有プロジェクトで「Cloud Pub/Sub API (または Cloud Asset API) has not been used in project [管理プロジェクト番号]」という 403 エラーが出る
 
@@ -35,13 +37,10 @@ ______________________________________________________________________
 
 #### 症状: プロジェクト作成直後に「Billing account for project '...' is not found.」というエラー
 
-- **原因**: プロジェクト作成後、課金アカウントがリンクされる前に Terraform がデフォルトネットワーク（VPC）を削除しようとし、そのアクションに必要な Compute Engine API の有効化が課金未設定のため拒否されています。
+- **原因**: L1 などの管理プロジェクトにおいて、課金アカウントのリンク前に API を有効化しようとしています。
 - **対策**:
-  - `terraform/modules/project-factory/variables.tf` の `auto_create_network` のデフォルト値が `true` になっているか確認してください。(`false` の場合、削除処理が走りこのエラーになります)
-  - すでにエラーで停止し、リソースが「Tainted」状態になっている場合は、以下の手順で復旧してください。
-    1. 該当ディレクトリ（例: `terraform/1_core/base/logsink`）へ移動。
-    1. `terraform untaint module.<モジュール名>.google_project.this` を実行。
-    1. 再度 `make deploy` を実行。
+  - `terraform/common.tfvars` の `core_billing_linked` が `true` になっているか確認してください。
+  - プロジェクト作成後、管理者が手動で課金アカウントをリンクし、このフラグを `true` にしてから再度 `make deploy` を実行してください。
 
 ______________________________________________________________________
 

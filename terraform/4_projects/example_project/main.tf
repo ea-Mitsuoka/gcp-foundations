@@ -56,23 +56,15 @@ module "project" {
   folder_id       = local.resolved_folder_id
   labels          = var.labels
 
+  deletion_protection = var.deletion_protection
 
   # 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
 }
 
-module "project_services" {
-  source = "../../modules/project-services"
-
-  project_id   = module.project.project_id
-  project_apis = var.billing_linked ? var.project_apis : toset([])
-}
-
 resource "google_compute_shared_vpc_service_project" "service_project" {
-  count           = var.billing_linked && var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
+  count           = var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
   host_project    = local.host_project_id
   service_project = module.project.project_id
-
-  depends_on = [module.project_services]
 }
 
 resource "google_access_context_manager_service_perimeter_resource" "service_perimeter_resource" {
@@ -85,7 +77,7 @@ resource "google_access_context_manager_service_perimeter_resource" "service_per
 
 # サブネットの利用権限付与 (Shared VPC)
 resource "google_compute_subnetwork_iam_member" "subnet_user" {
-  count      = var.billing_linked && local.subnet_id != null ? 1 : 0
+  count      = local.subnet_id != null ? 1 : 0
   project    = local.host_project_id
   region     = try(element(split("/", local.subnet_id), 3), "asia-northeast1")
   subnetwork = local.subnet_id

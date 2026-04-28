@@ -51,17 +51,16 @@ def generate_resources():
         # 1. resources
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"]
+        headers = ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging"]
         ws.append(headers)
-        ws.append(["folder", "organization_id", "shared", "", "", False, False, False, ""])
-        ws.append(["folder", "shared", "production", "", "", False, False, False, ""])
-        ws.append(["project", "production", "prd-app-01", "prd-subnet-01", "default_perimeter", True, True, True, "compute.googleapis.com,container.googleapis.com"])
+        ws.append(["folder", "organization_id", "shared", "", "", False, False])
+        ws.append(["folder", "shared", "production", "", "", False, False])
+        ws.append(["project", "production", "prd-app-01", "prd-subnet-01", "default_perimeter", True, True])
 
         # 入力規則の追加
         add_validation(ws, "A", '"folder,project"', "リソースタイプ", "リソースの種別を選択")
         add_validation(ws, "F", '"True,False"', "モニタリング", "有効にする場合はTrue")
         add_validation(ws, "G", '"True,False"', "ロギング", "有効にする場合はTrue")
-        add_validation(ws, "H", '"True,False"', "課金リンク", "有効にする場合はTrue")
 
         # 2. vpc_sc_perimeters
         ws2 = wb.create_sheet("vpc_sc_perimeters")
@@ -110,7 +109,7 @@ def generate_resources():
     
     # --- 欠落しているシートの自動追加 ---
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging", "billing_linked", "project_apis"],
+        "resources": ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
@@ -429,14 +428,6 @@ def generate_resources():
 
         monitoring = is_true(proj.get('monitoring'))
         logging = is_true(proj.get('logging'))
-        billing_linked = is_true(proj.get('billing_linked'))
-
-        raw_apis = proj.get('project_apis')
-        apis_formatted = '[]'
-        if raw_apis:
-            apis_list = [api.strip() for api in str(raw_apis).split(',') if api.strip()]
-            if apis_list:
-                apis_formatted = '[\n  "' + '",\n  "'.join(apis_list) + '"\n]'
 
         env_val = "prod"
         if app_name.startswith('prd-'): env_val = "prod"
@@ -457,8 +448,6 @@ shared_vpc_subnet   = "{shared_vpc_sn_val}"
 vpc_sc              = "{vpc_sc_val}"
 monitoring          = {str(monitoring).lower()}
 logging             = {str(logging).lower()}
-billing_linked      = {str(billing_linked).lower()}
-project_apis        = {apis_formatted}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)

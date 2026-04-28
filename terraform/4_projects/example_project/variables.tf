@@ -30,12 +30,6 @@ variable "folder_id" {
   description = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
 }
 
-variable "project_apis" {
-  type        = set(string)
-  description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
-}
-
 variable "vpc_sc" {
   type        = string
   description = "このプロジェクトを所属させる VPC Service Controls の境界名。空文字の場合は対象外。"
@@ -68,12 +62,6 @@ variable "shared_vpc_env" {
 variable "enable_shared_vpc" {
   type        = bool
   description = "Shared VPC が全体で有効か（共通変数から渡される）"
-  default     = false
-}
-
-variable "billing_linked" {
-  type        = bool
-  description = "課金アカウントが紐づいているか"
   default     = false
 }
 

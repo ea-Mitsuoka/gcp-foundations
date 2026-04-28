@@ -32,8 +32,6 @@ ______________________________________________________________________
 | `vpc_sc` | 所属境界名 | String | `default_perimeter` | `vpc_sc_perimeters` シートで定義した名前。 |
 | `monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
 | `logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
-| `billing_linked` | 課金リンク完了フラグ | Boolean | `FALSE` | **TRUE** に変更すると API 有効化が実行されます。 |
-| `project_apis` | 有効化 API リスト | String | `compute.googleapis.com` | カンマ区切りの API リスト。 |
 
 ### その他の詳細設定シート
 
