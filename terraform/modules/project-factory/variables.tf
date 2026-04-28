@@ -27,8 +27,8 @@ variable "labels" {
 
 variable "auto_create_network" {
   type        = bool
-  description = "If true, the default network will be created. Defaults to false."
-  default     = false
+  description = "If true, the default network will be created. Defaults to true."
+  default     = true
 }
 
 variable "deletion_protection" {

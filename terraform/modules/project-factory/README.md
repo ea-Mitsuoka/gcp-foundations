@@ -27,7 +27,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_auto_create_network"></a> [auto_create_network](#input_auto_create_network) | If true, the default network will be created. Defaults to false. | `bool` | `false` | no |
+| <a name="input_auto_create_network"></a> [auto_create_network](#input_auto_create_network) | If true, the default network will be created. Defaults to true. | `bool` | `true` | no |
 | <a name="input_folder_id"></a> [folder_id](#input_folder_id) | The folder ID to create the project in. If null, project will be created at the organization level. | `string` | `null` | no |
 | <a name="input_labels"></a> [labels](#input_labels) | A map of labels to assign to the project. | `map(string)` | `{}` | no |
 | <a name="input_name"></a> [name](#input_name) | The display name of the project. | `string` | n/a | yes |
