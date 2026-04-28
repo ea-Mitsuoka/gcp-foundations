@@ -71,3 +71,21 @@ variable "enable_org_policies" {
   default     = false
 }
 
+variable "monitoring" {
+  type        = bool
+  description = "監視を有効にするかどうか。"
+  default     = true
+}
+
+variable "logging" {
+  type        = bool
+  description = "ログ収集を有効にするかどうか。"
+  default     = true
+}
+
+variable "deletion_protection" {
+  type        = bool
+  description = "プロジェクトの削除保護を有効にするかどうか。"
+  default     = true
+}
+

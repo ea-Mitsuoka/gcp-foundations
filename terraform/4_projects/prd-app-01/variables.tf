@@ -30,16 +30,16 @@ variable "folder_id" {
   description = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
 }
 
-variable "project_apis" {
-  type        = set(string)
-  description = "プロジェクトで有効化するAPIのリスト。"
-  default     = []
+variable "vpc_sc" {
+  type        = string
+  description = "このプロジェクトを所属させる VPC Service Controls の境界名。空文字の場合は対象外。"
+  default     = ""
 }
 
-variable "vpc_sc" {
-  type        = bool
-  description = "このプロジェクトをVPC Service Controlsの境界に含めるかどうか。"
-  default     = false
+variable "shared_vpc_subnet" {
+  type        = string
+  description = "接続する Shared VPC のサブネット名。空文字の場合は対象外。"
+  default     = ""
 }
 
 variable "labels" {
@@ -65,9 +65,27 @@ variable "enable_shared_vpc" {
   default     = false
 }
 
-variable "billing_linked" {
+variable "enable_org_policies" {
   type        = bool
-  description = "課金アカウントが紐づいているか"
+  description = "組織ポリシーを適用するかどうか。"
   default     = false
+}
+
+variable "monitoring" {
+  type        = bool
+  description = "監視を有効にするかどうか。"
+  default     = true
+}
+
+variable "logging" {
+  type        = bool
+  description = "ログ収集を有効にするかどうか。"
+  default     = true
+}
+
+variable "deletion_protection" {
+  type        = bool
+  description = "プロジェクトの削除保護を有効にするかどうか。"
+  default     = true
 }
 
