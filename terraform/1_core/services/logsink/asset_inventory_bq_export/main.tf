@@ -6,9 +6,10 @@
 
 # 1. Pub/Subスキーマを定義
 resource "google_pubsub_schema" "iam_policy_schema" {
-  provider = google.logsink
-  project  = data.terraform_remote_state.project.outputs.project_id
+  provider = google-beta
+  project = data.terraform_remote_state.project.outputs.project_id
   name    = "asset-inventory-iam-policy-schema"
+
   type    = "AVRO" # JSONを扱う場合でもAVROかPROTOCOL_BUFFERの指定が必要
   definition = jsonencode({
     type = "record",
@@ -47,7 +48,7 @@ resource "google_pubsub_schema" "iam_policy_schema" {
 
 # 2. アセット更新情報を受け取るためのPub/Subトピック
 resource "google_pubsub_topic" "asset_inventory_feed" {
-  provider = google.logsink
+  provider = google-beta
   project = data.terraform_remote_state.project.outputs.project_id
   name    = "asset-inventory-iam-policy-feed"
 
@@ -82,7 +83,7 @@ resource "google_bigquery_table" "asset_inventory_iam_policy_table" {
 
 # 5. Pub/SubからBigQueryへメッセージを書き込むためのSubscription
 resource "google_pubsub_subscription" "asset_inventory_to_bq" {
-  provider = google.logsink
+  provider = google-beta
   project = data.terraform_remote_state.project.outputs.project_id
   name    = "sub-asset-inventory-to-bq"
   topic   = google_pubsub_topic.asset_inventory_feed.name
