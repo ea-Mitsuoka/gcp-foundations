@@ -12,7 +12,7 @@ data "terraform_remote_state" "folders" {
 }
 
 data "terraform_remote_state" "organization" {
-  count   = var.vpc_sc != "" ? 1 : 0
+  count   = var.vpc_sc != "" && var.vpc_sc != null ? 1 : 0
   backend = "gcs"
   config = {
     bucket                      = var.gcs_backend_bucket
