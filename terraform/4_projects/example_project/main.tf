@@ -50,7 +50,7 @@ resource "terraform_data" "variable_validation" {
 module "project" {
   source = "../../modules/project-factory"
 
-  project_id      = "${var.project_id_prefix}-${var.environment}-${var.app_name}"
+  project_id      = "${var.project_id_prefix}-${var.app_name}"
   name            = "${var.app_name}-${var.environment}"
   organization_id = data.google_organization.org.org_id
   folder_id       = local.resolved_folder_id
