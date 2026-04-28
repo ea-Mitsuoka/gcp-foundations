@@ -467,11 +467,14 @@ project_apis        = {apis_formatted}
     def export_to_csv(sheet_name, target_paths):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
-            headers = [cell.value for cell in ws[1]]
+            # Noneでないヘッダーのみを取得
+            headers = [cell.value for cell in ws[1] if cell.value is not None]
             rows = []
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if not any(row): continue
-                rows.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
+                # ヘッダーの数に合わせてデータ行をスライスし、型変換を行う
+                row_values = [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row[:len(headers)]]
+                rows.append(dict(zip(headers, row_values)))
             
             if headers:
                 for path in target_paths:
