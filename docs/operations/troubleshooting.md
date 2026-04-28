@@ -28,20 +28,20 @@ ______________________________________________________________________
 #### 症状: 共有プロジェクトで「Cloud Pub/Sub API (または Cloud Asset API) has not been used in project [管理プロジェクト番号]」という 403 エラーが出る
 
 - **原因**: Pub/Sub スキーマや組織アセットフィードなどの一部のリソースは、操作対象プロジェクトだけでなく、操作を実行する「管理（tfstate）プロジェクト」側でも API が有効になっている必要があります。
-- **対策**: 
+- **対策**:
   1. 管理プロジェクトで API を手動有効化します：`gcloud services enable pubsub.googleapis.com cloudasset.googleapis.com --project=[管理プロジェクトID]`
-  2. または、`terraform/0_bootstrap/google_project_service/variables.tf` の `project_apis` にこれらを追記して `apply` してください。
-  3. また、`provider.tf` で `user_project_override = true` を設定して、ターゲットプロジェクトのクォータを使用するようにします。
+  1. または、`terraform/0_bootstrap/google_project_service/variables.tf` の `project_apis` にこれらを追記して `apply` してください。
+  1. また、`provider.tf` で `user_project_override = true` を設定して、ターゲットプロジェクトのクォータを使用するようにします。
 
 #### 症状: プロジェクト作成直後に「Billing account for project '...' is not found.」というエラー
 
 - **原因**: プロジェクト作成後、課金アカウントがリンクされる前に Terraform がデフォルトネットワーク（VPC）を削除しようとし、そのアクションに必要な Compute Engine API の有効化が課金未設定のため拒否されています。
-- **対策**: 
+- **対策**:
   - `terraform/modules/project-factory/variables.tf` の `auto_create_network` のデフォルト値が `true` になっているか確認してください。(`false` の場合、削除処理が走りこのエラーになります)
   - すでにエラーで停止し、リソースが「Tainted」状態になっている場合は、以下の手順で復旧してください。
     1. 該当ディレクトリ（例: `terraform/1_core/base/logsink`）へ移動。
-    2. `terraform untaint module.<モジュール名>.google_project.this` を実行。
-    3. 再度 `make deploy` を実行。
+    1. `terraform untaint module.<モジュール名>.google_project.this` を実行。
+    1. 再度 `make deploy` を実行。
 
 ______________________________________________________________________
 
