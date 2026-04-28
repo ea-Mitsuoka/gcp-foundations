@@ -8,21 +8,21 @@ locals {
   alert_definitions     = csvdecode(file(var.alert_definitions_csv_path))
   alert_definitions_map = { for d in local.alert_definitions : d.alert_name => d }
   notifications         = csvdecode(file(var.notifications_csv_path))
-  # logsinkプロジェクトのアラート設定のみをフィルタリング
-  active_notifications = [for r in local.notifications : r if lower(r.receive_alerts) == "true" && r.project_id == data.terraform_remote_state.logsink_project.outputs.project_id]
+  # 有効な通知設定のみをフィルタリング
+  active_notifications = [for r in local.notifications : r if lower(r.receive_alerts) == "true"]
   # アラート名で通知メールをグループ化
   notifications_by_alert = {
     for row in local.active_notifications : row.alert_name => row.user_email...
   }
 }
 
-# 新しいモジュールを呼び出し、アラートを monitoring プロジェクトに作成
+# 新しいモジュールを呼び出し、アラートを logsink プロジェクトに作成
 module "log_match_alerts" {
   for_each = local.alert_definitions_map
 
   source = "../../../../../modules/log-match-alert-factory"
 
-  scoping_project_id   = data.terraform_remote_state.monitoring_project.outputs.project_id
+  scoping_project_id   = data.terraform_remote_state.logsink_project.outputs.project_id
   monitored_project_id = data.terraform_remote_state.logsink_project.outputs.project_id
   display_name         = each.value.alert_display_name
   filter               = "resource.labels.project_id=\"${data.terraform_remote_state.logsink_project.outputs.project_id}\" AND (${each.value.metric_filter})"

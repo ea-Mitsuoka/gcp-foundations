@@ -77,7 +77,6 @@ VPC Service Controls のサービス境界を定義します。
 | **alert_name** | アラートの識別名（`alert_definitions`シートと紐付け） | `error_log_alert` |
 | **user_email** | 通知先のメールアドレス | `admin@example.com` |
 | **receive_alerts** | 通知を受け取るか（ブール値。TRUEで有効） | `TRUE`, `FALSE` |
-| **project_id** | 通知対象のログが存在するプロジェクトID | `logsink-project-id` |
 
 ### 7. `alert_definitions` シート
 

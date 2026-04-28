@@ -88,8 +88,8 @@ def generate_resources():
 
         # 6. notifications
         ws6 = wb.create_sheet("notifications")
-        ws6.append(["alert_name", "user_email", "receive_alerts", "project_id"])
-        ws6.append(["error_log_alert", "admin@example.com", True, "logsink-project-id"])
+        ws6.append(["alert_name", "user_email", "receive_alerts"])
+        ws6.append(["error_log_alert", "admin@example.com", True])
 
         # 7. alert_definitions
         ws7 = wb.create_sheet("alert_definitions")
@@ -114,7 +114,7 @@ def generate_resources():
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
         "org_policies": ["target_name", "policy_id", "enforce", "allow_list"],
-        "notifications": ["alert_name", "user_email", "receive_alerts", "project_id"],
+        "notifications": ["alert_name", "user_email", "receive_alerts"],
         "alert_definitions": ["alert_name", "alert_display_name", "metric_filter", "alert_documentation"],
         "log_sinks": ["log_type", "filter", "destination_type", "destination_parent", "retention_days"]
     }
@@ -152,6 +152,15 @@ def generate_resources():
             perimeters.append(p_dict)
             if p_dict.get('perimeter_name'):
                 valid_perimeters.add(str(p_dict['perimeter_name']).strip())
+
+    # 3. VPC-SC Access Levels
+    access_levels = []
+    if 'vpc_sc_access_levels' in wb.sheetnames:
+        ws = wb['vpc_sc_access_levels']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            access_levels.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # 4. Shared VPC Subnets
     subnets = []
