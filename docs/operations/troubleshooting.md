@@ -25,6 +25,16 @@ ______________________________________________________________________
 - **原因**: プロジェクトで必要な API が有効になっていません。
 - **対策**: Excel (SSoT) の `project_apis` 列に必要な API が記載されているか確認し、`make generate` を実行した後に再度 `apply` してください。または、課金アカウントが正しくリンクされているか確認してください。
 
+#### 症状: プロジェクト作成直後に「Billing account for project '...' is not found.」というエラー
+
+- **原因**: プロジェクト作成後、課金アカウントがリンクされる前に Terraform がデフォルトネットワーク（VPC）を削除しようとし、そのアクションに必要な Compute Engine API の有効化が課金未設定のため拒否されています。
+- **対策**: 
+  - `terraform/modules/project-factory/variables.tf` の `auto_create_network` のデフォルト値が `true` になっているか確認してください。(`false` の場合、削除処理が走りこのエラーになります)
+  - すでにエラーで停止し、リソースが「Tainted」状態になっている場合は、以下の手順で復旧してください。
+    1. 該当ディレクトリ（例: `terraform/1_core/base/logsink`）へ移動。
+    2. `terraform untaint module.<モジュール名>.google_project.this` を実行。
+    3. 再度 `make deploy` を実行。
+
 ______________________________________________________________________
 
 ## 2. Google グループ・IAM 関連の問題
