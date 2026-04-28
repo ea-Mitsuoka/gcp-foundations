@@ -7,7 +7,7 @@ resource "google_access_context_manager_access_level" "office_ip_only" {
   basic {
     conditions {
       ip_subnetworks = ["1.2.3.4/32"]
-      members = ["user:admin@example.com"]
+      members        = ["user:admin@example.com"]
     }
   }
 }
