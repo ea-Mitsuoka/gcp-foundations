@@ -13,6 +13,8 @@ variable "project_apis" {
     "serviceusage.googleapis.com",
     "iamcredentials.googleapis.com",
     "orgpolicy.googleapis.com",
-    "logging.googleapis.com"
+    "logging.googleapis.com",
+    "pubsub.googleapis.com",
+    "cloudasset.googleapis.com"
   ]
 }

@@ -181,6 +181,8 @@ gcloud services enable \
   iamcredentials.googleapis.com \
   orgpolicy.googleapis.com \
   logging.googleapis.com \
+  pubsub.googleapis.com \
+  cloudasset.googleapis.com \
   --project="${MGMT_PROJECT_ID}"
 print_success "APIs enabled."
 
