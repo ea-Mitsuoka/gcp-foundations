@@ -73,6 +73,7 @@ make lint
 1. **[スプレッドシートの仕様書](docs/setup/spreadsheet_format.md)**: `gcp-foundations.xlsx` (SSoT) のカラム定義
 1. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 1. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
+1. **[ガバナンス・エボリューション・ガイド](docs/reference/governance_guideline.md)**: 運用継続のポイントと責務の境界線についての指針
 
 ### 🛠️ 便利な Makefile コマンド
 

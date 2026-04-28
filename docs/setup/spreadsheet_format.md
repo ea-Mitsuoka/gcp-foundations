@@ -92,6 +92,18 @@ VPC Service Controls のサービス境界を定義します。
 | **metric_filter** | ログをフィルタリングするクエリ | `severity="ERROR"` |
 | **alert_documentation** | アラート通知に含まれるドキュメント/説明 | `Documentation for error log alert` |
 
+### 8. `log_sinks` シート
+
+組織全体で集約するログの抽出条件と、宛先リソース（BigQuery データセットまたは GCS バケット）を定義します。
+
+| 列名 | 説明 | 例 |
+| :--- | :--- | :--- |
+| **log_type** | ログの分類名（`locals.tf` のマッピングで使用） | `管理アクティビティ監査ログ` |
+| **filter** | ログを抽出するクエリフィルタ | `protoPayload.methodName:*` |
+| **destination_type** | 宛先の種類（`BigQuery` または `Cloud Storage`） | `BigQuery` |
+| **destination_parent** | 宛先リソース名のベース（データセット名など） | `audit_logs` |
+| **retention_days** | ログの保持期間（日単位） | `365` |
+
 ______________________________________________________________________
 
 ## 💡 運用のポイント

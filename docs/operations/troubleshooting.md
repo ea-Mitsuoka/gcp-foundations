@@ -25,6 +25,14 @@ ______________________________________________________________________
 - **原因**: プロジェクトで必要な API が有効になっていません。
 - **対策**: Excel (SSoT) の `project_apis` 列に必要な API が記載されているか確認し、`make generate` を実行した後に再度 `apply` してください。または、課金アカウントが正しくリンクされているか確認してください。
 
+#### 症状: 共有プロジェクトで「Cloud Pub/Sub API (または Cloud Asset API) has not been used in project [管理プロジェクト番号]」という 403 エラーが出る
+
+- **原因**: Pub/Sub スキーマや組織アセットフィードなどの一部のリソースは、操作対象プロジェクトだけでなく、操作を実行する「管理（tfstate）プロジェクト」側でも API が有効になっている必要があります。
+- **対策**: 
+  1. 管理プロジェクトで API を手動有効化します：`gcloud services enable pubsub.googleapis.com cloudasset.googleapis.com --project=[管理プロジェクトID]`
+  2. または、`terraform/0_bootstrap/google_project_service/variables.tf` の `project_apis` にこれらを追記して `apply` してください。
+  3. また、`provider.tf` で `user_project_override = true` を設定して、ターゲットプロジェクトのクォータを使用するようにします。
+
 #### 症状: プロジェクト作成直後に「Billing account for project '...' is not found.」というエラー
 
 - **原因**: プロジェクト作成後、課金アカウントがリンクされる前に Terraform がデフォルトネットワーク（VPC）を削除しようとし、そのアクションに必要な Compute Engine API の有効化が課金未設定のため拒否されています。
