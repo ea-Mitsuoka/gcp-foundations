@@ -139,6 +139,33 @@ def generate_resources():
             if not row_dict.get(key):
                 errors.append(f"[{sheet_name}] {row_idx}行目: 必須項目 '{key}' が空です。")
 
+    # --- データの読み込み ---
+    # 2. VPC-SC Perimeters
+    perimeters = []
+    valid_perimeters = set()
+    if 'vpc_sc_perimeters' in wb.sheetnames:
+        ws = wb['vpc_sc_perimeters']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            p_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
+            perimeters.append(p_dict)
+            if p_dict.get('perimeter_name'):
+                valid_perimeters.add(str(p_dict['perimeter_name']).strip())
+
+    # 4. Shared VPC Subnets
+    subnets = []
+    valid_subnets = set()
+    if 'shared_vpc_subnets' in wb.sheetnames:
+        ws = wb['shared_vpc_subnets']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            s_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
+            subnets.append(s_dict)
+            if s_dict.get('subnet_name'):
+                valid_subnets.add(str(s_dict['subnet_name']).strip())
+
     # 1. フォルダとプロジェクト (resources) の読み込み
     all_resource_names = set() # 重複チェック用
     folders = {}
@@ -153,6 +180,8 @@ def generate_resources():
             
             res_name = str(row_dict.get('resource_name', '')).strip()
             res_type = str(row_dict.get('resource_type', '')).strip().lower()
+            shared_vpc = str(row_dict.get('shared_vpc', '')).strip()
+            vpc_sc = str(row_dict.get('vpc_sc', '')).strip()
 
             if res_name in all_resource_names:
                 errors.append(f"[resources] {idx}行目: リソース名 '{res_name}' が重複しています。")
@@ -161,63 +190,20 @@ def generate_resources():
             if res_type not in ['folder', 'project']:
                 errors.append(f"[resources] {idx}行目: 不正な resource_type '{res_type}' です。'folder' または 'project' を指定してください。")
             
+            # 整合性チェック: Shared VPC Subnet
+            if res_type == 'project' and shared_vpc and shared_vpc.lower() not in ['false', 'none', '']:
+                if shared_vpc not in valid_subnets:
+                    errors.append(f"[resources] {idx}行目: 指定された Shared VPC サブネット '{shared_vpc}' は 'shared_vpc_subnets' シートに定義されていません。")
+
+            # 整合性チェック: VPC-SC Perimeter
+            if res_type == 'project' and vpc_sc and vpc_sc.lower() not in ['false', 'none', '']:
+                if vpc_sc not in valid_perimeters:
+                    errors.append(f"[resources] {idx}行目: 指定された VPC-SC 境界 '{vpc_sc}' は 'vpc_sc_perimeters' シートに定義されていません。")
+
             if res_type == 'folder':
                 folders[res_name] = str(row_dict.get('parent_name', '')).strip()
             elif res_type == 'project':
                 projects.append(row_dict)
-
-    # 2. 親子関係の一括バリデーション（全データの読み込み完了後に実施）
-    # 全ての有効な親候補（組織、または定義済みのフォルダ）のリストを作成
-    valid_parents = set(folders.keys())
-    valid_parents.add('organization_id')
-
-    for name, parent in folders.items():
-        if parent not in valid_parents:
-            errors.append(f"[resources] フォルダ '{name}' の親 '{parent}' が見つかりません。")
-        if name == parent:
-            errors.append(f"[resources] フォルダ '{name}' が自分自身を親に指定しています。")
-    
-    for proj in projects:
-        p_name = proj.get('resource_name')
-        parent = str(proj.get('parent_name', '')).strip()
-        if parent not in valid_parents:
-            errors.append(f"[resources] プロジェクト '{p_name}' の親 '{parent}' が見つかりません。")
-
-    # エラーがあれば停止
-    if errors:
-        print("\n❌ Excelのバリデーションエラーが見つかりました:")
-        for err in errors:
-            print(f"  - {err}")
-        print("\n修正して再度実行してください。")
-        sys.exit(1)
-
-    # --- データの読み込み ---
-    # 2. VPC-SC Perimeters
-    perimeters = []
-    if 'vpc_sc_perimeters' in wb.sheetnames:
-        ws = wb['vpc_sc_perimeters']
-        headers = [cell.value for cell in ws[1]]
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not any(row): continue
-            perimeters.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
-
-    # 3. VPC-SC Access Levels
-    access_levels = []
-    if 'vpc_sc_access_levels' in wb.sheetnames:
-        ws = wb['vpc_sc_access_levels']
-        headers = [cell.value for cell in ws[1]]
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not any(row): continue
-            access_levels.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
-
-    # 4. Shared VPC Subnets
-    subnets = []
-    if 'shared_vpc_subnets' in wb.sheetnames:
-        ws = wb['shared_vpc_subnets']
-        headers = [cell.value for cell in ws[1]]
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not any(row): continue
-            subnets.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # 5. Org Policies
     org_policies = []
