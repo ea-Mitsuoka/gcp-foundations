@@ -97,6 +97,12 @@ def generate_resources():
         ws7.append(["alert_name", "alert_display_name", "metric_filter", "alert_documentation"])
         ws7.append(["error_log_alert", "Error Log Alert", 'severity="ERROR"', "Documentation for error log alert"])
 
+        # 8. log_sinks
+        ws8 = wb.create_sheet("log_sinks")
+        ws8.append(["log_type", "filter", "destination_type", "destination_parent", "retention_days"])
+        ws8.append(["管理アクティビティ監査ログ", "protoPayload.methodName:*", "BigQuery", "audit_logs", 365])
+        add_validation(ws8, "C", '"BigQuery,Cloud Storage"', "宛先タイプ", "出力先の種別を選択")
+
         wb.save(xlsx_path)
         print("Template created! Proceeding with initial generation...")
 
@@ -110,7 +116,8 @@ def generate_resources():
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
         "org_policies": ["target_name", "policy_id", "enforce", "allow_list"],
         "notifications": ["alert_name", "user_email", "receive_alerts", "project_id"],
-        "alert_definitions": ["alert_name", "alert_display_name", "metric_filter", "alert_documentation"]
+        "alert_definitions": ["alert_name", "alert_display_name", "metric_filter", "alert_documentation"],
+        "log_sinks": ["log_type", "filter", "destination_type", "destination_parent", "retention_days"]
     }
 
     updated = False
@@ -483,6 +490,9 @@ project_apis        = {apis_formatted}
     ])
     export_to_csv("alert_definitions", [
         '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'
+    ])
+    export_to_csv("log_sinks", [
+        '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'
     ])
 
     print(f"✅ Generated tfvars and auto_org_policies.tf for all layers")
