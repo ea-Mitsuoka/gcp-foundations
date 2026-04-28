@@ -102,6 +102,7 @@ resource "google_pubsub_subscription" "asset_inventory_to_bq" {
 
 # 6. Cloud Asset Inventoryのフィード設定
 resource "google_cloud_asset_organization_feed" "iam_policy_feed" {
+  provider        = google-beta
   billing_project = data.terraform_remote_state.project.outputs.project_id
   org_id          = data.google_organization.org.org_id
   feed_id         = "iam-policy-to-bigquery"
