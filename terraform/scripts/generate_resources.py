@@ -142,7 +142,7 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             if not any(row): continue
-            row_dict = dict(zip(headers, row))
+            row_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
             validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name'], 'resources', idx)
             
             res_name = str(row_dict.get('resource_name', '')).strip()
@@ -193,7 +193,7 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
-            perimeters.append(dict(zip(headers, row)))
+            perimeters.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # 3. VPC-SC Access Levels
     access_levels = []
@@ -202,7 +202,7 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
-            access_levels.append(dict(zip(headers, row)))
+            access_levels.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # 4. Shared VPC Subnets
     subnets = []
@@ -211,7 +211,7 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
-            subnets.append(dict(zip(headers, row)))
+            subnets.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # 5. Org Policies
     org_policies = []
@@ -220,7 +220,7 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
-            org_policies.append(dict(zip(headers, row)))
+            org_policies.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
     # --- TFファイル生成 ---
 
@@ -464,7 +464,7 @@ project_apis        = {apis_formatted}
             rows = []
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if not any(row): continue
-                rows.append(dict(zip(headers, row)))
+                rows.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
             
             if headers:
                 for path in target_paths:
