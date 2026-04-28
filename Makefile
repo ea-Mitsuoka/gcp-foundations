@@ -6,7 +6,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make install   - Install required Python dependencies using uv"
 	@echo "  make setup     - Initialize GCP seed resources for a new client"
-	@echo "  make generate  - Generate Terraform resources from gcp_foundations.xlsx"
+	@echo "  make generate  - Generate Terraform resources from gcp-foundations.xlsx"
 	@echo "  make lint      - Run terraform fmt, tflint, and shellcheck"
 	@echo "  make opa       - Run OPA policy checks"
 	@echo "  make test      - Run terraform tests in modules directory"

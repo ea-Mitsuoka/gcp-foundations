@@ -43,7 +43,7 @@ def generate_resources():
                     break
 
     # 2. xlsxファイルの読み込み/作成
-    xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp_foundations.xlsx')
+    xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp-foundations.xlsx')
     if not os.path.exists(xlsx_path):
         print(f"{xlsx_path} not found. Creating a template with data validation...")
         wb = Workbook()

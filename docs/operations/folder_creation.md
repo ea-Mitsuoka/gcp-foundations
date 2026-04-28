@@ -1,17 +1,17 @@
 # フォルダ作成の手順
 
 本基盤では、組織内の階層構造（Prod/Dev 等）を管理するために「フォルダ」を使用します。
-原則として、`gcp_foundations.xlsx` を用いた IaC による自動管理を行います。
+原則として、`gcp-foundations.xlsx` を用いた IaC による自動管理を行います。
 
 ______________________________________________________________________
 
 ## 1. 推奨手順: Excel による管理
 
-フォルダの追加・変更はプロジェクトルートにある `gcp_foundations.xlsx` で定義します。
+フォルダの追加・変更はプロジェクトルートにある `gcp-foundations.xlsx` で定義します。
 
-### ステップ 1: `gcp_foundations.xlsx` の編集
+### ステップ 1: `gcp-foundations.xlsx` の編集
 
-1. `gcp_foundations.xlsx` を開き、`resources` シートを選択します。
+1. `gcp-foundations.xlsx` を開き、`resources` シートを選択します。
 1. `resource_type` に `folder` を指定し、新しいフォルダを定義します。
    - `parent_name`: 親フォルダ名、または組織直下の場合は `organization_id` を指定します。
    - `resource_name`: フォルダの表示名（Terraform のリソース名にも使用されます）を指定します。

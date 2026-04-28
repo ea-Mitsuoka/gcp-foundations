@@ -7,7 +7,7 @@ on:
     paths:
       - '**.tf'
       - '**.tfvars'
-      - 'gcp_foundations.xlsx'
+      - 'gcp-foundations.xlsx'
       - 'domain.env'
       - '.github/workflows/**'
 

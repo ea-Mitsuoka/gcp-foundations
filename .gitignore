@@ -10,7 +10,7 @@
 # Environment files
 domain.env
 env
-gcp_foundations.xlsx
+gcp-foundations.xlsx
 
 # Automatically created terraform files
 /terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv

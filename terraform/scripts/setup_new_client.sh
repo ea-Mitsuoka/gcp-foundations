@@ -307,7 +307,7 @@ print_success "Configuration files and tfvars generated successfully."
 
 echo
 print_warning "-------------------- NEXT STEPS --------------------"
-print_info "1. Run 'make generate' to create/update the SSoT spreadsheet (gcp_foundations.xlsx)."
+print_info "1. Run 'make generate' to create/update the SSoT spreadsheet (gcp-foundations.xlsx)."
 print_info "2. Open the spreadsheet and define your folders, projects, subnets, and policies."
 print_info "3. Follow 'docs/setup/initial_setup.md' to deploy the environment."
 print_warning "----------------------------------------------------"

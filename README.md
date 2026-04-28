@@ -33,7 +33,7 @@ make lint
 実際のGCP環境へのデプロイは、以下の3ステップで行います。
 
 1. **`make setup`**: GCP組織に管理プロジェクトやtfstate保存用バケットを作成。
-1. **Excelの編集**: `gcp_foundations.xlsx` にフォルダやプロジェクトを定義。
+1. **Excelの編集**: `gcp-foundations.xlsx` にフォルダやプロジェクトを定義。
 1. **`make deploy`**: 依存関係を考慮して全レイヤーを自動デプロイ。
 
 詳細は **[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)** を参照してください。
@@ -70,7 +70,7 @@ make lint
 
 1. **[アーキテクチャ設計書](docs/design/architecture.md)**: 全体俯瞰図とSSoT・レイヤー構造の解説
 1. **[ベストプラクティス集](docs/reference/best_practices.md)**: インフラ運用とIAM・権限管理の方針
-1. **[スプレッドシートの仕様書](docs/setup/spreadsheet_format.md)**: `gcp_foundations.xlsx` (SSoT) のカラム定義
+1. **[スプレッドシートの仕様書](docs/setup/spreadsheet_format.md)**: `gcp-foundations.xlsx` (SSoT) のカラム定義
 1. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 1. **[非アクティブアカウント監視方針](docs/reference/inactive_account_monitoring.md)**: 90日間の未ログイン検知の仕組み
 
@@ -128,7 +128,7 @@ graph TD
 make deploy
 ```
 
-※ 事前に `gcp_foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSoT) を最新化してください。
+※ 事前に `gcp-foundations.xlsx` と `domain.env` を更新し、Single Source of Truth (SSoT) を最新化してください。
 
 ______________________________________________________________________
 

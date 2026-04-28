@@ -37,7 +37,7 @@ Terraform の状態（State）が保存されている GCS バケットを特定
 - `organization_domain`: 顧客ドメイン
 - `project_id_prefix`: プロジェクト ID の接頭辞（例: `example-com`）
 
-### ステップ 4: `gcp_foundations.xlsx` の復元
+### ステップ 4: `gcp-foundations.xlsx` の復元
 
 もしスプレッドシートがリポジトリに含まれていない場合は、現在の GCP 組織内のフォルダ構造やプロジェクト一覧から手動で再構築する必要があります。これが復元できないと `make generate` が正しく動作しません。
 

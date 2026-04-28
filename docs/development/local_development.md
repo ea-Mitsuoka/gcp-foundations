@@ -103,7 +103,7 @@ make opa
 
 ### 自動生成スクリプトの実行
 
-SSoT (`gcp_foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
+SSoT (`gcp-foundations.xlsx`) を更新した後は、手動でスクリプトを実行してリソースを生成します。
 
 ```bash
 make generate
@@ -119,7 +119,7 @@ ______________________________________________________________________
 
 ```mermaid
 graph TD
-    A[1. Excel 修正] -->|gcp_foundations.xlsx| B[2. コード自動生成]
+    A[1. Excel 修正] -->|gcp-foundations.xlsx| B[2. コード自動生成]
     B -->|make generate| C[3. 差分確認]
     C -->|terraform plan| D{意図通りか?}
     D -- No --> A
