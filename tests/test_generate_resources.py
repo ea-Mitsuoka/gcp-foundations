@@ -55,8 +55,8 @@ def test_validate_cidr_strict_check(validator):
 
 def test_validate_hierarchy_valid(validator):
     resources = [
-        {"resource_type": "folder", "resource_name": "shared", "parent_name": "organization_id"},
-        {"resource_type": "project", "resource_name": "prd-app-01", "parent_name": "shared"}
+        {"resource_type": "folder", "resource_name": "shared", "parent_name": "organization_id", "central_monitoring": False, "central_logging": False},
+        {"resource_type": "project", "resource_name": "prd-app-01", "parent_name": "shared", "central_monitoring": True, "central_logging": True}
     ]
     assert validator.validate_hierarchy(resources) == []
 

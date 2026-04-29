@@ -30,8 +30,8 @@ ______________________________________________________________________
 | `resource_name` | リソース名 | String | `prd-app-01` | フォルダ表示名、またはアプリ名。 |
 | `shared_vpc` | 使用サブネット名 | String | `prd-subnet-01` | `shared_vpc_subnets` シートで定義した名前。 |
 | `vpc_sc` | 所属境界名 | String | `default_perimeter` | `vpc_sc_perimeters` シートで定義した名前。 |
-| `monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
-| `logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
+| `central_monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
+| `central_logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
 
 ### その他の詳細設定シート
 
