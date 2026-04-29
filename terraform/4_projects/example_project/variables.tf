@@ -65,6 +65,12 @@ variable "enable_shared_vpc" {
   default     = false
 }
 
+variable "enable_vpc_sc" {
+  type        = bool
+  description = "VPC Service Controls が全体で有効か（共通変数から渡される）"
+  default     = false
+}
+
 variable "enable_org_policies" {
   type        = bool
   description = "組織ポリシーを適用するかどうか。"

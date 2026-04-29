@@ -8,42 +8,55 @@ data "google_organization" "org" {
 }
 
 # --------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # 組織ポリシー (Organization Policies) の定義
-# エンタープライズ環境で必須となる強力なガバナンスベースラインを適用します
+# エンタープライズ環境で必須となる強力なガバナンスベースラインを定義します。
+# 移行作業や初期構築をブロックしないよう、var.enable_org_policies スイッチに連動します。
 # --------------------------------------------------------------------------------
 
 # 1. サービスアカウントキーの作成を禁止
 # セキュリティ漏洩の最大の原因となるJSONキーのダウンロードを組織全体で禁止します。
 # アプリケーションはWorkload Identity、人間はSAの借用(Impersonation)を利用させます。
-resource "google_organization_policy" "disable_sa_key_creation" {
-  org_id     = data.google_organization.org.org_id
-  constraint = "constraints/iam.disableServiceAccountKeyCreation"
+resource "google_org_policy_policy" "disable_sa_key_creation" {
+  count  = var.enable_org_policies ? 1 : 0
+  name   = "organizations/${data.google_organization.org.org_id}/policies/iam.disableServiceAccountKeyCreation"
+  parent = "organizations/${data.google_organization.org.org_id}"
 
-  boolean_policy {
-    enforced = true
+  spec {
+    rules {
+      enforce = "true"
+    }
   }
 }
 
 # 2. デフォルトVPCネットワークの自動作成をスキップ
 # プロジェクト作成時に自動で作られる「default」ネットワークを無効化します。
-resource "google_organization_policy" "skip_default_network" {
-  org_id     = data.google_organization.org.org_id
-  constraint = "constraints/compute.skipDefaultNetworkCreation"
+# ネットワークはShared VPCホストプロジェクトで中央管理する設計を強制します。
+resource "google_org_policy_policy" "skip_default_network" {
+  count  = var.enable_org_policies ? 1 : 0
+  name   = "organizations/${data.google_organization.org.org_id}/policies/compute.skipDefaultNetworkCreation"
+  parent = "organizations/${data.google_organization.org.org_id}"
 
-  boolean_policy {
-    enforced = true
+  spec {
+    rules {
+      enforce = "true"
+    }
   }
 }
 
-# 3. 外部IPアドレスの付与を制限 (必要に応じて例外を設ける運用を推奨)
+# 3. 外部IPアドレスの付与を制限
 # VMインスタンスが直接パブリックIPを持つことを原則禁止し、Cloud NAT等を経由させます。
-resource "google_organization_policy" "vm_external_ip_access" {
-  org_id     = data.google_organization.org.org_id
-  constraint = "constraints/compute.vmExternalIpAccess"
+# 必要に応じて、特定のプロジェクトやフォルダでExcelから例外設定を行う運用を推奨します。
+resource "google_org_policy_policy" "vm_external_ip_access" {
+  count  = var.enable_org_policies ? 1 : 0
+  name   = "organizations/${data.google_organization.org.org_id}/policies/compute.vmExternalIpAccess"
+  parent = "organizations/${data.google_organization.org.org_id}"
 
-  list_policy {
-    deny {
-      all = true
+  spec {
+    rules {
+      deny {
+        all = true
+      }
     }
   }
 }

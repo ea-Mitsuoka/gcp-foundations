@@ -10,6 +10,8 @@ import glob
 import openpyxl
 import json
 import sys
+import re
+import ipaddress
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 
@@ -19,6 +21,20 @@ def sanitize_id(name):
     """TerraformのリソースIDとして使用可能な文字列に変換する"""
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
+
+def validate_gcp_resource_name(name, resource_type, row_idx):
+    """GCPのリソース命名規則に沿っているか検証する"""
+    if not name: return f"行 {row_idx}: リソース名が空です。"
+    
+    # プロジェクトID: 6-30文字、小文字、数字、ハイフン、先頭は英字、末尾は英数字
+    if resource_type == 'project':
+        if not re.match(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$', name):
+            return f"行 {row_idx}: プロジェクト名 '{name}' が不正です (6-30文字, 小文字, 数字, ハイフン, 先頭英字, 末尾英数字のみ)。"
+    # フォルダ名: 1-30文字、英数字、ハイフン、スペース
+    elif resource_type == 'folder':
+        if not re.match(r'^[a-zA-Z0-9- ]{1,30}$', name):
+            return f"行 {row_idx}: フォルダ名 '{name}' が不正です (1-30文字, 英数字, ハイフン, スペースのみ)。"
+    return None
 
 def add_validation(ws, col_letter, formula, title, prompt):
     """Excelシートにデータ入力規則（プルダウン）を追加する"""
@@ -51,11 +67,11 @@ def generate_resources():
         # 1. resources
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging"]
+        headers = ["resource_type", "parent_name", "resource_name", "owner", "shared_vpc", "vpc_sc", "monitoring", "logging"]
         ws.append(headers)
-        ws.append(["folder", "organization_id", "shared", "", "", False, False])
-        ws.append(["folder", "shared", "production", "", "", False, False])
-        ws.append(["project", "production", "prd-app-01", "prd-subnet-01", "default_perimeter", True, True])
+        ws.append(["folder", "organization_id", "shared", "admin@example.com", "", "", False, False])
+        ws.append(["folder", "shared", "production", "admin@example.com", "", "", False, False])
+        ws.append(["project", "production", "prd-app-01", "app-team@example.com", "prd-subnet-01", "default_perimeter", True, True])
 
         # 入力規則の追加
         add_validation(ws, "A", '"folder,project"', "リソースタイプ", "リソースの種別を選択")
@@ -109,7 +125,7 @@ def generate_resources():
     
     # --- 欠落しているシートの自動追加 ---
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "shared_vpc", "vpc_sc", "monitoring", "logging"],
+        "resources": ["resource_type", "parent_name", "resource_name", "owner", "shared_vpc", "vpc_sc", "monitoring", "logging"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
@@ -165,18 +181,31 @@ def generate_resources():
     # 4. Shared VPC Subnets
     subnets = []
     valid_subnets = set()
+    used_cidrs = []
     if 'shared_vpc_subnets' in wb.sheetnames:
         ws = wb['shared_vpc_subnets']
         headers = [cell.value for cell in ws[1]]
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             if not any(row): continue
             s_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
             subnets.append(s_dict)
-            if s_dict.get('subnet_name'):
-                valid_subnets.add(str(s_dict['subnet_name']).strip())
+            
+            s_name = str(s_dict.get('subnet_name', '')).strip()
+            if s_name: valid_subnets.add(s_name)
+            
+            cidr = str(s_dict.get('ip_cidr_range', '')).strip()
+            if cidr:
+                try:
+                    new_net = ipaddress.ip_network(cidr, strict=True)
+                    for old_net in used_cidrs:
+                        if new_net.overlaps(old_net):
+                            errors.append(f"[shared_vpc_subnets] {idx}行目: CIDR '{cidr}' が '{old_net}' と重複しています。")
+                    used_cidrs.append(new_net)
+                except ValueError as e:
+                    errors.append(f"[shared_vpc_subnets] {idx}行目: 不正な CIDR 形式またはネットワークアドレスです '{cidr}' ({e})。")
 
     # 1. フォルダとプロジェクト (resources) の読み込み
-    all_resource_names = set() # 重複チェック用
+    all_resource_names = set() 
     folders = {}
     projects = []
     if 'resources' in wb.sheetnames:
@@ -185,12 +214,18 @@ def generate_resources():
         for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             if not any(row): continue
             row_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
-            validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name'], 'resources', idx)
+            # owner も必須チェックに含める
+            validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name', 'owner'], 'resources', idx)
             
             res_name = str(row_dict.get('resource_name', '')).strip()
             res_type = str(row_dict.get('resource_type', '')).strip().lower()
+            parent_name = str(row_dict.get('parent_name', '')).strip()
             shared_vpc = str(row_dict.get('shared_vpc', '')).strip()
             vpc_sc = str(row_dict.get('vpc_sc', '')).strip()
+
+            # 命名規則チェック
+            name_error = validate_gcp_resource_name(res_name, res_type, idx)
+            if name_error: errors.append(f"[resources] {name_error}")
 
             if res_name in all_resource_names:
                 errors.append(f"[resources] {idx}行目: リソース名 '{res_name}' が重複しています。")
@@ -199,6 +234,10 @@ def generate_resources():
             if res_type not in ['folder', 'project']:
                 errors.append(f"[resources] {idx}行目: 不正な resource_type '{res_type}' です。'folder' または 'project' を指定してください。")
             
+            # 循環参照チェック
+            if res_name == parent_name:
+                errors.append(f"[resources] {idx}行目: 自分自身 '{res_name}' を親に指定することはできません (循環参照)。")
+
             # 整合性チェック: Shared VPC Subnet
             if res_type == 'project' and shared_vpc and shared_vpc.lower() not in ['false', 'none', '']:
                 if shared_vpc not in valid_subnets:
@@ -210,9 +249,21 @@ def generate_resources():
                     errors.append(f"[resources] {idx}行目: 指定された VPC-SC 境界 '{vpc_sc}' は 'vpc_sc_perimeters' シートに定義されていません。")
 
             if res_type == 'folder':
-                folders[res_name] = str(row_dict.get('parent_name', '')).strip()
+                folders[res_name] = parent_name
             elif res_type == 'project':
                 projects.append(row_dict)
+
+        # 親リソースの存在確認 (フォルダ)
+        for name, parent in folders.items():
+            if parent != 'organization_id' and parent not in folders:
+                errors.append(f"[resources] フォルダ '{name}' の親 '{parent}' が resources シート内に定義されていません。")
+        
+        # 親リソースの存在確認 (プロジェクト)
+        for proj in projects:
+            parent = str(proj.get('parent_name', '')).strip()
+            name = str(proj.get('resource_name', '')).strip()
+            if parent != 'organization_id' and parent not in folders:
+                errors.append(f"[resources] プロジェクト '{name}' の親フォルダ '{parent}' が resources シート内に定義されていません。")
 
     # 5. Org Policies
     org_policies = []
@@ -248,6 +299,14 @@ def generate_resources():
             if alert_name and alert_name not in valid_alert_names:
                 errors.append(f"[notifications] {idx}行目: アラート名 '{alert_name}' は 'alert_definitions' シートに定義されていません。")
 
+    # --- バリデーションエラーがあれば停止 ---
+    if errors:
+        print("\n❌ 構成エラーを検知しました:")
+        for err in errors:
+            print(f"  - {err}")
+        print("\n修正後に再度 'make generate' を実行してください。")
+        sys.exit(1)
+
     # --- TFファイル生成 ---
 
     def is_true_policy(val):
@@ -281,6 +340,7 @@ def generate_resources():
             if not name: continue
             sid = sanitize_id(name)
             f.write(f'resource "google_access_context_manager_access_level" "{sid}" {{\n')
+            f.write(f'  count  = var.enable_vpc_sc ? 1 : 0\n')
             f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
             f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{name}"\n')
             f.write(f'  title  = "{name}"\n')
@@ -292,7 +352,7 @@ def generate_resources():
                 members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
                 f.write(f'      members = {json.dumps(members)}\n')
             f.write(f'    }}\n  }}\n}}\n\n')
-            access_level_ids[name] = f"google_access_context_manager_access_level.{sid}.name"
+            access_level_ids[name] = f"var.enable_vpc_sc ? google_access_context_manager_access_level.{sid}[0].name : null"
 
         perimeter_ids = {}
         for p in perimeters:
@@ -301,6 +361,7 @@ def generate_resources():
             sid = sanitize_id(name)
             services = [s.strip() for s in str(p.get('restricted_services', '')).split(',') if s.strip()]
             f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n')
+            f.write(f'  count  = var.enable_vpc_sc ? 1 : 0\n')
             f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
             f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{name}"\n')
             f.write(f'  title  = "{name}"\n')
@@ -308,7 +369,7 @@ def generate_resources():
             f.write(f'    restricted_services = {json.dumps(services)}\n')
             f.write(f'  }}\n')
             f.write(f'  lifecycle {{\n    ignore_changes = [status[0].resources]\n  }}\n}}\n\n')
-            perimeter_ids[name] = f"google_access_context_manager_service_perimeter.{sid}.name"
+            perimeter_ids[name] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
 
         f.write(f'output "service_perimeter_ids" {{\n  value = {{\n')
         for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
@@ -458,6 +519,8 @@ def generate_resources():
         if shared_vpc_sn_val:
             shared_vpc_env_val = "dev" if env_val == "dev" else "prod"
 
+        owner_val = str(proj.get('owner', 'unknown')).strip()
+
         tfvars_content = f"""# 自動生成されたファイルです。手動で編集しないでください。
 organization_domain = "{domain}"
 app_name            = "{app_name}"
@@ -468,6 +531,13 @@ shared_vpc_subnet   = "{shared_vpc_sn_val}"
 vpc_sc              = "{vpc_sc_val}"
 monitoring          = {str(monitoring).lower()}
 logging             = {str(logging).lower()}
+deletion_protection = true
+
+labels = {{
+  env     = "{env_val}"
+  owner   = "{owner_val}"
+  app     = "{app_name}"
+}}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f:
             f.write(tfvars_content)

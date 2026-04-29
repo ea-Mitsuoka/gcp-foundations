@@ -30,12 +30,11 @@ Terraform の状態（State）が保存されている GCS バケットを特定
 
 ### ステップ 3: `common.tfvars` の再構成
 
-基盤全体で共有される変数を定義します。GCP コンソールや既存のリソース名から値を推測してください。
+基盤全体で共有される変数を定義します。このファイルは `make setup` 時に自動生成されますが、紛失した場合は再作成が必要です。
 
-- `terraform_service_account_email`: `terraform-org-manager@<MGMT_PROJECT_ID>.iam.gserviceaccount.com`
-- `gcs_backend_bucket`: ステートバケット名
-- `organization_domain`: 顧客ドメイン
-- `project_id_prefix`: プロジェクト ID の接頭辞（例: `example-com`）
+各パラメータの最新の定義および詳細な設定内容については、以下のガイドの **「ステップ 2.5: 共通変数ファイル (common.tfvars) の確認と調整」** セクションを必ず参照してください。
+
+- **[初期環境セットアップガイド - common.tfvars の詳細](../setup/initial_setup.md#ステップ-25-共通変数ファイル-commontfvars-の確認と調整)**
 
 ### ステップ 4: `gcp-foundations.xlsx` の復元
 
