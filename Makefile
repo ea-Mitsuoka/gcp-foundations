@@ -41,6 +41,13 @@ test:
 deploy:
 	bash terraform/scripts/deploy_all.sh
 
+destroy:
+	bash terraform/scripts/destroy_all.sh $(filter --all,$(MAKECMDGOALS))
+
+# ダミーターゲットを用意して --all を引数として扱えるようにする
+--all:
+	@:
+
 delivery:
 	bash terraform/scripts/handover.sh
 

@@ -294,6 +294,7 @@ enable_shared_vpc               = ${ENABLE_VPC}
 enable_vpc_sc                   = ${ENABLE_VPC_SC}
 enable_org_policies             = ${ENABLE_ORG_POLICIES}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
+allow_resource_destruction      = false
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
