@@ -34,7 +34,7 @@ Terraform の状態（State）が保存されている GCS バケットを特定
 
 各パラメータの最新の定義および詳細な設定内容については、以下のガイドの **「ステップ 2.5: 共通変数ファイル (common.tfvars) の確認と調整」** セクションを必ず参照してください。
 
-- **[初期環境セットアップガイド - common.tfvars の詳細](../setup/initial_setup.md#ステップ-25-共通変数ファイル-commontfvars-の確認と調整)**
+- **[初期環境セットアップガイド - common.tfvars の詳細](../setup/initial_setup.md#%E3%82%B9%E3%83%86%E3%83%83%E3%83%97-25-%E5%85%B1%E9%80%9A%E5%A4%89%E6%95%B0%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB-commontfvars-%E3%81%AE%E7%A2%BA%E8%AA%8D%E3%81%A8%E8%AA%BF%E6%95%B4)**
 
 ### ステップ 4: `gcp-foundations.xlsx` の復元
 
