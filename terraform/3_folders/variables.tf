@@ -9,8 +9,13 @@ variable "terraform_service_account_email" {
 
 variable "gcp_region" {
   type        = string
-  description = "プロジェクトのデフォルトリージョン。"
+  description = "リソースを作成するデフォルトリージョン。"
   default     = "asia-northeast1"
+}
+
+variable "gcs_backend_bucket" {
+  type        = string
+  description = "Terraformの状態ファイルを保存するGCSバケット名。"
 }
 
 variable "enable_org_policies" {
