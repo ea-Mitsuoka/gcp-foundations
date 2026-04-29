@@ -12,11 +12,6 @@ domain.env
 env
 gcp-foundations.xlsx
 
-# Automatically created terraform files
-/terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv
-/terraform/4_projects/*
-!/terraform/4_projects/example_project/
-
 # Sphinx documentation build
 build/
 
@@ -36,8 +31,6 @@ cat-for-ai.sh
 file_list.txt
 all_contents.txt
 change.patch
-alert_definitions.csv
-notifications.csv
 .catignore
 gemini/
 koushiki/

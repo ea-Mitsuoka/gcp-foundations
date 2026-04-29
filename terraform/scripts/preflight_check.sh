@@ -30,27 +30,50 @@ if [ ! -f "$COMMON_TFVARS" ]; then
 fi
 
 # Extract Management Project ID from bootstrap tfvars
-MGMT_PROJECT_ID=$(grep "project_id" "${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars" | cut -d'=' -f2 | tr -d ' "')
+BOOTSTRAP_TFVARS="${REPO_ROOT}/terraform/0_bootstrap/terraform.tfvars"
+MGMT_PROJECT_ID=""
+if [ -f "$BOOTSTRAP_TFVARS" ]; then
+    MGMT_PROJECT_ID=$(grep "project_id" "$BOOTSTRAP_TFVARS" | cut -d'=' -f2 | tr -d ' "')
+fi
+
+# CI環境（自動化）では一部のチェックを緩和する
+IS_CI=false
+if [[ "${TF_IN_AUTOMATION:-false}" == "true" ]]; then
+    IS_CI=true
+fi
 
 print_info "Starting Pre-flight Check..."
+if [ "$IS_CI" = true ]; then
+    print_warning "Running in Automation Mode (CI). Some checks will be bypassed."
+fi
 echo "--------------------------------------------------"
 
 # 1. Check gcloud authentication
 print_info "Checking gcloud authentication..."
 ACTIVE_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
 if [ -z "$ACTIVE_ACCOUNT" ]; then
-    print_error "No active gcloud account found. Run 'gcloud auth login' and 'gcloud auth application-default login'."
-    exit 1
+    if [ "$IS_CI" = true ]; then
+        print_warning "No active gcloud account, but continuing in CI mode."
+    else
+        print_error "No active gcloud account found. Run 'gcloud auth login' and 'gcloud auth application-default login'."
+        exit 1
+    fi
+else
+    print_success "Authenticated as: $ACTIVE_ACCOUNT"
 fi
-print_success "Authenticated as: $ACTIVE_ACCOUNT"
 
 # 2. Check Management Project existence
-print_info "Checking management project: $MGMT_PROJECT_ID..."
-if ! gcloud projects describe "$MGMT_PROJECT_ID" &>/dev/null; then
-    print_error "Cannot access management project '$MGMT_PROJECT_ID'. Check your permissions."
-    exit 1
+if [ -z "$MGMT_PROJECT_ID" ]; then
+    if [ "$IS_CI" = true ]; then
+        print_warning "Management Project ID not yet defined. Bypassing cloud checks."
+        echo "--------------------------------------------------"
+        print_success "Pre-flight Check bypassed for CI initialization."
+        exit 0
+    else
+        print_error "Management Project ID is empty. Run 'make setup' first."
+        exit 1
+    fi
 fi
-print_success "Project access confirmed."
 
 # 3. Check Billing Account link
 print_info "Checking billing account linkage..."

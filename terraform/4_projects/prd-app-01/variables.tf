@@ -1,0 +1,91 @@
+variable "organization_domain" {
+  type        = string
+  description = "GCP組織のドメイン名"
+}
+
+variable "gcs_backend_bucket" {
+  type        = string
+  description = "Terraformの状態ファイルを保存するGCSバケット名"
+  default     = ""
+}
+
+variable "project_id_prefix" {
+  type        = string
+  description = "プロジェクトIDの接頭辞（ドメイン名ベース）"
+}
+
+variable "app_name" {
+  type        = string
+  description = "アプリケーション名"
+}
+
+variable "environment" {
+  type        = string
+  description = "環境名 (dev, stag, prodなど)"
+}
+
+variable "folder_id" {
+  type        = string
+  default     = ""
+  description = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
+}
+
+variable "vpc_sc" {
+  type        = string
+  description = "このプロジェクトを所属させる VPC Service Controls の境界名。空文字の場合は対象外。"
+  default     = ""
+}
+
+variable "shared_vpc_subnet" {
+  type        = string
+  description = "接続する Shared VPC のサブネット名。空文字の場合は対象外。"
+  default     = ""
+}
+
+variable "labels" {
+  type        = map(string)
+  description = "プロジェクトに付与するラベル。"
+  default     = {}
+}
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
+}
+
+variable "shared_vpc_env" {
+  type        = string
+  description = "接続する Shared VPC の環境 (prod, dev, none)"
+  default     = "none"
+}
+
+variable "enable_shared_vpc" {
+  type        = bool
+  description = "Shared VPC が全体で有効か（共通変数から渡される）"
+  default     = false
+}
+
+variable "enable_org_policies" {
+  type        = bool
+  description = "組織ポリシーを適用するかどうか。"
+  default     = false
+}
+
+variable "monitoring" {
+  type        = bool
+  description = "監視を有効にするかどうか。"
+  default     = true
+}
+
+variable "logging" {
+  type        = bool
+  description = "ログ収集を有効にするかどうか。"
+  default     = true
+}
+
+variable "deletion_protection" {
+  type        = bool
+  description = "プロジェクトの削除保護を有効にするかどうか。"
+  default     = true
+}
+
