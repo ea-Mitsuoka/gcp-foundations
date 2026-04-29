@@ -423,7 +423,7 @@ def generate_resources():
                 f.write(f'        allowed_values = {json.dumps([v.strip() for v in str(p["allow_list"]).split(",")])}\n')
                 f.write(f'      }}\n    }}\n')
             else:
-                f.write(f'    rules {{\n      enforce = "{str(enforce).lower()}"\n    }}\n')
+                f.write(f'    rules {{\n      deny_all = "true"\n    }}\n')
             f.write(f'  }}\n}}\n\n')
 
     # 3_folders/auto_org_policies.tf
@@ -446,7 +446,7 @@ def generate_resources():
                 f.write(f'        allowed_values = {json.dumps([v.strip() for v in str(p["allow_list"]).split(",")])}\n')
                 f.write(f'      }}\n    }}\n')
             else:
-                f.write(f'    rules {{\n      enforce = "{str(enforce).lower()}"\n    }}\n')
+                f.write(f'    rules {{\n      deny_all = "true"\n    }}\n')
             f.write(f'  }}\n}}\n\n')
 
     # 8. プロジェクトのtfvars生成 (4_projects/*)
