@@ -63,7 +63,7 @@ resource "google_billing_budget" "budget" {
   display_name    = "Monthly Budget Alert - ${google_project.this.name}"
 
   budget_filter {
-    projects = ["projects/${google_project.this.project_number}"]
+    projects = ["projects/${google_project.this.number}"]
   }
 
   amount {
@@ -85,8 +85,8 @@ resource "google_billing_budget" "budget" {
 
   all_updates_rule {
     # 請求先アカウント管理者およびコスト管理者への通知を維持
-    iam_threshold_defined_amount_updates = true
-    
+    disable_default_iam_recipients = false
+
     # Excelで指定された追加のメールアドレスへの通知チャネルを紐付け
     monitoring_notification_channels = [
       for channel in google_monitoring_notification_channel.budget_emails : channel.name
