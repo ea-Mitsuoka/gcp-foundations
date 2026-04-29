@@ -4,39 +4,121 @@
 
 ### 1.1. 目的
 
-本ドキュメントは、[テスト計画書](./%E3%83%86%E3%82%B9%E3%83%88%E8%A8%88%E7%94%BB%E6%9B%B8.md)および[テスト設計書](./%E3%83%86%E3%82%B9%E3%83%88%E8%A8%AD%E8%A8%88%E6%9B%B8.md)に基づき、`gcp-foundations`リポジトリの各機能が仕様通りに動作することを確認するための、詳細なテストケース（手順、入力、期待結果）を定義する。
-
-### 1.2. 参照ドキュメント
-
-- [GCP Foundations テスト計画書](./%E3%83%86%E3%82%B9%E3%83%88%E8%A8%88%E7%94%BB%E6%9B%B8.md)
-- [GCP Foundations テスト設計書](./%E3%83%86%E3%82%B9%E3%83%88%E8%A8%AD%E8%A8%88%E6%9B%B8.md)
+本ドキュメントは、[テスト計画書](./test_plan.md)および[テスト設計書](./test_design.md)に基づき、`gcp-foundations`リポジトリの全機能および運用プロセスが仕様通りに動作することを確認するための詳細なテストケースを定義する。
+本仕様書は、SSoT定義、自動生成、デプロイ、運用ライフサイクル、およびセキュリティガバナンスの全領域をカバーする。
 
 ______________________________________________________________________
 
-## 2. テストケース
+## 2. 運用コマンドと初期構築の検証 (TC-OPS)
 
-### 2.1. SSoT とコード生成
+### TC-OPS-01: `make setup` によるシードリソース作成
+- **手順**:
+  1. クリーンなGCP組織で `make setup` を実行。
+  2. 対話プロンプトに従い、プロジェクト名や課金IDを入力。
+- **期待結果**:
+  - 管理プロジェクト、tfstate用GCSバケット、Terraform実行用SAが作成される。
+  - `terraform/common.tfvars` と `terraform/common.tfbackend` が自動生成される。
 
-| テストケースID | テスト内容 | 前提条件 | 手順 | 入力データ | 期待結果 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-GEN-01-01** | SSoTバリデーション - `resources`シート内のプロジェクト名の重複 | テスト用のExcelファイル`validation-error-duplicate-project.xlsx`が`tests/fixtures/`に準備されている。 | 1. `tests/fixtures/validation-error-duplicate-project.xlsx` をリポジトリルートに `gcp-foundations.xlsx` としてコピーする。<br>2. ターミナルで `make generate` を実行する。 | `resources`シートに、`resource_type`が`project`で、`resource_name`が同一（例: `prd-app-01`）の行が2つ存在するExcelファイル。 | 1. `make generate`コマンドが終了コード`1`で失敗する。<br>2. 標準出力に「Configuration errors detected:」というヘッダーが表示される。<br>3. エラー詳細に「Duplicate name 'prd-app-01'」といった趣旨のメッセージが含まれていること。 |
-| **TC-GEN-01-02** | SSoTバリデーション - `shared_vpc_subnets`シート内のCIDR重複 | テスト用のExcelファイル`validation-error-cidr-overlap.xlsx`が`tests/fixtures/`に準備されている。 | 1. `tests/fixtures/validation-error-cidr-overlap.xlsx` をリポジトリルートに `gcp-foundations.xlsx` としてコピーする。<br>2. ターミナルで `make generate` を実行する。 | `shared_vpc_subnets`シートに、`ip_cidr_range`が重複する（例: `10.0.1.0/24`と`10.0.1.128/25`）行が2つ存在するExcelファイル。 | 1. `make generate`コマンドが終了コード`1`で失敗する。<br>2. 標準出力に「Configuration errors detected:」というヘッダーが表示される。<br>3. エラー詳細に「CIDR '10.0.1.128/25' overlaps with '10.0.1.0/24'」といった趣旨のメッセージが含まれていること。 |
+### TC-OPS-02: `make check` (Pre-flight Check) の精度
+- **手順**:
+  1. 必要な権限（組織管理者など）を持っていないアカウントで `make check` を実行。
+  2. 正しい権限を持つアカウントに切り替えて再度実行。
+- **期待結果**:
+  - 1では権限不足のエラーを正しく報告すること。
+  - 2では全項目が「OK」または「PASS」となること。
 
-### 2.2. 初期構築とライフサイクル
+### TC-OPS-03: `make delivery` (納品準備)
+- **手順**: 開発完了後のリポジトリで `make delivery` を実行。
+- **期待結果**:
+  - `.git` ディレクトリが再初期化され、過去のコミット履歴が消去されていること。
+  - `docs/` や `terraform/` のファイル構成は維持されていること。
 
-| テストケースID | テスト内容 | 前提条件 | 手順 | 入力データ | 期待結果 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-LC-02-01** | 初期デプロイ（Happy Path）と差分適用 | ・テスト用GCP組織。<br>・実行環境で`gcloud auth login`済み。<br>・`happy-path.xlsx`が準備済み。 | 1. `make setup`を実行し、対話形式で設定を完了させる（課金アカウントのリンクも含む）。<br>2. `happy-path.xlsx`を`gcp-foundations.xlsx`としてコピーする。<br>3. `make deploy`を実行する。<br>4. `gcp-foundations.xlsx`の`resources`シートに、新しい`project`を1行追加する。<br>5. `make generate`を実行する。<br>6. `make deploy`を再度実行する。 | `happy-path.xlsx`: `shared`フォルダ1つと`prd-app-01`プロジェクト1つが定義されている。 | 1. 手順3の`make deploy`がエラーなく完了すること。<br>2. GCPコンソールで`shared`フォルダと`prd-app-01`プロジェクトが作成されていることを確認する。<br>3. 手順6の`make deploy`のログ上で、既存リソースが`No changes`となり、新規プロジェクトのみが`1 to add`として計画・適用されること。 |
+______________________________________________________________________
 
-### 2.3. セキュリティ & ガバナンス
+## 3. SSoT定義と自動生成の網羅的検証 (TC-SSOT)
 
-| テストケースID | テスト内容 | 前提条件 | 手順 | 入力データ | 期待結果 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-SEC-02-01** | フォルダ別組織ポリシー - リソースロケーション制限 | ・`common.tfvars`の`enable_org_policies`が`true`に設定されている。<br>・`gcp-foundations.xlsx`の`org_policies`シートで`target_name`が`production`フォルダ、`policy_id`が`gcp.resourceLocations`、`allow_list`が`asia-northeast1`に設定されている。<br>・上記設定で`make deploy`が完了している。<br>・`production`フォルダ配下に`prd-sec-test-01`プロジェクトが存在する。 | 1. `gcloud config set project prd-sec-test-01`でプロジェクトを切り替える。<br>2. `gcloud storage buckets create gs://prd-sec-test-us-bucket --location=us-central1` を実行する。<br>3. `gcloud storage buckets create gs://prd-sec-test-jp-bucket --location=asia-northeast1` を実行する。 | - | 1. 手順2のコマンドが`Constraint "gcp.resourceLocations" violated`というエラーで失敗すること。<br>2. 手順3のコマンドが成功すること。 |
-| **TC-SEC-03-01** | VPC-SC - 境界外へのデータ持ち出し禁止 | ・`common.tfvars`の`enable_vpc_sc`が`true`に設定されている。<br>・`vpc_sc_perimeters`シートで`default_perimeter`が定義され、`storage.googleapis.com`が`restricted_services`に含まれている。<br>・`resources`シートで`prd-sc-test-01`プロジェクトが`default_perimeter`に所属するように定義されている。<br>・上記設定で`make deploy`が完了している。<br>・`prd-sc-test-01`プロジェクト内にGCE-VMとGCSバケットが作成され、バケットにはテストファイル`test.txt`が配置されている。 | 1. `gcloud compute ssh`でVMにログインする。<br>2. VM上で`gcloud auth login`を実行し、ユーザー認証を行う。<br>3. `gsutil cp gs://<バケット名>/test.txt .` を実行する。 | - | 1. `gsutil`コマンドが`Request is prohibited by organization's policy.`というエラーで失敗すること。 |
+### TC-SSOT-01: `log_sinks` シートの反映
+- **手順**:
+  1. `log_sinks` シートに BQ宛先（365日保持）と GCS宛先（90日保持）の2行を追加。
+  2. `make generate` を実行。
+- **期待結果**:
+  - `terraform/1_core/services/logsink/sinks/locals.tf` の `sink_configs` に反映されていること。
+  - 同ディレクトリのデプロイにより、組織レベルのログシンクが作成されること。
 
-### 2.4. E2E機能テスト
+### TC-SSOT-02: `tag_definitions` と `org_tags`
+- **手順**:
+  1. `tag_definitions` に `cost_center` キーと値を定義。
+  2. `resources` シートの特定プロジェクトに `cost_center/123` を付与。
+  3. `make generate` 実行。
+- **期待結果**:
+  - `terraform/2_organization/auto_tags.tf` に `google_tags_tag_key` 等が出力されること。
+  - プロジェクト側のコードに `google_tags_tag_binding` が出力されること。
 
-| テストケースID | テスト内容 | 前提条件 | 手順 | 入力データ | 期待結果 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-E2E-01-01** | 非アクティブアカウント監視 - 検知とアラート | ・`make deploy`が完了している。<br>・テストユーザー`test-inactive-user@<domain>`が作成され、いずれかのプロジェクトの閲覧者(`roles/viewer`)権限が付与されている。 | 1. GCPコンソールのBigQuery画面を開く。<br>2. `logsink`プロジェクトの`security_analytics`データセットにある`inactive_users_view`を探す。<br>3. ビューのクエリを編集し、`INTERVAL 90 DAY`の部分を`INTERVAL 1 MINUTE`に変更して保存する。<br>4. 2分程度待機する。<br>5. Cloud Schedulerコンソールを開き、`daily-inactive-account-check`ジョブを手動で「今すぐ実行」する。<br>6. Cloud Monitoringコンソールを開き、Metrics Explorerで`custom.googleapis.com/security/inactive_account_count`という指標を検索する。 | - | 1. 手順6で、指標の値が `1` 以上でプロットされていることを確認する。<br>2. 5〜10分以内に、`notifications.csv`で定義された通知先に「Inactive User Account Detected」という件名のアラートメールが届くこと。 |
+### TC-SSOT-03: `shared_vpc_subnets` の重複・境界チェック
+- **手順**:
+  1. 同一の `subnet_name` を持つ2行を定義し `make generate`。
+  2. 重複するIP範囲（10.0.0.0/24 と 10.0.0.128/25）を定義し `make generate`。
+- **期待結果**: いずれもバリデーションエラーで停止すること。
+
+______________________________________________________________________
+
+## 4. プロジェクト・ライフサイクルの検証 (TC-LC)
+
+### TC-LC-01: プロジェクトの追加フロー
+- **手順**: `project_lifecycle.md` に従い、Excel追記 -> `make generate` -> `make deploy` を実行。
+- **期待結果**:
+  - 新規プロジェクトディレクトリが `terraform/4_projects/` に作成される。
+  - デプロイ後、GCP上でプロジェクトが作成され、正しいラベル（env, owner, app）が付与されている。
+
+### TC-LC-02: 削除保護 (Deletion Protection) の挙動
+- **手順**:
+  1. `terraform/4_projects/[name]/terraform.tfvars` の `deletion_protection` を `true` に設定してデプロイ。
+  2. 同ディレクトリで `terraform destroy` (または `apply -destroy`) を試行。
+  3. `deletion_protection = false` に変更して `apply` 後、再度削除を試行。
+- **期待結果**:
+  - 2では Terraform または GCP API によって削除が拒否されること。
+  - 3では正常に削除が完了すること。
+
+### TC-LC-03: 課金リンク待ち状態の再開フロー
+- **手順**:
+  1. `common.tfvars` で `core_billing_linked = false` に設定。
+  2. `make deploy` を実行。
+  3. プロジェクト作成完了後、手動で課金リンクを実施。
+  4. `core_billing_linked = true` に書き換えて再度 `make deploy`。
+- **期待結果**:
+  - 初回実行時は API 有効化レイヤーがスキップされる。
+  - 再実行時はスキップされていたレイヤー（services 配下）が正常に適用される。
+
+______________________________________________________________________
+
+## 5. セキュリティガバナンスの検証 (TC-SEC)
+
+### TC-SEC-01: 組織ポリシーのグローバルスイッチ
+- **手順**:
+  1. `common.tfvars` の `enable_org_policies` を `false` にして `make deploy`。
+  2. コンソールから SAキーを作成（成功するはず）。
+  3. `true` に変更して `make deploy`。
+  4. 再度 SAキーを作成。
+- **期待結果**: 3のデプロイ後は SAキーの作成が拒否されること。
+
+### TC-SEC-02: OPA (Rego) によるラベル必須化チェック
+- **手順**:
+  1. `terraform/4_projects/[name]/terraform.tfvars` から `labels` の `env` 行を削除。
+  2. `terraform plan -out=tfplan` -> `terraform show -json tfplan > plan.json`。
+  3. `opa eval --data policies/ --input plan.json "data.gcp.policies.deny"` を実行。
+- **期待結果**: `missing_labels: {"env"}` を含むエラーメッセージが返されること。
+
+______________________________________________________________________
+
+## 6. E2E機能と運用の検証 (TC-E2E)
+
+### TC-E2E-01: 中央監視プロジェクトの可視性
+- **前提**: `central_monitoring = true` のプロジェクト A と `false` のプロジェクト B をデプロイ。
+- **手順**: モニタリングプロジェクトのダッシュボードで、両プロジェクトのメトリクスが表示されるか確認。
+- **期待結果**: A のデータは表示され、B のデータは表示されない（または権限エラー）こと。
+
+### TC-E2E-02: ログベースアラートと通知チャネルの紐付け
+- **手順**:
+  1. `alert_definitions` シートに定義した条件のログを生成。
+  2. `notifications` シートで定義した各メールアドレスに通知が届くか確認。
+- **期待結果**: `monitoring_notification_channels` がアラートポリシーに正しく紐付いており、全通知先にメールが配信されること。
