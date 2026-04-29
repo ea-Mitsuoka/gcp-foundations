@@ -12,6 +12,7 @@ help:
 	@echo "  make opa       - Run OPA policy checks"
 	@echo "  make test      - Run all tests (TF and Python)"
 	@echo "  make deploy    - Run the global deployment script"
+	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
 	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
 	@echo "  make clean     - Remove local terraform state and cache files"
 
