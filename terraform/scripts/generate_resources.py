@@ -579,5 +579,13 @@ labels = {{
 
     print(f"✅ Generated tfvars and auto_org_policies.tf for all layers")
 
+    print("\n" + "="*50)
+    print(" 🎉 Generation Complete!")
+    print("="*50)
+    print(" 1. [Verify] Review the generated files in terraform/4_projects/")
+    print(" 2. [Check]  Run 'make lint' to ensure code quality")
+    print(" 3. [Deploy] Run 'make deploy' to apply changes to GCP")
+    print("="*50)
+
 if __name__ == "__main__":
     generate_resources()

@@ -28,6 +28,8 @@ lint:
 	cd terraform && terraform fmt -recursive
 	cd terraform && tflint --init && tflint --recursive
 	find terraform/scripts -name "*.sh" -exec shellcheck -s bash {} +
+	@echo ""
+	@echo "✅ Lint check passed! Next: Run 'make deploy' to apply changes."
 
 opa:
 	opa check policies/*.rego

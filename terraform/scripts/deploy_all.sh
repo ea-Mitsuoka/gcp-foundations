@@ -146,9 +146,22 @@ for dir in "${TARGET_DIRS[@]}"; do
 done
 
 if [[ "$PLAN_ONLY" == "false" ]]; then
-  echo "🎉 All deployments completed successfully!"
+  echo ""
+  echo "=========================================================="
+  echo " 🎉 All deployments completed successfully!"
+  echo "=========================================================="
+  echo " Next Steps:"
+  echo " - [Verify]   Log in to the GCP Console and check your resources."
+  echo " - [Operate]  To add/modify projects, update the spreadsheet and run 'make generate' again."
+  echo " - [Guide]    Refer to 'docs/operations/project_lifecycle.md' for daily operations."
+  echo "=========================================================="
   # 全て成功した場合は状態ファイルを削除
   rm -f "$STATE_FILE"
 else
-  echo "🎉 All plans completed successfully!"
+  echo ""
+  echo "=========================================================="
+  echo " 🎉 All plans completed successfully!"
+  echo "=========================================================="
+  echo " Review the plans above and run 'make deploy' to apply changes."
+  echo "=========================================================="
 fi
