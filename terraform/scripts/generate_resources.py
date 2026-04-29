@@ -117,15 +117,15 @@ def generate_resources():
         # 1. resources
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "monitoring", "logging"]
+        headers = ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging"]
         ws.append(headers)
         ws.append(["folder", "organization_id", "shared", "admin@example.com", 0, "", "", "", False, False])
         ws.append(["folder", "shared", "production", "admin@example.com", 0, "", "", "", False, False])
         ws.append(["project", "production", "prd-app-01", "app-team@example.com", 1000, "finance@example.com,lead@example.com", "prd-subnet-01", "default_perimeter", True, True])
 
         add_validation(ws, "A", '"folder,project"', "Resource Type", "Select type of resource")
-        add_validation(ws, "I", '"True,False"', "Monitoring", "Set True to enable")
-        add_validation(ws, "J", '"True,False"', "Logging", "Set True to enable")
+        add_validation(ws, "I", '"True,False"', "Monitoring", "Set True to enable central monitoring")
+        add_validation(ws, "J", '"True,False"', "Logging", "Set True to enable central logging")
 
         # 2. vpc_sc_perimeters
         ws2 = wb.create_sheet("vpc_sc_perimeters")
@@ -174,7 +174,7 @@ def generate_resources():
     
     # --- Auto-add missing sheets ---
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "monitoring", "logging"],
+        "resources": ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
@@ -526,9 +526,8 @@ def generate_resources():
         if vpc_sc_val.lower() in ['false', 'none', '']: vpc_sc_val = ""
         shared_vpc_sn_val = str(proj.get('shared_vpc', '')).strip()
         if shared_vpc_sn_val.lower() in ['false', 'none', '']: shared_vpc_sn_val = ""
-        monitoring = is_true(proj.get('monitoring'))
-        logging = is_true(proj.get('logging'))
-        
+        monitoring = is_true(proj.get('central_monitoring'))
+        logging = is_true(proj.get('central_logging'))
         # Budget settings
         budget_amount = proj.get('budget_amount', 0)
         if budget_amount is None: budget_amount = 0
