@@ -36,6 +36,12 @@ else
 fi
 
 echo "=========================================================="
+echo " Step 0: Pre-flight Check"
+echo "=========================================================="
+bash "${ROOT_DIR}/terraform/scripts/preflight_check.sh"
+
+echo ""
+echo "=========================================================="
 echo " Step 1: Generating tfvars from SSoT (domain.env & xlsx)"
 echo "=========================================================="
 

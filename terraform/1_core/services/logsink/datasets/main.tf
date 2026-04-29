@@ -28,7 +28,7 @@ resource "google_bigquery_table" "inactive_users_view" {
   table_id   = "inactive_users_view"
 
   view {
-    query = <<EOF
+    query          = <<EOF
 WITH 
   -- 過去90日間に活動があったユーザーを抽出
   active_users AS (

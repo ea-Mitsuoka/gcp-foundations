@@ -1,4 +1,4 @@
-# 自動生成されたファイルです。手動で編集しないでください。
+# Auto-generated file. Do not edit manually.
 
 resource "google_org_policy_policy" "production_gcp_resourceLocations" {
   count  = var.enable_org_policies ? 1 : 0

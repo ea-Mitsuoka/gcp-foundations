@@ -63,12 +63,13 @@ if [ -f "$DOMAIN_ENV_PATH" ]; then
     print_success "Loaded domain: $CUSTOMER_DOMAIN"
 else
     print_info "Please provide the following information for the new client."
-    read -r -p "Enter customer's domain (e.g., customer-domain.com): " CUSTOMER_DOMAIN
-    echo "domain=\"${CUSTOMER_DOMAIN}\"" > "$DOMAIN_ENV_PATH"
-    print_success "Created domain.env with domain: $CUSTOMER_DOMAIN"
+read -r -p "Enter customer's domain (e.g., customer-domain.com): " CUSTOMER_DOMAIN
+echo "domain=\"${CUSTOMER_DOMAIN}\"" > "$DOMAIN_ENV_PATH"
+print_success "Created domain.env with domain: $CUSTOMER_DOMAIN"
 fi
 
 print_info "Please provide the following information for the new client."
+read -r -p "Enter the Billing Account ID (e.g., 012345-6789AB-CDEF01): " BILLING_ACCOUNT_ID
 read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
 
 read -r -p "Do you want to enable Shared VPC Host Projects in 1_core? (true/false) [default: false]: " ENABLE_VPC
@@ -286,6 +287,7 @@ cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
 terraform_service_account_email = "${SA_EMAIL}"
 gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
 organization_domain             = "${CUSTOMER_DOMAIN}"
+billing_account_id              = "${BILLING_ACCOUNT_ID}"
 gcp_region                      = "${GCP_REGION}"
 project_id_prefix               = "${SHORT_ORG_NAME}"
 core_billing_linked             = false

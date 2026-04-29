@@ -44,5 +44,52 @@ resource "google_project" "this" {
 
 #   labels = { for k, v in var.labels : k => v if v != "" && v != null }
 
-#   # billing_account はプロジェクト作成後に管理者アカウントで設定するため、ここでは定義しない
-# }
+# 予算通知用のメールチャネルを作成 (通知先と管理プロジェクトの両方が指定されている場合のみ)
+resource "google_monitoring_notification_channel" "budget_emails" {
+  for_each     = var.monitoring_project_id != null ? toset(var.budget_alert_emails) : []
+  project      = var.monitoring_project_id
+  display_name = "Budget Alert Email - ${each.key}"
+  type         = "email"
+  labels = {
+    email_address = each.key
+  }
+}
+
+# 予算アラートの設定 (予算が0より大きい場合のみ作成)
+resource "google_billing_budget" "budget" {
+  count = var.budget_amount > 0 && var.billing_account != null ? 1 : 0
+
+  billing_account = var.billing_account
+  display_name    = "Monthly Budget Alert - ${google_project.this.name}"
+
+  budget_filter {
+    projects = ["projects/${google_project.this.project_number}"]
+  }
+
+  amount {
+    specified_amount {
+      currency_code = "JPY"
+      units         = var.budget_amount
+    }
+  }
+
+  threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
+    threshold_percent = 0.9
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+  }
+
+  all_updates_rule {
+    # 請求先アカウント管理者およびコスト管理者への通知を維持
+    iam_threshold_defined_amount_updates = true
+    
+    # Excelで指定された追加のメールアドレスへの通知チャネルを紐付け
+    monitoring_notification_channels = [
+      for channel in google_monitoring_notification_channel.budget_emails : channel.name
+    ]
+  }
+}

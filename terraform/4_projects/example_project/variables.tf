@@ -95,3 +95,27 @@ variable "deletion_protection" {
   default     = true
 }
 
+variable "budget_amount" {
+  type        = number
+  description = "月額予算。0の場合はアラートを作成しません。"
+  default     = 0
+}
+
+variable "budget_alert_emails" {
+  type        = list(string)
+  description = "追加の予算アラート通知先メールアドレス。"
+  default     = []
+}
+
+variable "billing_account_id" {
+  type        = string
+  description = "予算アラートを紐付ける請求先アカウントID。プロジェクト作成後の手動紐付け後に有効になります。"
+  default     = null
+}
+
+variable "mgmt_project_id" {
+  type        = string
+  description = "管理プロジェクトのID。通知チャネルの作成先として使用します。"
+  default     = null
+}
+

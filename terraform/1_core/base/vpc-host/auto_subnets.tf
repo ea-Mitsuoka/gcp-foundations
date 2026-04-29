@@ -1,4 +1,4 @@
-# 自動生成されたファイルです。手動で編集しないでください。
+# Auto-generated file. Do not edit manually.
 
 resource "google_compute_subnetwork" "prd_subnet_01" {
   name                     = "prd-subnet-01"

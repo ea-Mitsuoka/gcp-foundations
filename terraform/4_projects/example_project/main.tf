@@ -86,18 +86,21 @@ module "project" {
   name            = "${var.app_name}-${var.environment}"
   organization_id = data.google_organization.org.org_id
   folder_id       = local.resolved_folder_id
-  
+
   # ベースのラベルに、monitoring / logging フラグの状態を統合
   labels = merge(var.labels, {
     monitoring = tostring(var.monitoring)
     logging    = tostring(var.logging)
   })
 
-  deletion_protection = var.deletion_protection
+  deletion_protection   = var.deletion_protection
+  budget_amount         = var.budget_amount
+  budget_alert_emails   = var.budget_alert_emails
+  billing_account       = var.billing_account_id
+  monitoring_project_id = var.mgmt_project_id
 
   # 課金アカウントの紐付けは別途管理者が実行するため、Terraform では設定しない
 }
-
 resource "google_compute_shared_vpc_service_project" "service_project" {
   count           = var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
   host_project    = local.host_project_id

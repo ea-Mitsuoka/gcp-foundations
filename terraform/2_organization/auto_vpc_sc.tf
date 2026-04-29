@@ -1,6 +1,7 @@
-# 自動生成されたファイルです。手動で編集しないでください。
+# Auto-generated file. Do not edit manually.
 
 resource "google_access_context_manager_access_level" "office_ip_only" {
+  count  = var.enable_vpc_sc ? 1 : 0
   parent = "accessPolicies/${google_access_context_manager_access_policy.access_policy[0].name}"
   name   = "accessPolicies/${google_access_context_manager_access_policy.access_policy[0].name}/accessLevels/office_ip_only"
   title  = "office_ip_only"
@@ -13,6 +14,7 @@ resource "google_access_context_manager_access_level" "office_ip_only" {
 }
 
 resource "google_access_context_manager_service_perimeter" "default_perimeter" {
+  count  = var.enable_vpc_sc ? 1 : 0
   parent = "accessPolicies/${google_access_context_manager_access_policy.access_policy[0].name}"
   name   = "accessPolicies/${google_access_context_manager_access_policy.access_policy[0].name}/servicePerimeters/default_perimeter"
   title  = "default_perimeter"
@@ -26,13 +28,13 @@ resource "google_access_context_manager_service_perimeter" "default_perimeter" {
 
 output "service_perimeter_ids" {
   value = {
-    "default_perimeter" = google_access_context_manager_service_perimeter.default_perimeter.name
+    "default_perimeter" = var.enable_vpc_sc ? google_access_context_manager_service_perimeter.default_perimeter[0].name : null
   }
 }
 
 output "access_level_ids" {
   value = {
-    "office_ip_only" = google_access_context_manager_access_level.office_ip_only.name
+    "office_ip_only" = var.enable_vpc_sc ? google_access_context_manager_access_level.office_ip_only[0].name : null
   }
 }
 

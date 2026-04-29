@@ -36,3 +36,27 @@ variable "deletion_protection" {
   description = "Whether or not to protect the project from deletion. Internally mapped to google_project's deletion_policy (PREVENT/DELETE). Default is true."
   default     = true
 }
+
+variable "budget_amount" {
+  type        = number
+  description = "The monthly budget amount for the project. If 0, no budget alert is created."
+  default     = 0
+}
+
+variable "billing_account" {
+  type        = string
+  description = "The billing account ID to associate the budget with. Required if budget_amount > 0."
+  default     = null
+}
+
+variable "monitoring_project_id" {
+  type        = string
+  description = "The ID of the project where notification channels will be created (usually the management or central monitoring project)."
+  default     = null
+}
+
+variable "budget_alert_emails" {
+  type        = list(string)
+  description = "List of additional email addresses to receive budget alerts."
+  default     = []
+}
