@@ -12,7 +12,7 @@ data "terraform_remote_state" "folders" {
 }
 
 data "terraform_remote_state" "organization" {
-  count   = var.enable_vpc_sc && var.vpc_sc != "" && var.vpc_sc != null ? 1 : 0
+  count   = (var.enable_vpc_sc && var.vpc_sc != "" && var.vpc_sc != null) || var.enable_tags ? 1 : 0
   backend = "gcs"
   config = {
     bucket                      = var.gcs_backend_bucket
@@ -124,3 +124,14 @@ resource "google_compute_subnetwork_iam_member" "subnet_user" {
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:${module.project.project_number}@cloudservices.gserviceaccount.com"
 }
+
+# 組織レベルのタグ紐付け (enable_tags = true の場合のみ)
+resource "google_tags_tag_binding" "project_tags" {
+  for_each  = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? toset(var.org_tags) : []
+
+  parent    = "//cloudresourcemanager.googleapis.com/projects/${module.project.project_id}"
+  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids[each.key]
+
+  depends_on = [module.project]
+}
+

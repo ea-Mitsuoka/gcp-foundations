@@ -82,6 +82,9 @@ print_info "Organization Policies can be restrictive. If you plan to migrate exi
 read -r -p "Do you want to enable Organization Policies? (true/false) [default: false]: " ENABLE_ORG_POLICIES
 ENABLE_ORG_POLICIES=$(echo "${ENABLE_ORG_POLICIES:-false}" | tr '[:upper:]' '[:lower:]')
 
+read -r -p "Do you want to enable Organization Tags? (true/false) [default: false]: " ENABLE_TAGS
+ENABLE_TAGS=$(echo "${ENABLE_TAGS:-false}" | tr '[:upper:]' '[:lower:]')
+
 read -r -p "Do you want to enable Simplified Admin Groups (2 groups instead of 9)? (true/false) [default: false]: " ENABLE_SIMPLIFIED_GROUPS
 ENABLE_SIMPLIFIED_GROUPS=$(echo "${ENABLE_SIMPLIFIED_GROUPS:-false}" | tr '[:upper:]' '[:lower:]')
 
@@ -295,6 +298,7 @@ enable_vpc_host_projects        = ${ENABLE_VPC}
 enable_shared_vpc               = ${ENABLE_VPC}
 enable_vpc_sc                   = ${ENABLE_VPC_SC}
 enable_org_policies             = ${ENABLE_ORG_POLICIES}
+enable_tags                     = ${ENABLE_TAGS}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
 allow_resource_destruction      = false
 EOF

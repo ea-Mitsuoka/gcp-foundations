@@ -19,3 +19,9 @@ variable "enable_org_policies" {
   default     = false
 }
 
+variable "enable_tags" {
+  type        = bool
+  description = "組織レベルのタグ機能を有効化するかどうか。"
+  default     = false
+}
+

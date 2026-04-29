@@ -73,3 +73,22 @@ def test_validate_hierarchy_missing_parent(validator):
     ]
     errors = validator.validate_hierarchy(resources)
     assert any("not defined" in e for e in errors)
+
+# --- Tag Validation Tests ---
+
+def test_validate_tags_valid(validator):
+    definitions = {'environment': {'allowed_values': ['production', 'development']}}
+    assert validator.validate_tags("environment/production", definitions) is None
+    assert validator.validate_tags("environment/production, environment/development", definitions) is None
+
+def test_validate_tags_invalid_format(validator):
+    definitions = {'environment': {'allowed_values': ['production']}}
+    assert validator.validate_tags("environment:production", definitions) is not None # Missing slash
+
+def test_validate_tags_undefined_key(validator):
+    definitions = {'environment': {'allowed_values': ['production']}}
+    assert validator.validate_tags("cost_center/123", definitions) is not None
+
+def test_validate_tags_undefined_value(validator):
+    definitions = {'environment': {'allowed_values': ['production']}}
+    assert validator.validate_tags("environment/sandbox", definitions) is not None
