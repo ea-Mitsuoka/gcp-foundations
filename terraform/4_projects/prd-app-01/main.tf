@@ -44,7 +44,11 @@ locals {
 
 # tflint 未使用変数エラー回避のための参照
 resource "terraform_data" "variable_validation" {
-  input = var.enable_org_policies
+  input = {
+    enable_org_policies = var.enable_org_policies
+    monitoring          = var.monitoring
+    logging             = var.logging
+  }
 }
 
 module "project" {
