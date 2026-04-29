@@ -22,6 +22,7 @@ setup:
 
 generate:
 	uv run terraform/scripts/generate_resources.py
+	cd terraform && terraform fmt -recursive
 
 lint:
 	cd terraform && terraform fmt -recursive
