@@ -14,6 +14,7 @@ on:
       - '**.tfvars'
       - '**.md' # For terraform-docs
       - '.github/workflows/**'
+      - 'terraform/scripts/**'
   push:
     branches:
       - main
@@ -22,6 +23,7 @@ on:
       - '**.tfvars'
       - '**.md' # For terraform-docs
       - '.github/workflows/**'
+      - 'terraform/scripts/**'
   workflow_dispatch:
 
 permissions:
@@ -38,8 +40,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Generate Terraform Code from SSoT
+        run: |
+          # Create a minimal dummy domain.env and Excel if they don't exist
+          echo 'domain="example.com"' > domain.env
+          make generate
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
@@ -52,17 +65,6 @@ jobs:
       - name: Init TFLint
         run: tflint --init
 
-      - name: Create dummy CSV files for TFLint
-        run: |
-          echo "log_type,filter,destination_type,destination_parent,retention_days" > terraform/1_core/services/logsink/sinks/gcp_log_sink_config.csv
-          echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/1_notification_channels/notifications.csv
-          echo "alert_name,alert_display_name,metric_filter,alert_documentation" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv
-          echo "user_email,receive_alerts,project_id,alert_name" > terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv
-          
-          # Also create them in the root since tflint resolves paths relative to where it runs when using --recursive
-          echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
-          echo "alert_name,alert_display_name,metric_filter,alert_documentation" > alert_definitions.csv
-
       - name: Run TFLint
         run: tflint --recursive
 
@@ -72,11 +74,20 @@ jobs:
   discover:
     name: Discover Terraform Root Modules
     runs-on: ubuntu-latest
+    needs: [lint] # Wait for code generation in lint job (though we need to repeat it in validate)
     outputs:
       matrix: ${{ steps.discover.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Generate Terraform Code
+        run: |
+          echo 'domain="example.com"' > domain.env
+          uv run terraform/scripts/generate_resources.py
 
       - name: Build validation matrix
         id: discover
@@ -139,20 +150,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create dummy CSV for validation
-        if: matrix.working-directory == 'terraform/1_core/services/logsink/sinks'
-        run: echo "log_type,filter,destination_type,destination_parent,retention_days" > gcp_log_sink_config.csv
-        working-directory: ${{ matrix.working-directory }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
-      - name: Create dummy CSV for notification channels validation
-        if: matrix.working-directory == 'terraform/1_core/services/monitoring/1_notification_channels'
-        run: echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
-        working-directory: ${{ matrix.working-directory }}
-
-      - name: Create dummy CSV for log alerts validation
-        if: matrix.working-directory == 'terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts'
-        run: echo "alert_name,alert_display_name,metric_filter,alert_documentation" > alert_definitions.csv && echo "user_email,receive_alerts,project_id,alert_name" > notifications.csv
-        working-directory: ${{ matrix.working-directory }}
+      - name: Generate Terraform Code
+        run: |
+          echo 'domain="example.com"' > domain.env
+          uv run terraform/scripts/generate_resources.py
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
