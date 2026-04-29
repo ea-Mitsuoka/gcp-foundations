@@ -15,6 +15,10 @@ gcp-foundations.xlsx
 # Sphinx documentation build
 build/
 
+# Automatically created terraform files
+/terraform/4_projects/*
+!/terraform/4_projects/example_project/
+
 # Python cache files
 __pycache__/
 
