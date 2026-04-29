@@ -54,9 +54,7 @@ resource "google_org_policy_policy" "vm_external_ip_access" {
 
   spec {
     rules {
-      deny {
-        all = true
-      }
+      deny_all = "true"
     }
   }
 }
