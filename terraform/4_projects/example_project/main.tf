@@ -32,7 +32,7 @@ data "terraform_remote_state" "vpc_host" {
 }
 
 data "terraform_remote_state" "monitoring" {
-  count   = var.monitoring ? 1 : 0
+  count   = var.central_monitoring ? 1 : 0
   backend = "gcs"
   config = {
     bucket                      = var.gcs_backend_bucket
@@ -52,14 +52,14 @@ locals {
   subnet_id = var.shared_vpc_subnet != "" ? try(data.terraform_remote_state.vpc_host[0].outputs.shared_vpc_subnet_ids[var.shared_vpc_subnet], null) : null
 
   # 監視用サービスアカウントの取得
-  monitoring_sa = var.monitoring ? try(data.terraform_remote_state.monitoring[0].outputs.monitoring_service_account_email, null) : null
+  monitoring_sa = var.central_monitoring ? try(data.terraform_remote_state.monitoring[0].outputs.monitoring_service_account_email, null) : null
 }
 
 # ... (既存の module.project 定義などは維持)
 
-# 監視用 IAM 権限の付与 (monitoring フラグが true の場合のみ)
+# 監視用 IAM 権限の付与 (central_monitoring フラグが true の場合のみ)
 resource "google_project_iam_member" "monitoring_viewer" {
-  for_each = toset(var.monitoring && local.monitoring_sa != null ? [
+  for_each = toset(var.central_monitoring && local.monitoring_sa != null ? [
     "roles/monitoring.viewer",
     "roles/compute.viewer",
     "roles/stackdriver.resourceMetadata.viewer"
@@ -74,8 +74,8 @@ resource "google_project_iam_member" "monitoring_viewer" {
 resource "terraform_data" "variable_validation" {
   input = {
     enable_org_policies = var.enable_org_policies
-    monitoring          = var.monitoring
-    logging             = var.logging
+    central_monitoring  = var.central_monitoring
+    central_logging     = var.central_logging
   }
 }
 
@@ -87,10 +87,10 @@ module "project" {
   organization_id = data.google_organization.org.org_id
   folder_id       = local.resolved_folder_id
 
-  # ベースのラベルに、monitoring / logging フラグの状態を統合
+  # ベースのラベルに、central_monitoring / central_logging フラグの状態を統合
   labels = merge(var.labels, {
-    monitoring = tostring(var.monitoring)
-    logging    = tostring(var.logging)
+    monitoring = tostring(var.central_monitoring)
+    logging    = tostring(var.central_logging)
   })
 
   deletion_protection   = var.deletion_protection

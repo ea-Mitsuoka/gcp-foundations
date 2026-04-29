@@ -89,15 +89,15 @@ variable "org_tags" {
   default     = []
 }
 
-variable "monitoring" {
+variable "central_monitoring" {
   type        = bool
-  description = "監視を有効にするかどうか。"
+  description = "中央監視を有効にするかどうか。"
   default     = true
 }
 
-variable "logging" {
+variable "central_logging" {
   type        = bool
-  description = "ログ収集を有効にするかどうか。"
+  description = "中央ログ集約を有効にするかどうか。"
   default     = true
 }
 
