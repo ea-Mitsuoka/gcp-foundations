@@ -57,6 +57,9 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
+      - name: Run Python Unit Tests
+        run: uv run pytest tests/
+
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:

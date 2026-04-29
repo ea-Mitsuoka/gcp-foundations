@@ -13,16 +13,26 @@ deny contains msg if {
   # 作成(create)または更新(update)されるリソースのみを対象
   change.change.actions[_] in ["create", "update"]
 
-  # リソースに"labels"属性が存在するか確認
-  labels := change.change.after.labels
+  # プロジェクトリソースのみを対象にラベルを強制する
+  change.type == "google_project"
+
+  # リソースの labels 属性を安全に取得
+  labels := get_labels(change.change.after)
 
   # 必須ラベルのセットと、リソースに実際に付与されたラベルのセットを比較
-  provided_labels := {k | labels[k]}
+  # (labels が空 {} の場合は provided_labels も空になる)
+  provided_labels := {k | _ := labels[k]}
   missing_labels := required_labels - provided_labels
 
   # 足りないラベルが1つでもあれば（count > 0）...
   count(missing_labels) > 0
 
   # エラーメッセージを生成
-  msg := sprintf("リソース '%s' に必須ラベルがありません: %s", [change.address, missing_labels])
+  msg := sprintf("プロジェクト '%s' に必須ラベルがありません: %s", [change.address, missing_labels])
 }
+
+# labels 属性が null や未定義の場合に備え、安全に空のオブジェクトにフォールバックするヘルパー
+get_labels(after) := labels if {
+    labels := object.get(after, "labels", {})
+    labels != null
+} else := {}

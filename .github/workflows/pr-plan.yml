@@ -64,11 +64,17 @@ jobs:
           terraform_service_account_email = "${{ secrets.TF_SERVICE_ACCOUNT_EMAIL || 'dummy-sa@example.com' }}"
           gcs_backend_bucket              = "${{ secrets.GCS_BACKEND_BUCKET || 'dummy-bucket-for-ci' }}"
           organization_domain             = "${{ secrets.ORGANIZATION_DOMAIN || 'example.com' }}"
+          billing_account_id              = "${{ secrets.BILLING_ACCOUNT_ID || '012345-6789AB-CDEF01' }}"
           gcp_region                      = "${{ secrets.GCP_REGION || 'asia-northeast1' }}"
           project_id_prefix               = "${{ secrets.PROJECT_ID_PREFIX || 'example' }}"
           core_billing_linked             = ${{ secrets.CORE_BILLING_LINKED || 'false' }}
           enable_vpc_host_projects        = ${{ secrets.ENABLE_VPC || 'false' }}
           enable_shared_vpc               = ${{ secrets.ENABLE_VPC || 'false' }}
+          enable_vpc_sc                   = ${{ secrets.ENABLE_VPC_SC || 'false' }}
+          enable_org_policies             = ${{ secrets.ENABLE_ORG_POLICIES || 'false' }}
+          enable_tags                     = ${{ secrets.ENABLE_TAGS || 'false' }}
+          enable_simplified_admin_groups  = ${{ secrets.ENABLE_SIMPLIFIED_ADMIN_GROUPS || 'false' }}
+          allow_resource_destruction      = false
           EOF
 
       - name: Run Terraform Plan via script
