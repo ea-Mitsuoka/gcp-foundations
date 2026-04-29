@@ -223,6 +223,31 @@ def generate_resources():
             if not any(row): continue
             org_policies.append(dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row])))
 
+    # 7. Alert Definitions
+    alert_definitions = []
+    valid_alert_names = set()
+    if 'alert_definitions' in wb.sheetnames:
+        ws = wb['alert_definitions']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(row): continue
+            d_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
+            alert_definitions.append(d_dict)
+            if d_dict.get('alert_name'):
+                valid_alert_names.add(str(d_dict['alert_name']).strip())
+
+    # 6. Notifications
+    if 'notifications' in wb.sheetnames:
+        ws = wb['notifications']
+        headers = [cell.value for cell in ws[1]]
+        for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not any(row): continue
+            row_dict = dict(zip(headers, [v if not (isinstance(v, float) and v.is_integer()) else str(int(v)) for v in row]))
+            alert_name = str(row_dict.get('alert_name', '')).strip()
+            
+            if alert_name and alert_name not in valid_alert_names:
+                errors.append(f"[notifications] {idx}行目: アラート名 '{alert_name}' は 'alert_definitions' シートに定義されていません。")
+
     # --- TFファイル生成 ---
 
     def is_true_policy(val):
