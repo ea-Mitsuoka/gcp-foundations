@@ -39,4 +39,5 @@ change.patch
 gemini/
 koushiki/
 .deploy_state
+tfplan
 
