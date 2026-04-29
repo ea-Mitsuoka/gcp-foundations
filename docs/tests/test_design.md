@@ -11,24 +11,30 @@ ______________________________________________________________________
 ## 2. 自動化テストの設計 (Automation Design)
 
 ### 2.1. Python ロジックの結合テスト
+
 `ResourceValidator` 単体ではなく、`generate_resources.py` がExcelを読み込んで正しいTerraformファイルを生成するまでを検証する。
+
 - **検証ツール**: `pytest`
-- **設計**: 
+- **設計**:
   - 正常系/異常系のExcelファイルを `tests/fixtures/` に用意。
   - スクリプトを実行し、終了コードを検証。
   - 生成された `auto_folders.tf` 等のファイルが、期待される文字列（正規表現でチェック）を含んでいるか、またはファイルが存在しないことを確認。
 
 ### 2.2. Terraform モジュールテスト
+
 `terraform/modules/` 配下の部品が、単体でGCPの仕様を満たす構成を生成するかを検証する。
+
 - **検証ツール**: `terraform test` (Terraform 1.6+)
-- **設計**: 
+- **設計**:
   - 各 `.tftest.hcl` において、`plan` 実行後の `root_module` の出力を検証。
   - 例：`project-factory` モジュールで `billing_account` が `lifecycle` で無視されている設定が、実行プランに正しく反映されているかを確認。
 
 ### 2.3. OPA ポリシーテスト
+
 Regoファイル自体のロジックが正しいかを検証する。
+
 - **検証ツール**: `opa test`
-- **設計**: 
+- **設計**:
   - `policies/` 配下に `*_test.rego` を作成。
   - モックされた `input`（Terraform plan JSON）を流し込み、期待通り `deny` が発生するかをテスト。
 
@@ -63,8 +69,8 @@ ______________________________________________________________________
 GitHub Actions における検証パイプラインを以下の順序で構成する。
 
 1. **Lint Phase**: `ruff`, `terraform fmt`, `tflint`.
-2. **Unit Test Phase**: `pytest` (Python), `terraform test` (Modules), `opa test` (Rego).
-3. **Integration Phase**:
+1. **Unit Test Phase**: `pytest` (Python), `terraform test` (Modules), `opa test` (Rego).
+1. **Integration Phase**:
    - `make generate` を各フィクスチャに対して実行。
    - 生成されたコードに対して `terraform validate` を実行し、構文の正しさを保証。
-4. **Security Phase**: `checkov` を生成後の全ディレクトリに対して実行。
+1. **Security Phase**: `checkov` を生成後の全ディレクトリに対して実行。
