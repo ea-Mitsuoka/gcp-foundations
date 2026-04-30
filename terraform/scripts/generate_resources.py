@@ -292,7 +292,7 @@ def generate_resources():
     export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv'))
 
     # 8. Projects & Template Copying
-    example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
+    template_dir = os.path.join(os.path.dirname(__file__), '../4_projects/template')
     for proj in projects:
         app_name = str(proj.get('resource_name', '')).strip()
         if not app_name: continue
@@ -300,16 +300,16 @@ def generate_resources():
         os.makedirs(project_dir, exist_ok=True)
         
         # --- Template Copying ---
-        if os.path.exists(example_dir) and app_name != 'example_project':
+        if os.path.exists(template_dir) and app_name != 'template':
             for filename in ['main.tf', 'variables.tf', 'provider.tf', 'versions.tf']:
-                src = os.path.join(example_dir, filename)
+                src = os.path.join(template_dir, filename)
                 dst = os.path.join(project_dir, filename)
                 if os.path.exists(src) and not os.path.exists(dst):
                     shutil.copy2(src, dst)
             backend_dst = os.path.join(project_dir, 'backend.tf')
             if not os.path.exists(backend_dst):
                 with open(backend_dst, 'w') as f:
-                    f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
+                    f.write(f'terraform {{\n  backend "gcs" {{\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
         parent_folder = str(proj.get('parent_name', '')).strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
