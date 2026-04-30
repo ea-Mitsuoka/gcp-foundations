@@ -1,5 +1,6 @@
 terraform {
   backend "gcs" {
+    bucket = ""
     # terraform initコマンドのオプションでバケットを指定する
     # このディレクトリ用のtfstateの保存場所を区別するためのprefix
     prefix = "core/base/logsink"
