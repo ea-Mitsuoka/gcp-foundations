@@ -166,7 +166,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: terraform init -backend=false -upgrade
+        run: terraform init -backend=false -upgrade -backend-config="bucket=dummy-bucket"
         working-directory: ${{ matrix.working-directory }}
 
       - name: Terraform Validate
