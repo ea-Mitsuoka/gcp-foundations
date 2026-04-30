@@ -40,4 +40,6 @@ gemini/
 koushiki/
 .deploy_state
 tfplan
+notifications.csv
+alert_definitions.csv
 
