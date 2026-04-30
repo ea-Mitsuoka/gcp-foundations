@@ -27,5 +27,3 @@ resource "google_project_iam_member" "compute_default_agent_roles" {
   member  = "serviceAccount:${local.compute_default_service_agent}"
 }
 
-# Cloud Buildサービスエージェントはこのビルドでは使用されないため、関連するリソースは不要です。
-# 以前のコードが残っている場合はこの機会に削除します。

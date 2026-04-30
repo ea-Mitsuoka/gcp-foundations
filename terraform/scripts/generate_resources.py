@@ -236,10 +236,13 @@ def generate_resources():
             f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n  count = var.enable_vpc_sc ? 1 : 0\n  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n  title = "{p["perimeter_name"]}"\n  status {{\n    restricted_services = {json.dumps(services)}\n  }}\n  lifecycle {{ ignore_changes = [status[0].resources] }}\n}}\n\n')
             perimeter_ids[p['perimeter_name']] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
         
-        perimeter_ids_str = json.dumps(perimeter_ids).replace('"', '')
-        access_level_ids_str = json.dumps(access_level_ids).replace('"', '')
-        f.write(f'output "service_perimeter_ids" {{ value = {perimeter_ids_str} }}\n')
-        f.write(f'output "access_level_ids" {{ value = {access_level_ids_str} }}\n\n')
+        f.write('output "service_perimeter_ids" {\n  value = {\n')
+        for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n')
+        
+        f.write('output "access_level_ids" {\n  value = {\n')
+        for k, v in access_level_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n\n')
 
     # Projects & Template Copying
     template_dir = os.path.join(os.path.dirname(__file__), '../4_projects/template')
