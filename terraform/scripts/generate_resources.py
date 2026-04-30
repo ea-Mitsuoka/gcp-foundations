@@ -378,6 +378,28 @@ def generate_resources():
         f.write(f'output "service_perimeter_ids" {{ value = {json.dumps(perimeter_ids).replace("\"", "")} }}\n')
         f.write(f'output "access_level_ids" {{ value = {json.dumps(access_level_ids).replace("\"", "")} }}\n\n')
 
+    # 7. CSV Exports (log_sinks, alert_definitions, notifications)
+    def export_sheet_to_csv(sheet_name, output_path):
+        """Helper to export specific Excel sheets to CSV formats required by Terraform."""
+        if sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
+                writer = csv.writer(csv_file)
+                for row in ws.iter_rows(values_only=True):
+                    # completely emptyな行を除外
+                    if any(cell is not None for cell in row):
+                        # None を空文字に変換して書き込み
+                        writer.writerow(["" if cell is None else str(cell) for cell in row])
+
+    # ログシンク用CSVの出力
+    export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
+    # アラート定義用CSVの出力
+    export_sheet_to_csv('alert_definitions', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'))
+    # 通知先CSVの出力 (通知チャネルモジュールと、アラート連携モジュールの双方から参照されるため両方に出力)
+    export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/1_notification_channels/notifications.csv'))
+    export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv'))
+
     # 8. Projects
     example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
     for proj in projects:
