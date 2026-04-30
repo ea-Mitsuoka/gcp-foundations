@@ -1,133 +1,131 @@
 variable "organization_domain" {
+  description = "The organization domain name."
   type        = string
-  description = "GCP組織のドメイン名"
 }
 
-variable "gcs_backend_bucket" {
+variable "mgmt_project_id" {
+  description = "The project ID of the management/monitoring project."
   type        = string
-  description = "Terraformの状態ファイルを保存するGCSバケット名"
-  default     = ""
-}
-
-variable "project_id_prefix" {
-  type        = string
-  description = "プロジェクトIDの接頭辞（ドメイン名ベース）"
 }
 
 variable "app_name" {
+  description = "The name of the application."
   type        = string
-  description = "アプリケーション名"
 }
 
 variable "environment" {
+  description = "The environment name (prod, stag, dev)."
   type        = string
-  description = "環境名 (dev, stag, prodなど)"
 }
 
 variable "folder_id" {
+  description = "The folder ID to place the project in."
   type        = string
   default     = ""
-  description = "プロジェクトを作成するフォルダのID。空文字なら組織直下"
-}
-
-variable "vpc_sc" {
-  type        = string
-  description = "このプロジェクトを所属させる VPC Service Controls の境界名。空文字の場合は対象外。"
-  default     = ""
-}
-
-variable "shared_vpc_subnet" {
-  type        = string
-  description = "接続する Shared VPC のサブネット名。空文字の場合は対象外。"
-  default     = ""
-}
-
-variable "labels" {
-  type        = map(string)
-  description = "プロジェクトに付与するラベル。"
-  default     = {}
-}
-
-variable "terraform_service_account_email" {
-  type        = string
-  description = "TerraformがGCP操作用に借用するサービスアカウントのメールアドレス。"
 }
 
 variable "shared_vpc_env" {
+  description = "The shared VPC environment (prod, dev, none)."
   type        = string
-  description = "接続する Shared VPC の環境 (prod, dev, none)"
   default     = "none"
 }
 
-variable "enable_shared_vpc" {
-  type        = bool
-  description = "Shared VPC が全体で有効か（共通変数から渡される）"
-  default     = false
+variable "shared_vpc_subnet" {
+  description = "The name of the shared VPC subnet."
+  type        = string
+  default     = ""
 }
 
-variable "enable_vpc_sc" {
-  type        = bool
-  description = "VPC Service Controls が全体で有効か（共通変数から渡される）"
-  default     = false
-}
-
-variable "enable_org_policies" {
-  type        = bool
-  description = "組織ポリシーを適用するかどうか。"
-  default     = false
-}
-
-variable "enable_tags" {
-  type        = bool
-  description = "組織レベルのタグ機能を有効化するかどうか。"
-  default     = false
-}
-
-variable "org_tags" {
-  type        = list(string)
-  description = "プロジェクトに紐付けるタグのリスト（key/value形式）。"
-  default     = []
+variable "vpc_sc" {
+  description = "The name of the VPC-SC perimeter."
+  type        = string
+  default     = ""
 }
 
 variable "central_monitoring" {
+  description = "Whether to enable central monitoring."
   type        = bool
-  description = "中央監視を有効にするかどうか。"
   default     = true
 }
 
 variable "central_logging" {
+  description = "Whether to enable central logging."
   type        = bool
-  description = "中央ログ集約を有効にするかどうか。"
-  default     = true
-}
-
-variable "deletion_protection" {
-  type        = bool
-  description = "プロジェクトの削除保護を有効にするかどうか。"
   default     = true
 }
 
 variable "budget_amount" {
+  description = "The budget amount for the project."
   type        = number
-  description = "月額予算。0の場合はアラートを作成しません。"
   default     = 0
 }
 
 variable "budget_alert_emails" {
+  description = "The list of emails to receive budget alerts."
   type        = list(string)
-  description = "追加の予算アラート通知先メールアドレス。"
   default     = []
 }
 
+variable "org_tags" {
+  description = "The list of organization tags (key/value format)."
+  type        = list(string)
+  default     = []
+}
+
+variable "deletion_protection" {
+  description = "Whether to enable deletion protection for the project."
+  type        = bool
+  default     = true
+}
+
+variable "labels" {
+  description = "The labels to apply to the project."
+  type        = map(string)
+  default     = {}
+}
+
+# --- Infrastructure Global Variables (Passed via -var-file) ---
+
+variable "gcs_backend_bucket" {
+  description = "The GCS bucket for Terraform state."
+  type        = string
+}
+
+variable "terraform_service_account_email" {
+  description = "The email of the Terraform service account."
+  type        = string
+}
+
+variable "project_id_prefix" {
+  description = "The prefix for project IDs."
+  type        = string
+}
+
 variable "billing_account_id" {
+  description = "The billing account ID."
   type        = string
-  description = "予算アラートを紐付ける請求先アカウントID。プロジェクト作成後の手動紐付け後に有効になります。"
-  default     = null
 }
 
-variable "mgmt_project_id" {
-  type        = string
-  description = "管理プロジェクトのID。通知チャネルの作成先として使用します。"
-  default     = null
+variable "enable_shared_vpc" {
+  description = "Global switch to enable Shared VPC."
+  type        = bool
+  default     = false
 }
 
+variable "enable_vpc_sc" {
+  description = "Global switch to enable VPC Service Controls."
+  type        = bool
+  default     = false
+}
+
+variable "enable_org_policies" {
+  description = "Global switch to enable Organization Policies."
+  type        = bool
+  default     = false
+}
+
+variable "enable_tags" {
+  description = "Global switch to enable Organization Tags."
+  type        = bool
+  default     = false
+}

@@ -16,21 +16,16 @@ import csv
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 
-# --- Validation Logic (Extracted for Testing) ---
+# --- Validation Logic ---
 
 class ResourceValidator:
     @staticmethod
     def validate_gcp_resource_name(name, resource_type):
-        """Validates if a GCP resource name follows the naming conventions."""
-        if not name:
-            return "Resource name is empty."
-        
+        if not name: return "Resource name is empty."
         name = str(name).strip()
-        # Project ID: 6-30 chars, lowercase, numbers, hyphens, starts with letter, ends with alphanumeric
         if resource_type == 'project':
             if not re.match(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$', name):
                 return f"Project name '{name}' is invalid (6-30 chars, lowercase, numbers, hyphens, starts with letter, ends with alphanumeric)."
-        # Folder Name: 1-30 chars, alphanumeric, hyphens, spaces
         elif resource_type == 'folder':
             if not re.match(r'^[a-zA-Z0-9- ]{1,30}$', name):
                 return f"Folder name '{name}' is invalid (1-30 chars, alphanumeric, hyphens, spaces only)."
@@ -38,9 +33,7 @@ class ResourceValidator:
 
     @staticmethod
     def validate_cidr(cidr, used_cidrs):
-        """Validates CIDR format and overlaps."""
-        if not cidr:
-            return None
+        if not cidr: return None
         try:
             new_net = ipaddress.ip_network(cidr, strict=True)
             for old_net in used_cidrs:
@@ -52,51 +45,37 @@ class ResourceValidator:
 
     @staticmethod
     def validate_hierarchy(resources):
-        """Validates hierarchy for circular references and missing parents."""
         errors = []
         folders = {str(r['resource_name']).strip() for r in resources if str(r['resource_type']).strip().lower() == 'folder'}
-        
         for r in resources:
             name = str(r['resource_name']).strip()
             parent = str(r['parent_name']).strip()
             res_type = str(r['resource_type']).strip().lower()
-
             if name == parent:
-                errors.append(f"Resource '{name}' cannot have itself as a parent (circular reference).")
-            
+                errors.append(f"Resource '{name}' cannot have itself as a parent.")
             if parent != 'organization_id' and parent not in folders:
-                errors.append(f"{res_type.capitalize()} '{name}' refers to parent '{parent}' which is not defined in the resources sheet.")
-        
+                errors.append(f"{res_type.capitalize()} '{name}' refers to parent '{parent}' which is not defined.")
         return errors
 
     @staticmethod
     def validate_tags(org_tags_str, tag_definitions):
-        """Validates tag format and availability in definitions."""
-        if not org_tags_str:
-            return None
-        
+        if not org_tags_str: return None
         tags = [t.strip() for t in org_tags_str.split(',') if t.strip()]
         for tag in tags:
-            if '/' not in tag:
-                return f"Invalid tag format '{tag}'. Must be 'key/value'."
-            
+            if '/' not in tag: return f"Invalid tag format '{tag}'. Must be 'key/value'."
             key, val = tag.split('/', 1)
-            if key not in tag_definitions:
-                return f"Tag key '{key}' is not defined in 'tag_definitions' sheet."
+            if key not in tag_definitions: return f"Tag key '{key}' is not defined."
             if val not in tag_definitions[key]['allowed_values']:
-                return f"Tag value '{val}' is not allowed for key '{key}'. Allowed: {tag_definitions[key]['allowed_values']}."
-        
+                return f"Tag value '{val}' not allowed for '{key}'."
         return None
 
 # --- Helper functions ---
 
 def sanitize_id(name):
-    """Converts a string to a valid Terraform resource ID."""
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
 
 def add_validation(ws, col_letter, formula, title, prompt):
-    """Adds data validation (dropdown) to an Excel sheet."""
     dv = DataValidation(type="list", formula1=formula, allow_blank=True)
     dv.errorTitle = "Input Error"
     dv.error = f"Please select from the options in {title}."
@@ -131,42 +110,6 @@ def generate_resources():
         ws.title = "resources"
         headers = ["resource_type", "parent_name", "resource_name", "owner", "org_tags", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging"]
         ws.append(headers)
-        ws.append(["folder", "organization_id", "shared", "admin@example.com", "environment/production", 0, "", "", "", False, False])
-        ws.append(["folder", "shared", "production", "admin@example.com", "environment/production", 0, "", "", "", False, False])
-        ws.append(["project", "production", "prd-app-01", "app-team@example.com", "environment/production, cost_center/123", 1000, "finance@example.com", "prd-subnet-01", "default_perimeter", True, True])
-
-        add_validation(ws, "A", '"folder,project"', "Resource Type", "Select type of resource")
-        add_validation(ws, "J", '"True,False"', "Monitoring", "Set True to enable central monitoring")
-        add_validation(ws, "K", '"True,False"', "Logging", "Set True to enable central logging")
-
-        ws_tags = wb.create_sheet("tag_definitions")
-        ws_tags.append(["tag_key", "allowed_values", "description"])
-        ws_tags.append(["environment", "production,development,sandbox", "Environment type"])
-        ws_tags.append(["cost_center", "123,456,789", "Department cost center code"])
-
-        ws2 = wb.create_sheet("vpc_sc_perimeters")
-        ws2.append(["perimeter_name", "title", "restricted_services"])
-        ws2.append(["default_perimeter", "Default Security Perimeter", "storage.googleapis.com,bigquery.googleapis.com,compute.googleapis.com"])
-        ws3 = wb.create_sheet("vpc_sc_access_levels")
-        ws3.append(["access_level_name", "ip_subnetworks", "members"])
-        ws3.append(["office_ip_only", "1.2.3.4/32", "user:admin@example.com"])
-        ws4 = wb.create_sheet("shared_vpc_subnets")
-        ws4.append(["host_project_env", "subnet_name", "region", "ip_cidr_range"])
-        ws4.append(["prod", "prd-subnet-01", "asia-northeast1", "10.0.1.0/24"])
-        ws4.append(["dev", "dev-subnet-01", "asia-northeast1", "10.1.1.0/24"])
-        ws5 = wb.create_sheet("org_policies")
-        ws5.append(["target_name", "policy_id", "enforce", "allow_list"])
-        ws5.append(["organization_id", "compute.disableExternalIPProxy", True, ""])
-        ws6 = wb.create_sheet("notifications")
-        ws6.append(["alert_name", "user_email", "receive_alerts"])
-        ws6.append(["error_log_alert", "admin@example.com", True])
-        ws7 = wb.create_sheet("alert_definitions")
-        ws7.append(["alert_name", "alert_display_name", "metric_filter", "alert_documentation"])
-        ws7.append(["error_log_alert", "Error Log Alert", 'severity="ERROR"', "Documentation for error log alert"])
-        ws8 = wb.create_sheet("log_sinks")
-        ws8.append(["log_type", "filter", "destination_type", "destination_parent", "retention_days"])
-        ws8.append(["管理アクティビティ監査ログ", "protoPayload.methodName:*", "BigQuery", "audit_logs", 365])
-
         wb.save(xlsx_path)
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
@@ -193,11 +136,6 @@ def generate_resources():
     errors = []
     validator = ResourceValidator()
     
-    def validate_row(row_dict, required_keys, sheet_name, row_idx):
-        for key in required_keys:
-            if row_dict.get(key) is None:
-                errors.append(f"[{sheet_name}] Row {row_idx}: Required field '{key}' is empty.")
-
     tag_definitions = {}
     if 'tag_definitions' in wb.sheetnames:
         ws = wb['tag_definitions']
@@ -252,26 +190,17 @@ def generate_resources():
             if not any(row): continue
             row_dict = dict(zip(headers, row))
             resources_data.append(row_dict)
-            validate_row(row_dict, ['resource_type', 'parent_name', 'resource_name', 'owner'], 'resources', idx)
-            
             res_name = str(row_dict.get('resource_name', '')).strip()
             res_type = str(row_dict.get('resource_type', '')).strip().lower()
             org_tags = str(row_dict.get('org_tags', '')).strip()
-
             name_err = validator.validate_gcp_resource_name(res_name, res_type)
             if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
             tag_err = validator.validate_tags(org_tags, tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             if res_name in all_resource_names: errors.append(f"[resources] Row {idx}: Duplicate name '{res_name}'.")
             all_resource_names.add(res_name)
-
-            if res_type == 'folder':
-                folders_map[res_name] = str(row_dict.get('parent_name', '')).strip()
-            elif res_type == 'project':
-                projects.append(row_dict)
-
-        hierarchy_errors = validator.validate_hierarchy(resources_data)
-        for h_err in hierarchy_errors: errors.append(f"[resources] {h_err}")
+            if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name', '')).strip()
+            elif res_type == 'project': projects.append(row_dict)
 
     if errors:
         print("\n❌ Configuration errors detected:")
@@ -293,20 +222,10 @@ def generate_resources():
             parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{sanitize_id(parent_str)}.name"
             folder_data = next((r for r in resources_data if r['resource_name'] == folder_name), {})
             folder_tags = [t.strip() for t in str(folder_data.get('org_tags', '')).split(',') if t.strip()]
-
-            f.write(f'resource "google_folder" "{fid}" {{\n')
-            f.write(f'  display_name        = "{folder_name}"\n')
-            f.write(f'  parent              = {parent_expr}\n')
-            f.write(f'  deletion_protection = false\n')
-            f.write(f'}}\n\n')
-            
+            f.write(f'resource "google_folder" "{fid}" {{\n  display_name = "{folder_name}"\n  parent = {parent_expr}\n  deletion_protection = false\n}}\n\n')
             for tag in folder_tags:
                 tid = sanitize_id(f"{folder_name}_{tag.replace('/', '_')}")
-                f.write(f'resource "google_tags_tag_binding" "{tid}" {{\n')
-                f.write(f'  count     = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? 1 : 0\n')
-                f.write(f'  parent    = "//cloudresourcemanager.googleapis.com/${{google_folder.{fid}.name}}"\n')
-                f.write(f'  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids["{tag}"]\n')
-                f.write(f'}}\n\n')
+                f.write(f'resource "google_tags_tag_binding" "{tid}" {{\n  count = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? 1 : 0\n  parent = "//cloudresourcemanager.googleapis.com/${{google_folder.{fid}.name}}"\n  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids["{tag}"]\n}}\n\n')
             f.write(f'output "{fid}_folder_id" {{\n  value = google_folder.{fid}.id\n}}\n\n')
 
     # 5. Tag Definitions
@@ -316,19 +235,10 @@ def generate_resources():
         tag_value_map = {}
         for key, info in tag_definitions.items():
             kid = sanitize_id(key)
-            f.write(f'resource "google_tags_tag_key" "{kid}" {{\n')
-            f.write(f'  count       = var.enable_tags ? 1 : 0\n')
-            f.write(f'  parent      = "organizations/${{data.google_organization.org.org_id}}"\n')
-            f.write(f'  short_name  = "{key}"\n')
-            f.write(f'  description = "{info["description"]}"\n')
-            f.write(f'}}\n\n')
+            f.write(f'resource "google_tags_tag_key" "{kid}" {{\n  count = var.enable_tags ? 1 : 0\n  parent = "organizations/${{data.google_organization.org.org_id}}"\n  short_name = "{key}"\n  description = "{info["description"]}"\n}}\n\n')
             for val in info['allowed_values']:
                 vid = sanitize_id(f"{key}_{val}")
-                f.write(f'resource "google_tags_tag_value" "{vid}" {{\n')
-                f.write(f'  count       = var.enable_tags ? 1 : 0\n')
-                f.write(f'  parent      = google_tags_tag_key.{kid}[0].id\n')
-                f.write(f'  short_name  = "{val}"\n')
-                f.write(f'}}\n\n')
+                f.write(f'resource "google_tags_tag_value" "{vid}" {{\n  count = var.enable_tags ? 1 : 0\n  parent = google_tags_tag_key.{kid}[0].id\n  short_name = "{val}"\n}}\n\n')
                 tag_value_map[f"{key}/{val}"] = f"try(google_tags_tag_value.{vid}[0].id, null)"
         f.write(f'output "tag_value_ids" {{\n  value = {{\n')
         for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
@@ -347,12 +257,7 @@ def generate_resources():
                 al = dict(zip(headers, row))
                 if not al.get('access_level_name'): continue
                 sid = sanitize_id(al['access_level_name'])
-                f.write(f'resource "google_access_context_manager_access_level" "{sid}" {{\n')
-                f.write(f'  count  = var.enable_vpc_sc ? 1 : 0\n')
-                f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
-                f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n')
-                f.write(f'  title  = "{al["access_level_name"]}"\n')
-                f.write(f'  basic {{\n    conditions {{\n')
+                f.write(f'resource "google_access_context_manager_access_level" "{sid}" {{\n  count = var.enable_vpc_sc ? 1 : 0\n  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n  title = "{al["access_level_name"]}"\n  basic {{\n    conditions {{\n')
                 if al.get('ip_subnetworks'):
                     ips = [ip.strip() for ip in str(al['ip_subnetworks']).split(',') if ip.strip()]
                     f.write(f'      ip_subnetworks = {json.dumps(ips)}\n')
@@ -361,46 +266,32 @@ def generate_resources():
                     f.write(f'      members = {json.dumps(members)}\n')
                 f.write(f'    }}\n  }}\n}}\n\n')
                 access_level_ids[al["access_level_name"]] = f"var.enable_vpc_sc ? google_access_context_manager_access_level.{sid}[0].name : null"
-
         perimeter_ids = {}
         for p in perimeters:
             if not p.get('perimeter_name'): continue
             sid = sanitize_id(p['perimeter_name'])
             services = [s.strip() for s in str(p.get('restricted_services', '')).split(',') if s.strip()]
-            f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n')
-            f.write(f'  count  = var.enable_vpc_sc ? 1 : 0\n')
-            f.write(f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n')
-            f.write(f'  name   = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n')
-            f.write(f'  title  = "{p["perimeter_name"]}"\n')
-            f.write(f'  status {{\n    restricted_services = {json.dumps(services)}\n  }}\n')
-            f.write(f'  lifecycle {{ ignore_changes = [status[0].resources] }}\n}}\n\n')
+            f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n  count = var.enable_vpc_sc ? 1 : 0\n  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n  title = "{p["perimeter_name"]}"\n  status {{\n    restricted_services = {json.dumps(services)}\n  }}\n  lifecycle {{ ignore_changes = [status[0].resources] }}\n}}\n\n')
             perimeter_ids[p['perimeter_name']] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
         f.write(f'output "service_perimeter_ids" {{ value = {json.dumps(perimeter_ids).replace("\"", "")} }}\n')
         f.write(f'output "access_level_ids" {{ value = {json.dumps(access_level_ids).replace("\"", "")} }}\n\n')
 
-    # 7. CSV Exports (log_sinks, alert_definitions, notifications)
+    # 7. CSV Exports
     def export_sheet_to_csv(sheet_name, output_path):
-        """Helper to export specific Excel sheets to CSV formats required by Terraform."""
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
                 writer = csv.writer(csv_file)
                 for row in ws.iter_rows(values_only=True):
-                    # completely emptyな行を除外
                     if any(cell is not None for cell in row):
-                        # None を空文字に変換して書き込み
                         writer.writerow(["" if cell is None else str(cell) for cell in row])
-
-    # ログシンク用CSVの出力
     export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
-    # アラート定義用CSVの出力
     export_sheet_to_csv('alert_definitions', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'))
-    # 通知先CSVの出力 (通知チャネルモジュールと、アラート連携モジュールの双方から参照されるため両方に出力)
     export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/1_notification_channels/notifications.csv'))
     export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv'))
 
-    # 8. Projects
+    # 8. Projects & Template Copying
     example_dir = os.path.join(os.path.dirname(__file__), '../4_projects/example_project')
     for proj in projects:
         app_name = str(proj.get('resource_name', '')).strip()
@@ -408,9 +299,20 @@ def generate_resources():
         project_dir = os.path.join(os.path.dirname(__file__), f"../4_projects/{app_name}")
         os.makedirs(project_dir, exist_ok=True)
         
+        # --- Template Copying ---
+        if os.path.exists(example_dir) and app_name != 'example_project':
+            for filename in ['main.tf', 'variables.tf', 'provider.tf', 'versions.tf']:
+                src = os.path.join(example_dir, filename)
+                dst = os.path.join(project_dir, filename)
+                if os.path.exists(src) and not os.path.exists(dst):
+                    shutil.copy2(src, dst)
+            backend_dst = os.path.join(project_dir, 'backend.tf')
+            if not os.path.exists(backend_dst):
+                with open(backend_dst, 'w') as f:
+                    f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
+
         parent_folder = str(proj.get('parent_name', '')).strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
-
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
@@ -426,15 +328,13 @@ budget_amount       = {proj.get('budget_amount', 0) or 0}
 budget_alert_emails = {json.dumps([e.strip() for e in str(proj.get('budget_alert_emails', '')).split(',') if e.strip()])}
 org_tags            = {json.dumps([t.strip() for t in str(proj.get('org_tags', '')).split(',') if t.strip()])}
 deletion_protection = true
-
 labels = {{
-  env     = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-  owner   = "{str(proj.get('owner', 'unknown')).strip()}"
-  app     = "{app_name}"
+  env = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
+  owner = "{str(proj.get('owner', 'unknown')).strip()}"
+  app = "{app_name}"
 }}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f: f.write(tfvars_content)
-
     print(f"✅ Generated all resources successfully")
 
 if __name__ == "__main__":
