@@ -38,7 +38,7 @@ resource "google_cloudfunctions2_function" "inactive_account_reporter" {
   location = var.gcp_region
 
   build_config {
-    runtime     = "python311"
+    runtime     = "python312"
     entry_point = "check_inactive_accounts"
     source {
       storage_source {
