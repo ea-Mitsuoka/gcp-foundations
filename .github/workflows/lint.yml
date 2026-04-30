@@ -214,7 +214,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform init -backend=false -backend-config="bucket=dummy-bucket"
         working-directory: ${{ matrix.working-directory }}
 
       - name: Terraform Test
