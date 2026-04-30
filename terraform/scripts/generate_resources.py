@@ -165,6 +165,22 @@ def generate_resources():
             if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name', '')).strip()
             elif res_type == 'project': projects.append(row_dict)
 
+
+    # --- 復活したバリデーション処理 ---
+    if resources_data:
+        hierarchy_errors = validator.validate_hierarchy(resources_data)
+        if hierarchy_errors: errors.extend(hierarchy_errors)
+        for idx, r in enumerate(resources_data, start=2):
+            name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'))
+            if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
+            tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
+            if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
+            
+    if errors:
+        print("\n❌ Configuration errors detected:")
+        for err in errors: print(f"  - {err}")
+        sys.exit(1)
+
     def is_true(val):
         if val is None: return False
         if isinstance(val, bool): return val
@@ -272,14 +288,14 @@ mgmt_project_id     = "{mgmt_project_id}"
 app_name            = "{app_name}"
 environment         = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
 folder_id           = "{folder_id_val}"
-shared_vpc_env      = "{'dev' if app_name.startswith('dev-') else 'prod' if proj.get('shared_vpc') else 'none'}"
-shared_vpc_subnet   = "{str(proj.get('shared_vpc', '')).strip()}"
-vpc_sc              = "{str(proj.get('vpc_sc', '')).strip()}"
+shared_vpc_env      = "{'dev' if app_name.startswith('dev-') and proj.get('shared_vpc') else 'prod' if proj.get('shared_vpc') else 'none'}"
+shared_vpc_subnet   = "{str(proj.get('shared_vpc') or '').strip()}"
+vpc_sc              = "{str(proj.get('vpc_sc') or '').strip()}"
 central_monitoring  = {str(is_true(proj.get('central_monitoring'))).lower()}
 central_logging     = {str(is_true(proj.get('central_logging'))).lower()}
 budget_amount       = {proj.get('budget_amount', 0) or 0}
-budget_alert_emails = {json.dumps([e.strip() for e in str(proj.get('budget_alert_emails', '')).split(',') if e.strip()])}
-org_tags            = {json.dumps([t.strip() for t in str(proj.get('org_tags', '')).split(',') if t.strip()])}
+budget_alert_emails = {json.dumps([e.strip() for e in str(proj.get('budget_alert_emails') or '').split(',') if e.strip()])}
+org_tags            = {json.dumps([t.strip() for t in str(proj.get('org_tags') or '').split(',') if t.strip()])}
 deletion_protection = true
 labels = {{
   env = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"

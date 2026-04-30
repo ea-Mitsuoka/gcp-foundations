@@ -44,9 +44,9 @@ jobs:
           organization_domain             = "${{ secrets.ORGANIZATION_DOMAIN || 'example.com' }}"
           gcp_region                      = "${{ secrets.GCP_REGION || 'asia-northeast1' }}"
           project_id_prefix               = "${{ secrets.PROJECT_ID_PREFIX || 'example' }}"
-          core_billing_linked             = ${{ secrets.CORE_BILLING_LINKED || 'true' }}
-          enable_vpc_host_projects        = ${{ secrets.ENABLE_VPC || 'true' }}
-          enable_shared_vpc               = ${{ secrets.ENABLE_VPC || 'true' }}
+          core_billing_linked             = ${{ secrets.CORE_BILLING_LINKED || 'false' }}
+          enable_vpc_host_projects        = ${{ secrets.ENABLE_VPC || 'false' }}
+          enable_shared_vpc               = ${{ secrets.ENABLE_VPC || 'false' }}
           enable_simplified_admin_groups  = ${{ secrets.ENABLE_SIMPLIFIED_GROUPS || 'false' }}
           EOF
 
