@@ -119,7 +119,7 @@ for dir in "${TARGET_DIRS[@]}"; do
   INIT_ARGS=("-backend-config=${ROOT_DIR}/terraform/common.tfbackend" "-reconfigure")
   if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q . && [[ "${TF_IN_AUTOMATION}" == "true" ]]; then
     echo "⚠️ No GCP credentials found. Initializing with -backend=false"
-    INIT_ARGS=("-backend=false" "-reconfigure")
+    INIT_ARGS=("-backend=false" "-reconfigure" "-backend-config=bucket=dummy-bucket")
   fi
 
   terraform init "${INIT_ARGS[@]}"
