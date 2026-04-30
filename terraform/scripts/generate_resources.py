@@ -258,7 +258,8 @@ def generate_resources():
             backend_dst = os.path.join(project_dir, 'backend.tf')
             if not os.path.exists(backend_dst):
                 with open(backend_dst, 'w') as f:
-                    f.write(f'terraform {{\n  backend "gcs" {{\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
+                    # --- 修正箇所: bucket = "" を復活させ、CIの -backend=false の validate を通過させる ---
+                    f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
         parent_folder = str(proj.get('parent_name', '')).strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
