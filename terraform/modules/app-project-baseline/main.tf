@@ -72,10 +72,10 @@ resource "terraform_data" "variable_validation" {
 module "project" {
   source = "../project-factory"
 
-  project_id            = "${var.project_id_prefix}-${var.app_name}"
-  name                  = "${var.app_name}-${var.environment}"
-  organization_id       = data.google_organization.org.id
-  folder_id             = local.resolved_folder_id
+  project_id      = "${var.project_id_prefix}-${var.app_name}"
+  name            = "${var.app_name}-${var.environment}"
+  organization_id = data.google_organization.org.id
+  folder_id       = local.resolved_folder_id
   labels = merge(var.labels, {
     monitoring = tostring(var.central_monitoring)
     logging    = tostring(var.central_logging)
@@ -110,8 +110,8 @@ resource "google_compute_subnetwork_iam_member" "subnet_user" {
 }
 
 resource "google_tags_tag_binding" "project_tags" {
-  for_each  = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? toset(var.org_tags) : []
-  parent    = "//cloudresourcemanager.googleapis.com/projects/${module.project.project_id}"
-  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids[each.key]
+  for_each   = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? toset(var.org_tags) : []
+  parent     = "//cloudresourcemanager.googleapis.com/projects/${module.project.project_id}"
+  tag_value  = data.terraform_remote_state.organization[0].outputs.tag_value_ids[each.key]
   depends_on = [module.project]
 }

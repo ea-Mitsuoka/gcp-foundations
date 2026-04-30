@@ -1,6 +1,9 @@
 # 組織情報を取得
 resource "terraform_data" "variable_validation" {
-  input = var.enable_org_policies
+  input = [
+    var.enable_org_policies,
+    var.enable_tags
+  ]
 }
 
 data "google_organization" "org" {

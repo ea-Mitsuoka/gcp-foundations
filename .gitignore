@@ -18,7 +18,7 @@ build/
 
 # Automatically created terraform files
 /terraform/4_projects/*
-!/terraform/4_projects/example_project/
+!/terraform/4_projects/template/
 
 # Python cache files
 __pycache__/
@@ -42,4 +42,5 @@ koushiki/
 .deploy_state
 notifications.csv
 alert_definitions.csv
+gcp_log_sink_config.csv
 

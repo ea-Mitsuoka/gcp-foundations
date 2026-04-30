@@ -47,7 +47,7 @@ PROJECT_DIRS=()
 for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   if [ -d "$proj_dir" ]; then
     proj_name="$(basename "$proj_dir")"
-    if [ "$proj_name" != "example_project" ]; then
+    if [ "$proj_name" != "template" ]; then
       PROJECT_DIRS+=("terraform/4_projects/${proj_name}")
     fi
   fi

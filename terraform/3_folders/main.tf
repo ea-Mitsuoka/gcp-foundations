@@ -1,5 +1,9 @@
 resource "terraform_data" "variable_validation" {
-  input = var.enable_org_policies
+  input = [
+    var.enable_org_policies,
+    var.enable_tags,
+    data.terraform_remote_state.organization
+  ]
 }
 
 data "google_organization" "org" {
