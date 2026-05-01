@@ -361,7 +361,7 @@ def generate_resources():
                 tf_file_path = "../3_folders/auto_org_policies.tf"
             else:
                 # Target is an application project
-                parent_resource = f"projects/${{module.project.project_id}}"
+                parent_resource = f"projects/${{module.baseline.project_id}}"
                 tf_file_path = f"../4_projects/{target_name}/auto_org_policies.tf"
 
             if tf_file_path not in org_policy_files:
@@ -411,7 +411,7 @@ def generate_resources():
                     f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
         parent_folder = str(proj.get('parent_name') or '').strip()
-        folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
+        folder_id_val = "" if parent_folder == 'organization_id' else sanitize_id(parent_folder)
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
