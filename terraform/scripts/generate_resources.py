@@ -304,8 +304,8 @@ def generate_resources():
                 f.write(
                     f'resource "google_access_context_manager_access_level" "{sid}" {{\n'
                     f'  count = var.enable_vpc_sc ? 1 : 0\n'
-                    f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n'
-                    f'  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n'
+                    f'  parent = google_access_context_manager_access_policy.access_policy[0].name\n'
+                    f'  name = "${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n'
                     f'  title = "{al["access_level_name"]}"\n'
                     f'  basic {{\n'
                     f'    conditions {{\n'
@@ -326,8 +326,8 @@ def generate_resources():
             f.write(
                 f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n'
                 f'  count = var.enable_vpc_sc ? 1 : 0\n'
-                f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n'
-                f'  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n'
+                f'  parent = google_access_context_manager_access_policy.access_policy[0].name\n'
+                f'  name = "${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n'
                 f'  title = "{p["perimeter_name"]}"\n'
                 f'  status {{\n'
                 f'    restricted_services = {json.dumps(services)}\n'
