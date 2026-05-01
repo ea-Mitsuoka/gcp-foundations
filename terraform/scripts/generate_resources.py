@@ -457,7 +457,7 @@ labels = {{
                 with open(os.path.join(root, 'auto_global_vars.tf'), 'w') as fv:
                     fv.write('# Auto-generated file to silence undeclared variable warnings.\n')
                     for mv in missing_vars:
-                        fv.write(f'variable "{mv}" {{ type = any, default = null }}\n')
+                        fv.write(f'variable "{mv}" {{\n  type    = any\n  default = null\n}}\n\n')
 
     print(f"✅ Generated all resources successfully")
 
