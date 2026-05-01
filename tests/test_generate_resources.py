@@ -24,6 +24,11 @@ def test_validate_project_name_invalid(validator):
     assert validator.validate_gcp_resource_name("a"*31, "project") is not None # Too long
     assert validator.validate_gcp_resource_name("project_", "project") is not None # Ends with underscore/invalid
 
+def test_validate_project_name_with_prefix(validator):
+    assert validator.validate_gcp_resource_name("app-01", "project", prefix="my-company") is None
+    assert validator.validate_gcp_resource_name("a"*20, "project", prefix="my-company") is not None # prefix(10) + hypen(1) + name(20) = 31 > 30
+
+
 def test_validate_folder_name_valid(validator):
     assert validator.validate_gcp_resource_name("Production", "folder") is None
     assert validator.validate_gcp_resource_name("Shared VPC", "folder") is None

@@ -30,12 +30,15 @@ def to_snake_case(name):
 
 class ResourceValidator:
     @staticmethod
-    def validate_gcp_resource_name(name, resource_type):
+    def validate_gcp_resource_name(name, resource_type, prefix=""):
         if not name: return "Resource name is empty."
         name = str(name).strip()
         if resource_type == 'project':
-            if not re.match(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$', name):
-                return f"Project name '{name}' is invalid."
+            full_name = f"{prefix}-{name}" if prefix and prefix != "unknown" else name
+            if not re.match(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$', full_name):
+                if len(full_name) > 30:
+                    return f"Project ID '{full_name}' exceeds the 30-character limit (prefix '{prefix}' + name '{name}')."
+                return f"Project ID '{full_name}' is invalid. Must be 6-30 chars, lowercase letters, numbers, and hyphens."
         elif resource_type == 'folder':
             if not re.match(r'^[a-zA-Z0-9- ]{1,30}$', name):
                 return f"Folder name '{name}' is invalid."
@@ -182,7 +185,7 @@ def generate_resources():
         hierarchy_errors = validator.validate_hierarchy(resources_data)
         if hierarchy_errors: errors.extend(hierarchy_errors)
         for idx, r in enumerate(resources_data, start=2):
-            name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'))
+            name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'), prefix=project_id_prefix)
             if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
