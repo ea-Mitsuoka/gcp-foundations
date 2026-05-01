@@ -23,9 +23,9 @@ module "log_match_alerts" {
   source = "../../../../../modules/log-match-alert-factory"
 
   scoping_project_id   = data.terraform_remote_state.monitoring_project.outputs.project_id
-  monitored_project_id = data.terraform_remote_state.logsink_project.outputs.project_id
+  monitored_project_id = "Organization-Wide"
   display_name         = each.value.alert_display_name
-  filter               = "resource.labels.project_id=\"${data.terraform_remote_state.logsink_project.outputs.project_id}\" AND (${each.value.metric_filter})"
+  filter               = each.value.metric_filter
   documentation        = each.value.alert_documentation
 
   # 第1段階で作成した通知チャネルを参照
