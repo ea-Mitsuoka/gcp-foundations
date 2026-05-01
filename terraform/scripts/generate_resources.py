@@ -90,10 +90,17 @@ class ResourceValidator:
     @staticmethod
     def validate_alerts(notifications, alert_defs):
         errors = []
-        alert_names = {str(a.get('alert_name') or '').strip() for a in alert_defs if a.get('alert_name')}
+        seen_alerts = set()
+        alert_names_list = [str(a.get('alert_name') or '').strip() for a in alert_defs if a.get('alert_name')]
+        
+        for idx, name in enumerate(alert_names_list, start=2):
+            if name in seen_alerts:
+                errors.append(f"[alert_definitions] Row {idx}: Duplicate alert_name '{name}'. Alert names must be unique.")
+            seen_alerts.add(name)
+
         for idx, n in enumerate(notifications, start=2):
             name = str(n.get('alert_name') or '').strip()
-            if name and name not in alert_names:
+            if name and name not in seen_alerts:
                 errors.append(f"[notifications] Row {idx}: Refers to undefined alert '{name}'.")
         return errors
 

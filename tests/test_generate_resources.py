@@ -131,3 +131,8 @@ def test_validate_tags_undefined_key(validator):
 def test_validate_tags_undefined_value(validator):
     definitions = {'environment': {'allowed_values': ['production']}}
     assert validator.validate_tags("environment/sandbox", definitions) is not None
+
+def test_validate_alerts_duplicate(validator):
+    alert_defs = [{"alert_name": "alert1"}, {"alert_name": "alert1"}]
+    errors = validator.validate_alerts([], alert_defs)
+    assert any("Duplicate alert_name" in e for e in errors)
