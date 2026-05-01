@@ -81,6 +81,16 @@ class ResourceValidator:
             if val not in tag_definitions[key]['allowed_values']: return f"Tag value '{val}' not allowed for '{key}'."
         return None
 
+    @staticmethod
+    def validate_alerts(notifications, alert_defs):
+        errors = []
+        alert_names = {str(a.get('alert_name') or '').strip() for a in alert_defs if a.get('alert_name')}
+        for idx, n in enumerate(notifications, start=2):
+            name = str(n.get('alert_name') or '').strip()
+            if name and name not in alert_names:
+                errors.append(f"[notifications] Row {idx}: Refers to undefined alert '{name}'.")
+        return errors
+
 def sanitize_id(name):
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
@@ -180,6 +190,22 @@ def generate_resources():
             res_type = str(row_dict.get('resource_type') or '').strip().lower()
             if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name') or '').strip()
             elif res_type == 'project': projects.append(row_dict)
+
+    alert_defs = []
+    notifications = []
+    if 'alert_definitions' in wb.sheetnames:
+        ws = wb['alert_definitions']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if any(row): alert_defs.append(dict(zip(headers, row)))
+    if 'notifications' in wb.sheetnames:
+        ws = wb['notifications']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if any(row): notifications.append(dict(zip(headers, row)))
+    if notifications and alert_defs:
+        alert_errs = validator.validate_alerts(notifications, alert_defs)
+        if alert_errs: errors.extend(alert_errs)
 
     if resources_data:
         hierarchy_errors = validator.validate_hierarchy(resources_data)

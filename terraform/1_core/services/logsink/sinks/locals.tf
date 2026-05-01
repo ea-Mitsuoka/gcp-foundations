@@ -33,7 +33,7 @@ locals {
   # 4a. BigQuery宛先の保持期間を宛先名でグループ化
   grouped_bigquery_retention_days = {
     for sink in local.sinks_from_csv :
-    sink.destination_parent => tonumber(sink.retention_days)... # Correct syntax: ... is before if
+    sink.destination_parent => try(tonumber(sink.retention_days), 365)... # Correct syntax: ... is before if
     if lower(sink.destination_type) == "bigquery"
   }
 
@@ -48,7 +48,7 @@ locals {
   # 5a. GCS宛先の保持期間を宛先名でグループ化
   grouped_gcs_retention_days = {
     for sink in local.sinks_from_csv :
-    sink.destination_parent => tonumber(sink.retention_days)... # Correct syntax: ... is before if
+    sink.destination_parent => try(tonumber(sink.retention_days), 365)... # Correct syntax: ... is before if
     if lower(sink.destination_type) == "cloud storage"
   }
 

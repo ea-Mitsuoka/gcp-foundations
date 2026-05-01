@@ -96,6 +96,7 @@ resource "google_compute_subnetwork_iam_member" "subnet_user" {
   subnetwork = local.subnet_id
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:${module.project.project_number}@cloudservices.gserviceaccount.com"
+  depends_on = [google_project_service.compute_api]
 }
 
 # Compute Engine のデフォルトサービスアカウントにもサブネット利用権限を付与 (VM作成等の運用に必須)
@@ -106,6 +107,7 @@ resource "google_compute_subnetwork_iam_member" "subnet_user_compute" {
   subnetwork = local.subnet_id
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:${module.project.project_number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_project_service.compute_api]
 }
 
 resource "google_tags_tag_binding" "project_tags" {
