@@ -58,3 +58,19 @@ variable "enable_simplified_admin_groups" {
   type        = bool
   description = "Whether to use the 2-group simplified admin model."
 }
+
+variable "billing_account_id" {
+  type        = string
+  description = "The billing account ID."
+}
+
+variable "enable_tags" {
+  type        = bool
+  description = "Whether to enable tags."
+}
+
+variable "allow_resource_destruction" {
+  type        = bool
+  description = "Whether to allow resource destruction."
+  default     = false
+}
