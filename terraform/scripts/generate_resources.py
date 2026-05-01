@@ -6,14 +6,22 @@
 # ///
 import os
 import shutil
-import openpyxl
+try:
+    import openpyxl
+    from openpyxl import Workbook
+    from openpyxl.worksheet.datavalidation import DataValidation
+except Exception:
+    openpyxl = None
+    class Workbook:
+        def __init__(self):
+            self.active = None
+    DataValidation = None
 import json
 import sys
 import re
 import ipaddress
 import csv
-from openpyxl import Workbook
-from openpyxl.worksheet.datavalidation import DataValidation
+
 
 def to_snake_case(name):
     name = re.sub(r'[\.\s-]', '_', str(name))
@@ -99,13 +107,15 @@ def generate_resources():
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "owner", "org_tags", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging"]
+        headers = ["resource_type", "parent_name", "resource_name", "owner", "org_tags", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring",
+"central_logging"]
         ws.append(headers)
         wb.save(xlsx_path)
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "owner", "org_tags", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging"],
+        "resources": ["resource_type", "parent_name", "resource_name", "owner", "org_tags", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring",
+"central_logging"],
         "tag_definitions": ["tag_key", "allowed_values", "description"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
@@ -183,63 +193,41 @@ def generate_resources():
 
     folders_tf_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_folders.tf')
     with open(folders_tf_path, 'w') as f:
-        f.write("# Auto-generated file. Do not edit manually.
-
-")
+        f.write("# Auto-generated file. Do not edit manually.\n\n")
         for folder_name, parent_name in folders_map.items():
             fid = sanitize_id(folder_name)
             parent_str = str(parent_name).strip()
             parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{sanitize_id(parent_str)}.name"
-            f.write(f'resource "google_folder" "{fid}" {{
-  display_name = "{folder_name}"
-  parent = {parent_expr}
-  deletion_protection = false
-}}
-
-')
-            f.write(f'output "{fid}_folder_id" {{
-  description = "The resource ID of the {folder_name} folder."
-  value = google_folder.{fid}.id
-}}
-
-')
+            f.write(f'resource "google_folder" "{fid}" {{\n  display_name = "{folder_name}"\n  parent = {parent_expr}\n  deletion_protection = false\n}}\n\n')
+            f.write(f'output "{fid}_folder_id" {{\n  description = "The resource ID of the {folder_name} folder."\n  value = google_folder.{fid}.id\n}}\n\n')
 
     tags_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_tags.tf')
     with open(tags_tf_path, 'w') as f:
-        f.write("# Auto-generated file. Do not edit manually.
-
-")
+        f.write("# Auto-generated file. Do not edit manually.\n\n")
         tag_value_map = {}
         for key, info in tag_definitions.items():
             kid = sanitize_id(key)
-            f.write(f'resource "google_tags_tag_key" "{kid}" {{
-  count = var.enable_tags ? 1 : 0
-  parent = "organizations/${{data.google_organization.org.org_id}}"
-  short_name = "{key}"
-  description = "{info["description"]}"
-}}
-
-')
+            f.write(
+                f'resource "google_tags_tag_key" "{kid}" {{\n'
+                f'  count = var.enable_tags ? 1 : 0\n'
+                f'  parent = "organizations/${{data.google_organization.org.org_id}}"\n'
+                f'  short_name = "{key}"\n'
+                f'  description = "{info["description"]}"\n'
+                f'}}\n\n'
+            )
             for val in info['allowed_values']:
                 vid = sanitize_id(f"{key}_{val}")
-                f.write(f'resource "google_tags_tag_value" "{vid}" {{
-  count = var.enable_tags ? 1 : 0
-  parent = google_tags_tag_key.{kid}[0].id
-  short_name = "{val}"
-}}
-
-')
+                f.write(
+                    f'resource "google_tags_tag_value" "{vid}" {{\n'
+                    f'  count = var.enable_tags ? 1 : 0\n'
+                    f'  parent = google_tags_tag_key.{kid}[0].id\n'
+                    f'  short_name = "{val}"\n'
+                    f'}}\n\n'
+                )
                 tag_value_map[f"{key}/{val}"] = f"try(google_tags_tag_value.{vid}[0].id, null)"
-        f.write('output "tag_value_ids" {
-  description = "Map of organization tag key/value pairs to their resource IDs."
-  value = {
-')
-        for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}
-')
-        f.write('  }
-}
-
-')
+        f.write('output "tag_value_ids" {\n  description = "Map of organization tag key/value pairs to their resource IDs."\n  value = {\n')
+        for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n\n')
 
     def export_sheet_to_csv(sheet_name, output_path):
         if sheet_name in wb.sheetnames:
@@ -263,9 +251,7 @@ def generate_resources():
     subnets_tf_path = os.path.join(os.path.dirname(__file__), '../1_core/base/vpc-host/auto_subnets.tf')
     if 'shared_vpc_subnets' in wb.sheetnames:
         with open(subnets_tf_path, 'w') as f:
-            f.write("# Auto-generated file. Do not edit manually.
-
-")
+            f.write("# Auto-generated file. Do not edit manually.\n\n")
             ws = wb['shared_vpc_subnets']
             headers = [cell.value for cell in ws[1]]
             subnet_outputs = []
@@ -283,33 +269,23 @@ def generate_resources():
                     else: used_cidrs.append(ipaddress.ip_network(cidr, strict=True))
                 if s_name and env in ['prod', 'dev']:
                     sid = sanitize_id(s_name)
-                    f.write(f'resource "google_compute_subnetwork" "{sid}" {{
-  name = "{s_name}"
-  ip_cidr_range = "{cidr}"
-  region = "{region}"
-  network = google_compute_network.vpc_{env}[0].id
-  project = module.vpc_host_{env}[0].project_id
-  private_ip_google_access = true
-}}
-
-')
+                    f.write(
+                        f'resource "google_compute_subnetwork" "{sid}" {{\n'
+                        f'  name = "{s_name}"\n'
+                        f'  ip_cidr_range = "{cidr}"\n'
+                        f'  region = "{region}"\n'
+                        f'  network = google_compute_network.vpc_{env}[0].id\n'
+                        f'  project = module.vpc_host_{env}[0].project_id\n'
+                        f'  private_ip_google_access = true\n'
+                        f'}}\n\n'
+                    )
                     subnet_outputs.append(f'    "{s_name}" = google_compute_subnetwork.{sid}.id')
-            f.write('output "shared_vpc_subnet_ids" {
-  description = "Map of shared VPC subnet names to their resource IDs."
-  value = {
-')
-            f.write('
-'.join(subnet_outputs) + '
-  }
-}
-
-')
+            f.write('output "shared_vpc_subnet_ids" {\n  description = "Map of shared VPC subnet names to their resource IDs."\n  value = {\n')
+            f.write('\n'.join(subnet_outputs) + '\n  }\n}\n\n')
 
     vpc_sc_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_vpc_sc.tf')
     with open(vpc_sc_tf_path, 'w') as f:
-        f.write("# Auto-generated file. Do not edit manually.
-
-")
+        f.write("# Auto-generated file. Do not edit manually.\n\n")
         access_level_ids = {}
         if 'vpc_sc_access_levels' in wb.sheetnames:
             ws = wb['vpc_sc_access_levels']
@@ -319,66 +295,47 @@ def generate_resources():
                 al = dict(zip(headers, row))
                 if not al.get('access_level_name'): continue
                 sid = sanitize_id(al['access_level_name'])
-                f.write(f'resource "google_access_context_manager_access_level" "{sid}" {{
-  count = var.enable_vpc_sc ? 1 : 0
-  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"
-  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"
-  title = "{al["access_level_name"]}"
-  basic {{
-    conditions {{
-')
+                f.write(
+                    f'resource "google_access_context_manager_access_level" "{sid}" {{\n'
+                    f'  count = var.enable_vpc_sc ? 1 : 0\n'
+                    f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n'
+                    f'  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n'
+                    f'  title = "{al["access_level_name"]}"\n'
+                    f'  basic {{\n'
+                    f'    conditions {{\n'
+                )
                 if al.get('ip_subnetworks'):
                     ips = [ip.strip() for ip in str(al['ip_subnetworks']).split(',') if ip.strip()]
-                    f.write(f'      ip_subnetworks = {json.dumps(ips)}
-')
+                    f.write(f'      ip_subnetworks = {json.dumps(ips)}\n')
                 if al.get('members'):
                     members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
-                    f.write(f'      members = {json.dumps(members)}
-')
-                f.write(f'    }}
-  }}
-}}
-
-')
+                    f.write(f'      members = {json.dumps(members)}\n')
+                f.write(f'    }}\n  }}\n}}\n\n')
                 access_level_ids[al["access_level_name"]] = f"var.enable_vpc_sc ? google_access_context_manager_access_level.{sid}[0].name : null"
         perimeter_ids = {}
         for p in perimeters:
             if not p.get('perimeter_name'): continue
             sid = sanitize_id(p['perimeter_name'])
             services = [s.strip() for s in str(p.get('restricted_services') or '').split(',') if s.strip()]
-            f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{
-  count = var.enable_vpc_sc ? 1 : 0
-  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"
-  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"
-  title = "{p["perimeter_name"]}"
-  status {{
-    restricted_services = {json.dumps(services)}
-  }}
-  lifecycle {{ ignore_changes = [status[0].resources] }}
-}}
-
-')
+            f.write(
+                f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n'
+                f'  count = var.enable_vpc_sc ? 1 : 0\n'
+                f'  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n'
+                f'  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n'
+                f'  title = "{p["perimeter_name"]}"\n'
+                f'  status {{\n'
+                f'    restricted_services = {json.dumps(services)}\n'
+                f'  }}\n'
+                f'  lifecycle {{ ignore_changes = [status[0].resources] }}\n'
+                f'}}\n\n'
+            )
             perimeter_ids[p['perimeter_name']] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
-        f.write('output "service_perimeter_ids" {
-  description = "Map of VPC-SC perimeter names to their resource IDs."
-  value = {
-')
-        for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}
-')
-        f.write('  }
-}
-
-')
-        f.write('output "access_level_ids" {
-  description = "Map of VPC-SC access level names to their resource IDs."
-  value = {
-')
-        for k, v in access_level_ids.items(): f.write(f'    "{k}" = {v}
-')
-        f.write('  }
-}
-
-')
+        f.write('output "service_perimeter_ids" {\n  description = "Map of VPC-SC perimeter names to their resource IDs."\n  value = {\n')
+        for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n\n')
+        f.write('output "access_level_ids" {\n  description = "Map of VPC-SC access level names to their resource IDs."\n  value = {\n')
+        for k, v in access_level_ids.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n\n')
 
     if 'org_policies' in wb.sheetnames:
         org_policy_files = {}
@@ -401,48 +358,27 @@ def generate_resources():
             policy_id = str(p.get('policy_id') or '').strip()
             res_name = to_snake_case(f"{target_name}_{policy_id}")
             
-            tf_block = f'resource "google_org_policy_policy" "{res_name}" {{
-'
-            tf_block += f'  count  = var.enable_org_policies ? 1 : 0
-'
-            tf_block += f'  name   = "{parent_resource}/policies/{policy_id}"
-'
-            tf_block += f'  parent = "{parent_resource}"
-'
-            tf_block += f'  spec {{
-'
+            tf_block = f'resource "google_org_policy_policy" "{res_name}" {{\n'
+            tf_block += f'  count  = var.enable_org_policies ? 1 : 0\n'
+            tf_block += f'  name   = "{parent_resource}/policies/{policy_id}"\n'
+            tf_block += f'  parent = "{parent_resource}"\n'
+            tf_block += f'  spec {{\n'
             if is_true(p.get('enforce')):
-                tf_block += f'    rules {{
-      enforce = "true"
-    }}
-'
+                tf_block += f'    rules {{\n      enforce = "true"\n    }}\n'
             elif str(p.get('enforce')).strip().lower() == 'false':
-                 tf_block += f'    rules {{
-      enforce = "false"
-    }}
-'
+                 tf_block += f'    rules {{\n      enforce = "false"\n    }}\n'
             else:
                 values = [v.strip() for v in str(p.get('allow_list') or '').split(',') if v.strip()]
-                tf_block += f'    rules {{
-      values {{
-        allowed_values = {json.dumps(values)}
-      }}
-    }}
-'
-            tf_block += f'  }}
-}}
-'
+                tf_block += f'    rules {{\n      values {{\n        allowed_values = {json.dumps(values)}\n      }}\n    }}\n'
+            tf_block += f'  }}\n}}\n'
             org_policy_files[tf_file_path].append(tf_block)
 
         for path, blocks in org_policy_files.items():
             full_path = os.path.join(os.path.dirname(__file__), path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, 'w') as f:
-                f.write("# Auto-generated file. Do not edit manually.
-
-")
-                f.write("
-".join(blocks))
+                f.write("# Auto-generated file. Do not edit manually.\n\n")
+                f.write("\n".join(blocks))
 
     template_dir = os.path.join(os.path.dirname(__file__), '../4_projects/template')
     for proj in projects:
@@ -460,13 +396,7 @@ def generate_resources():
             backend_dst = os.path.join(project_dir, 'backend.tf')
             if not os.path.exists(backend_dst):
                 with open(backend_dst, 'w') as f:
-                    f.write(f'terraform {{
-  backend "gcs" {{
-    bucket = ""
-    prefix = "projects/{app_name}"
-  }}
-}}
-')
+                    f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
         parent_folder = str(proj.get('parent_name') or '').strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
@@ -495,3 +425,6 @@ labels = {{
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f: f.write(tfvars_content)
 
     print(f"✅ Generated all resources successfully")
+
+if __name__ == "__main__":
+    generate_resources()
