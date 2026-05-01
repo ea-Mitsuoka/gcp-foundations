@@ -353,11 +353,17 @@ def generate_resources():
             target_name = str(p.get('target_name') or '').strip()
             if not target_name: continue
             
-            parent_type = "organizations" if target_name == 'organization_id' else "folders"
-            parent_path_part = f"data.google_organization.org.org_id" if target_name == 'organization_id' else f"google_folder.{sanitize_id(target_name)}.name"
-            parent_resource = f"{parent_type}/${{{parent_path_part}}}"
+            if target_name == 'organization_id':
+                parent_resource = "organizations/${data.google_organization.org.org_id}"
+                tf_file_path = "../2_organization/auto_org_policies.tf"
+            elif target_name in folders_map:
+                parent_resource = f"${{google_folder.{sanitize_id(target_name)}.name}}" # google_folder.name already includes "folders/" prefix
+                tf_file_path = "../3_folders/auto_org_policies.tf"
+            else:
+                # Target is an application project
+                parent_resource = f"projects/${{module.project.project_id}}"
+                tf_file_path = f"../4_projects/{target_name}/auto_org_policies.tf"
 
-            tf_file_path = f"../2_organization/auto_org_policies.tf" if target_name == 'organization_id' else f"../3_folders/auto_org_policies.tf"
             if tf_file_path not in org_policy_files:
                 org_policy_files[tf_file_path] = []
 
@@ -424,7 +430,7 @@ deletion_protection = true
 
 labels = {{
   env   = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-  owner = "{str(proj.get('owner') or 'unknown').strip()}"
+  owner = "{str(proj.get('owner') or 'unknown').strip().replace('@', '-at-').replace('.', '-')}"
   app   = "{app_name}"
 }}
 """
