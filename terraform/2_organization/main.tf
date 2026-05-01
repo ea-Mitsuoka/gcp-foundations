@@ -71,7 +71,6 @@ locals {
   # 役割ごとの標準的なロール定義
   raw_roles = {
     "gcp-organization-admins" = [
-      "roles/billing.user",                      # 請求先アカウント ユーザー
       "roles/cloudkms.admin",                    # クラウド KMS 管理者
       "roles/cloudsupport.admin",                # サポート アカウント管理者
       "roles/iam.organizationRoleAdmin",         # 組織のロールの管理者
@@ -83,7 +82,6 @@ locals {
       "roles/securitycenter.admin",              # セキュリティ センター管理者
     ]
     "gcp-billing-admins" = [
-      "roles/billing.admin",                      # 請求先アカウント管理者
       "roles/billing.creator",                    # 請求先アカウント作成者
       "roles/resourcemanager.organizationViewer", # 組織閲覧者
     ]
