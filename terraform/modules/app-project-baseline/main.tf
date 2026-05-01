@@ -66,10 +66,20 @@ module "project" {
   monitoring_project_id = var.mgmt_project_id
 }
 
+
+# Shared VPC を利用するためには Compute API の有効化が必須
+resource "google_project_service" "compute_api" {
+  count              = var.enable_shared_vpc && var.shared_vpc_env != "none" ? 1 : 0
+  project            = module.project.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_compute_shared_vpc_service_project" "service_project" {
   count           = var.enable_shared_vpc && var.shared_vpc_env != "none" && local.host_project_id != null ? 1 : 0
   host_project    = local.host_project_id
   service_project = module.project.project_id
+  depends_on      = [google_project_service.compute_api]
 }
 
 resource "google_access_context_manager_service_perimeter_resource" "service_perimeter_resource" {
