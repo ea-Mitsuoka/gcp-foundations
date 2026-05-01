@@ -10,7 +10,7 @@ resource "google_monitoring_monitored_project" "monitored_projects" {
   # if p.project_id != scoping_project_id で、スコーピングプロジェクト自身は対象から除外
   for_each = toset([
     for p in data.google_projects.all_projects.projects : p.project_id
-    if p.project_id != data.terraform_remote_state.project.outputs.project_id
+    if p.project_id != data.terraform_remote_state.project.outputs.project_id && try(p.labels["monitoring"], "true") == "true"
   ])
 
   # 指標スコープの指定
