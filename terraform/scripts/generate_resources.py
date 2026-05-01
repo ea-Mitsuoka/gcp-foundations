@@ -277,15 +277,16 @@ def generate_resources():
                     sid = sanitize_id(s_name)
                     f.write(
                         f'resource "google_compute_subnetwork" "{sid}" {{\n'
+                        f'  count = var.enable_vpc_host_projects ? 1 : 0\n'
                         f'  name = "{s_name}"\n'
                         f'  ip_cidr_range = "{cidr}"\n'
                         f'  region = "{region}"\n'
-                        f'  network = google_compute_network.vpc_{env}[0].id\n'
-                        f'  project = module.vpc_host_{env}[0].project_id\n'
+                        f'  network = try(google_compute_network.vpc_{env}[0].id, "")\n'
+                        f'  project = try(module.vpc_host_{env}[0].project_id, "")\n'
                         f'  private_ip_google_access = true\n'
                         f'}}\n\n'
                     )
-                    subnet_outputs.append(f'    "{s_name}" = google_compute_subnetwork.{sid}.id')
+                    subnet_outputs.append(f'    "{s_name}" = try(google_compute_subnetwork.{sid}[0].id, null)')
             f.write('output "shared_vpc_subnet_ids" {\n  description = "Map of shared VPC subnet names to their resource IDs."\n  value = {\n')
             f.write('\n'.join(subnet_outputs) + '\n  }\n}\n\n')
 
@@ -304,8 +305,8 @@ def generate_resources():
                 f.write(
                     f'resource "google_access_context_manager_access_level" "{sid}" {{\n'
                     f'  count = var.enable_vpc_sc ? 1 : 0\n'
-                    f'  parent = google_access_context_manager_access_policy.access_policy[0].name\n'
-                    f'  name = "${{google_access_context_manager_access_policy.access_policy[0].name}}/accessLevels/{al["access_level_name"]}"\n'
+                    f'  parent = try(google_access_context_manager_access_policy.access_policy[0].name, "")\n'
+                    f'  name = "${{try(google_access_context_manager_access_policy.access_policy[0].name, "")}}/accessLevels/{al["access_level_name"]}"\n'
                     f'  title = "{al["access_level_name"]}"\n'
                     f'  basic {{\n'
                     f'    conditions {{\n'
@@ -326,8 +327,8 @@ def generate_resources():
             f.write(
                 f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n'
                 f'  count = var.enable_vpc_sc ? 1 : 0\n'
-                f'  parent = google_access_context_manager_access_policy.access_policy[0].name\n'
-                f'  name = "${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n'
+                f'  parent = try(google_access_context_manager_access_policy.access_policy[0].name, "")\n'
+                f'  name = "${{try(google_access_context_manager_access_policy.access_policy[0].name, "")}}/servicePerimeters/{p["perimeter_name"]}"\n'
                 f'  title = "{p["perimeter_name"]}"\n'
                 f'  status {{\n'
                 f'    restricted_services = {json.dumps(services)}\n'
