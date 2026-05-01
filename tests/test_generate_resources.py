@@ -79,6 +79,15 @@ def test_validate_hierarchy_missing_parent(validator):
     errors = validator.validate_hierarchy(resources)
     assert any("not defined" in e for e in errors)
 
+
+def test_validate_hierarchy_duplicate_names(validator):
+    resources = [
+        {"resource_type": "folder", "resource_name": "app-01", "parent_name": "organization_id"},
+        {"resource_type": "project", "resource_name": "app-01", "parent_name": "organization_id"}
+    ]
+    errors = validator.validate_hierarchy(resources)
+    assert any("Duplicate resource name" in e for e in errors)
+
 # --- Tag Validation Tests ---
 
 def test_validate_tags_valid(validator):

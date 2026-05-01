@@ -59,11 +59,17 @@ class ResourceValidator:
     @staticmethod
     def validate_hierarchy(resources):
         errors = []
+        seen_names = set()
         folders = {str(r['resource_name']).strip() for r in resources if str(r['resource_type']).strip().lower() == 'folder'}
         for r in resources:
             name = str(r['resource_name']).strip()
             parent = str(r['parent_name']).strip()
             res_type = str(r['resource_type']).strip().lower()
+            
+            if name in seen_names:
+                errors.append(f"Duplicate resource name '{name}' detected. Names must be unique across all folders and projects.")
+            seen_names.add(name)
+
             if name == parent:
                 errors.append(f"Resource '{name}' circular reference.")
             if parent != 'organization_id' and parent not in folders:
