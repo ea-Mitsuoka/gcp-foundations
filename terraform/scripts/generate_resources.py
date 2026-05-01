@@ -186,6 +186,38 @@ def generate_resources():
         if isinstance(val, bool): return val
         return str(val).strip().lower() == 'true'
 
+        # 4. Folders
+    folders_tf_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_folders.tf')
+    with open(folders_tf_path, 'w') as f:
+        f.write("# Auto-generated file. Do not edit manually.\n\n")
+        for folder_name, parent_name in folders_map.items():
+            fid = sanitize_id(folder_name)
+            parent_str = str(parent_name).strip()
+            parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{sanitize_id(parent_str)}.name"
+            folder_data = next((r for r in resources_data if r['resource_name'] == folder_name), {})
+            folder_tags = [t.strip() for t in str(folder_data.get('org_tags') or '').split(',') if t.strip()]
+            f.write(f'resource "google_folder" "{fid}" {{\n  display_name = "{folder_name}"\n  parent = {parent_expr}\n  deletion_protection = false\n}}\n\n')
+            for tag in folder_tags:
+                tid = sanitize_id(f"{folder_name}_{tag.replace('/', '_')}")
+                f.write(f'resource "google_tags_tag_binding" "{tid}" {{\n  count = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? 1 : 0\n  parent = "//cloudresourcemanager.googleapis.com/${{google_folder.{fid}.name}}"\n  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids["{tag}"]\n}}\n\n')
+            f.write(f'output "{fid}_folder_id" {{\n  value = google_folder.{fid}.id\n}}\n\n')
+
+    # 5. Tag Definitions
+    tags_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_tags.tf')
+    with open(tags_tf_path, 'w') as f:
+        f.write("# Auto-generated file. Do not edit manually.\n\n")
+        tag_value_map = {}
+        for key, info in tag_definitions.items():
+            kid = sanitize_id(key)
+            f.write(f'resource "google_tags_tag_key" "{kid}" {{\n  count = var.enable_tags ? 1 : 0\n  parent = "organizations/${{data.google_organization.org.org_id}}"\n  short_name = "{key}"\n  description = "{info["description"]}"\n}}\n\n')
+            for val in info['allowed_values']:
+                vid = sanitize_id(f"{key}_{val}")
+                f.write(f'resource "google_tags_tag_value" "{vid}" {{\n  count = var.enable_tags ? 1 : 0\n  parent = google_tags_tag_key.{kid}[0].id\n  short_name = "{val}"\n}}\n\n')
+                tag_value_map[f"{key}/{val}"] = f"try(google_tags_tag_value.{vid}[0].id, null)"
+        f.write('output "tag_value_ids" {\n  value = {\n')
+        for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
+        f.write('  }\n}\n\n')
+
     # CSV Exports
     def export_sheet_to_csv(sheet_name, output_path):
         if sheet_name in wb.sheetnames:
