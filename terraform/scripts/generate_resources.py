@@ -100,13 +100,14 @@ def generate_resources():
                     domain = line.split('=')[1].strip().strip('"')
                     break
 
-    mgmt_project_id = ""
-    bootstrap_vars_path = os.path.join(os.path.dirname(__file__), '../0_bootstrap/terraform.tfvars')
-    if os.path.exists(bootstrap_vars_path):
-        with open(bootstrap_vars_path, 'r') as f:
+    project_id_prefix = "unknown"
+    common_vars_path = os.path.join(os.path.dirname(__file__), '../common.tfvars')
+    if os.path.exists(common_vars_path):
+        with open(common_vars_path, 'r') as f:
             for line in f:
-                if 'project_id' in line:
-                    mgmt_project_id = line.split('=')[1].strip().strip('"')
+                if line.startswith('project_id_prefix'):
+                    project_id_prefix = line.split('=')[1].strip().strip('"').strip()
+    mgmt_project_id = f"{project_id_prefix}-monitoring" 
 
     xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp-foundations.xlsx')
     if not os.path.exists(xlsx_path):

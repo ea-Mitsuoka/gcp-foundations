@@ -31,35 +31,14 @@ data "terraform_remote_state" "vpc_host" {
   }
 }
 
-data "terraform_remote_state" "monitoring" {
-  count   = var.central_monitoring ? 1 : 0
-  backend = "gcs"
-  config = {
-    bucket                      = var.gcs_backend_bucket
-    prefix                      = "core/services/monitoring/iam"
-    impersonate_service_account = var.terraform_service_account_email
-  }
-}
 
 locals {
   host_project_id    = var.shared_vpc_env == "prod" ? try(data.terraform_remote_state.vpc_host[0].outputs.prod_host_project_id, null) : (var.shared_vpc_env == "dev" ? try(data.terraform_remote_state.vpc_host[0].outputs.dev_host_project_id, null) : null)
   resolved_folder_id = var.folder_id != "" ? try(data.terraform_remote_state.folders.outputs[format("%s_folder_id", var.folder_id)], var.folder_id) : null
   perimeter_id       = length(data.terraform_remote_state.organization) > 0 && var.vpc_sc != "" ? try(data.terraform_remote_state.organization[0].outputs.service_perimeter_ids[var.vpc_sc], null) : null
   subnet_id          = var.shared_vpc_subnet != "" ? try(data.terraform_remote_state.vpc_host[0].outputs.shared_vpc_subnet_ids[var.shared_vpc_subnet], null) : null
-  monitoring_sa      = var.central_monitoring ? try(data.terraform_remote_state.monitoring[0].outputs.monitoring_service_account_email, null) : null
 }
 
-resource "google_project_iam_member" "monitoring_viewer" {
-  for_each = toset(var.central_monitoring && local.monitoring_sa != null ? [
-    "roles/monitoring.viewer",
-    "roles/compute.viewer",
-    "roles/stackdriver.resourceMetadata.viewer"
-  ] : [])
-
-  project = module.project.project_id
-  role    = each.key
-  member  = "serviceAccount:${local.monitoring_sa}"
-}
 
 resource "terraform_data" "variable_validation" {
   input = {
