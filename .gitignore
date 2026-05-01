@@ -19,6 +19,7 @@ build/
 # Automatically created terraform files
 /terraform/4_projects/*
 !/terraform/4_projects/template/
+**/auto_*.tf
 
 # Python cache files
 __pycache__/

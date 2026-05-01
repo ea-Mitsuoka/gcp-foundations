@@ -6,6 +6,7 @@
 # ///
 import os
 import shutil
+import glob
 try:
     import openpyxl
     from openpyxl import Workbook
@@ -21,8 +22,6 @@ import sys
 import re
 import ipaddress
 import csv
-
-
 def to_snake_case(name):
     name = re.sub(r'[\.\s-]', '_', str(name))
     name = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -84,6 +83,14 @@ def sanitize_id(name):
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
 
 def generate_resources():
+    # --- Cleanup Phase ---
+    print("🧹 Cleaning up previously auto-generated files...")
+    terraform_dir = os.path.join(os.path.dirname(__file__), '..')
+    for file_path in glob.glob(os.path.join(terraform_dir, '**', 'auto_*.tf'), recursive=True):
+        print(f"  - Deleting {file_path}")
+        os.remove(file_path)
+
+    # --- Setup Phase ---
     domain_env_path = os.path.join(os.path.dirname(__file__), '../../domain.env')
     domain = ""
     if os.path.exists(domain_env_path):
@@ -103,7 +110,7 @@ def generate_resources():
 
     xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp-foundations.xlsx')
     if not os.path.exists(xlsx_path):
-        print(f"{xlsx_path} not found. Creating a template...")
+        print(f"'{xlsx_path}' not found. Creating a template...")
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
