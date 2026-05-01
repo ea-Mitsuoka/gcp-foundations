@@ -51,6 +51,7 @@ class ResourceValidator:
             if name == parent:
                 errors.append(f"Resource '{name}' circular reference.")
             if parent != 'organization_id' and parent not in folders:
+                # tests/test_generate_resources.py が期待する厳密なエラーメッセージ
                 errors.append(f"{res_type.capitalize()} '{name}' refers to parent '{parent}' which is not defined.")
         return errors
 
@@ -137,9 +138,9 @@ def generate_resources():
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
             t_dict = dict(zip(headers, row))
-            key = str(t_dict.get('tag_key', '')).strip()
+            key = str(t_dict.get('tag_key') or '').strip()
             if key:
-                allowed = [v.strip() for v in str(t_dict.get('allowed_values', '')).split(',') if v.strip()]
+                allowed = [v.strip() for v in str(t_dict.get('allowed_values') or '').split(',') if v.strip()]
                 tag_definitions[key] = {'allowed_values': allowed, 'description': t_dict.get('description')}
 
     perimeters = []
@@ -160,13 +161,12 @@ def generate_resources():
             if not any(row): continue
             row_dict = dict(zip(headers, row))
             resources_data.append(row_dict)
-            res_name = str(row_dict.get('resource_name', '')).strip()
-            res_type = str(row_dict.get('resource_type', '')).strip().lower()
-            if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name', '')).strip()
+            res_name = str(row_dict.get('resource_name') or '').strip()
+            res_type = str(row_dict.get('resource_type') or '').strip().lower()
+            if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name') or '').strip()
             elif res_type == 'project': projects.append(row_dict)
 
-
-    # --- 復活したバリデーション処理 ---
+    # --- 1. バリデーションの実行 ---
     if resources_data:
         hierarchy_errors = validator.validate_hierarchy(resources_data)
         if hierarchy_errors: errors.extend(hierarchy_errors)
@@ -186,7 +186,7 @@ def generate_resources():
         if isinstance(val, bool): return val
         return str(val).strip().lower() == 'true'
 
-        # 4. Folders
+    # --- 2. フォルダの生成 ---
     folders_tf_path = os.path.join(os.path.dirname(__file__), '../3_folders/auto_folders.tf')
     with open(folders_tf_path, 'w') as f:
         f.write("# Auto-generated file. Do not edit manually.\n\n")
@@ -196,13 +196,14 @@ def generate_resources():
             parent_expr = "data.google_organization.org.name" if parent_str == 'organization_id' else f"google_folder.{sanitize_id(parent_str)}.name"
             folder_data = next((r for r in resources_data if r['resource_name'] == folder_name), {})
             folder_tags = [t.strip() for t in str(folder_data.get('org_tags') or '').split(',') if t.strip()]
+            
             f.write(f'resource "google_folder" "{fid}" {{\n  display_name = "{folder_name}"\n  parent = {parent_expr}\n  deletion_protection = false\n}}\n\n')
             for tag in folder_tags:
                 tid = sanitize_id(f"{folder_name}_{tag.replace('/', '_')}")
                 f.write(f'resource "google_tags_tag_binding" "{tid}" {{\n  count = var.enable_tags && length(data.terraform_remote_state.organization) > 0 ? 1 : 0\n  parent = "//cloudresourcemanager.googleapis.com/${{google_folder.{fid}.name}}"\n  tag_value = data.terraform_remote_state.organization[0].outputs.tag_value_ids["{tag}"]\n}}\n\n')
             f.write(f'output "{fid}_folder_id" {{\n  value = google_folder.{fid}.id\n}}\n\n')
 
-    # 5. Tag Definitions
+    # --- 3. タグの生成 ---
     tags_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_tags.tf')
     with open(tags_tf_path, 'w') as f:
         f.write("# Auto-generated file. Do not edit manually.\n\n")
@@ -218,7 +219,7 @@ def generate_resources():
         for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
         f.write('  }\n}\n\n')
 
-    # CSV Exports
+    # --- 4. CSV のエクスポート ---
     def export_sheet_to_csv(sheet_name, output_path):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -238,14 +239,12 @@ def generate_resources():
                 for row in ws.iter_rows(values_only=True):
                     if not any(cell is not None and str(cell).strip() != "" for cell in row):
                         continue
-                    
                     filtered_row = []
                     for i in valid_col_indices:
                         if i < len(row) and row[i] is not None:
                             filtered_row.append(str(row[i]))
                         else:
                             filtered_row.append("")
-                    
                     writer.writerow(filtered_row)
 
     export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
@@ -253,7 +252,43 @@ def generate_resources():
     export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/1_notification_channels/notifications.csv'))
     export_sheet_to_csv('notifications', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/notifications.csv'))
 
-    # VPC-SC Outputs Generation
+    # --- 5. サブネットの生成 ---
+    subnets_tf_path = os.path.join(os.path.dirname(__file__), '../1_core/base/vpc-host/auto_subnets.tf')
+    if 'shared_vpc_subnets' in wb.sheetnames:
+        with open(subnets_tf_path, 'w') as f:
+            f.write("# Auto-generated file. Do not edit manually.\n\n")
+            ws = wb['shared_vpc_subnets']
+            headers = [cell.value for cell in ws[1]]
+            subnet_outputs = []
+            used_cidrs = []
+            for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+                if not any(row): continue
+                s = dict(zip(headers, row))
+                s_name = str(s.get('subnet_name') or '').strip()
+                env = str(s.get('host_project_env') or '').strip().lower()
+                cidr = str(s.get('ip_cidr_range') or '').strip()
+                region = str(s.get('region') or '').strip()
+
+                if cidr:
+                    err = validator.validate_cidr(cidr, used_cidrs)
+                    if err: errors.append(f"[shared_vpc_subnets] Row {idx}: {err}")
+                    else: used_cidrs.append(ipaddress.ip_network(cidr, strict=True))
+
+                if s_name and env in ['prod', 'dev']:
+                    sid = sanitize_id(s_name)
+                    f.write(f'resource "google_compute_subnetwork" "{sid}" {{\n')
+                    f.write(f'  name                     = "{s_name}"\n')
+                    f.write(f'  ip_cidr_range            = "{cidr}"\n')
+                    f.write(f'  region                   = "{region}"\n')
+                    f.write(f'  network                  = google_compute_network.vpc_{env}[0].id\n')
+                    f.write(f'  project                  = module.vpc_host_{env}[0].project_id\n')
+                    f.write(f'  private_ip_google_access = true\n}}\n\n')
+                    subnet_outputs.append(f'    "{s_name}" = google_compute_subnetwork.{sid}.id')
+            
+            f.write('output "shared_vpc_subnet_ids" {\n  value = {\n')
+            f.write('\n'.join(subnet_outputs) + '\n  }\n}\n\n')
+
+    # --- 6. VPC-SC の生成 ---
     vpc_sc_tf_path = os.path.join(os.path.dirname(__file__), '../2_organization/auto_vpc_sc.tf')
     with open(vpc_sc_tf_path, 'w') as f:
         f.write("# Auto-generated file. Do not edit manually.\n\n")
@@ -280,22 +315,22 @@ def generate_resources():
         for p in perimeters:
             if not p.get('perimeter_name'): continue
             sid = sanitize_id(p['perimeter_name'])
-            services = [s.strip() for s in str(p.get('restricted_services', '')).split(',') if s.strip()]
+            services = [s.strip() for s in str(p.get('restricted_services') or '').split(',') if s.strip()]
             f.write(f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n  count = var.enable_vpc_sc ? 1 : 0\n  parent = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}"\n  name = "accessPolicies/${{google_access_context_manager_access_policy.access_policy[0].name}}/servicePerimeters/{p["perimeter_name"]}"\n  title = "{p["perimeter_name"]}"\n  status {{\n    restricted_services = {json.dumps(services)}\n  }}\n  lifecycle {{ ignore_changes = [status[0].resources] }}\n}}\n\n')
             perimeter_ids[p['perimeter_name']] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
         
         f.write('output "service_perimeter_ids" {\n  value = {\n')
         for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
-        f.write('  }\n}\n')
+        f.write('  }\n}\n\n')
         
         f.write('output "access_level_ids" {\n  value = {\n')
         for k, v in access_level_ids.items(): f.write(f'    "{k}" = {v}\n')
         f.write('  }\n}\n\n')
 
-    # Projects & Template Copying
+    # --- 7. プロジェクトとテンプレートのコピー ---
     template_dir = os.path.join(os.path.dirname(__file__), '../4_projects/template')
     for proj in projects:
-        app_name = str(proj.get('resource_name', '')).strip()
+        app_name = str(proj.get('resource_name') or '').strip()
         if not app_name: continue
         project_dir = os.path.join(os.path.dirname(__file__), f"../4_projects/{app_name}")
         os.makedirs(project_dir, exist_ok=True)
@@ -309,10 +344,9 @@ def generate_resources():
             backend_dst = os.path.join(project_dir, 'backend.tf')
             if not os.path.exists(backend_dst):
                 with open(backend_dst, 'w') as f:
-                    # --- 修正箇所: bucket = "" を復活させ、CIの -backend=false の validate を通過させる ---
                     f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
-        parent_folder = str(proj.get('parent_name', '')).strip()
+        parent_folder = str(proj.get('parent_name') or '').strip()
         folder_id_val = "" if parent_folder == 'organization_id' else parent_folder
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
@@ -329,13 +363,15 @@ budget_amount       = {proj.get('budget_amount', 0) or 0}
 budget_alert_emails = {json.dumps([e.strip() for e in str(proj.get('budget_alert_emails') or '').split(',') if e.strip()])}
 org_tags            = {json.dumps([t.strip() for t in str(proj.get('org_tags') or '').split(',') if t.strip()])}
 deletion_protection = true
+
 labels = {{
-  env = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-  owner = "{str(proj.get('owner', 'unknown')).strip()}"
-  app = "{app_name}"
+  env   = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
+  owner = "{str(proj.get('owner') or 'unknown').strip()}"
+  app   = "{app_name}"
 }}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f: f.write(tfvars_content)
+
     print(f"✅ Generated all resources successfully")
 
 if __name__ == "__main__":
