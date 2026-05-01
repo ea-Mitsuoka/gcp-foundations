@@ -460,7 +460,7 @@ deletion_protection = true
 
 labels = {{
   env   = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-  owner = "{str(proj.get('owner') or 'unknown').strip().replace('@', '-at-').replace('.', '-')}"
+  owner = "{str(proj.get('owner') or 'unknown').strip().lower().replace('@', '-at-').replace('.', '-')}"
   app   = "{app_name}"
 }}
 """

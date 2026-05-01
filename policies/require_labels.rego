@@ -1,38 +1,29 @@
-package gcp.policies
+package terraform.validation
 
 import rego.v1
 
-# 必須ラベルのリストを定義
-required_labels := {"env", "owner"}
+# 必須ラベルの定義（環境、所有者、アプリ名）
+required_labels := {"env", "owner", "app"}
 
-# denyルール：一つでも違反があればエラーメッセージを返す
+# プロジェクト作成・更新時に必須ラベルが欠如している場合、デプロイをブロックする
 deny contains msg if {
-  # Terraform planに含まれる全リソース変更をチェック
-  some change in input.resource_changes
+    # 変更されるリソースをイテレーション
+    some resource in input.resource_changes
+    
+    # 対象を GCP プロジェクトのリソースに限定
+    resource.type == "google_project"
+    
+    # 削除アクションは除外
+    some action in resource.change.actions
+    action != "delete"
 
-  # 作成(create)または更新(update)されるリソースのみを対象
-  change.change.actions[_] in ["create", "update"]
-
-  # プロジェクトリソースのみを対象にラベルを強制する
-  change.type == "google_project"
-
-  # リソースの labels 属性を安全に取得
-  labels := get_labels(change.change.after)
-
-  # 必須ラベルのセットと、リソースに実際に付与されたラベルのセットを比較
-  # (labels が空 {} の場合は provided_labels も空になる)
-  provided_labels := {k | _ := labels[k]}
-  missing_labels := required_labels - provided_labels
-
-  # 足りないラベルが1つでもあれば（count > 0）...
-  count(missing_labels) > 0
-
-  # エラーメッセージを生成
-  msg := sprintf("プロジェクト '%s' に必須ラベルがありません: %s", [change.address, missing_labels])
+    # labels 属性を取得（nullまたは未定義の場合は空オブジェクトとして扱う）
+    labels := object.get(resource.change.after, "labels", {})
+    
+    # 必須ラベルの中で、設定されていないものを特定
+    missing := {l | some l in required_labels; not labels[l]}
+    count(missing) > 0
+    
+    # エラーメッセージを生成
+    msg := sprintf("GCP Project '%s' is missing required labels: %v", [resource.address, missing])
 }
-
-# labels 属性が null や未定義の場合に備え、安全に空のオブジェクトにフォールバックするヘルパー
-get_labels(after) := labels if {
-    labels := object.get(after, "labels", {})
-    labels != null
-} else := {}
