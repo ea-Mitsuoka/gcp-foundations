@@ -6,10 +6,6 @@ resource "terraform_data" "variable_validation" {
   ]
 }
 
-data "google_organization" "org" {
-  domain = var.organization_domain
-}
-
 data "terraform_remote_state" "organization" {
   count   = var.enable_org_policies || var.enable_tags ? 1 : 0
   backend = "gcs"
