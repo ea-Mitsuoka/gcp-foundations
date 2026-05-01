@@ -312,7 +312,7 @@ def generate_resources():
                     f'    conditions {{\n'
                 )
                 if al.get('ip_subnetworks'):
-                    ips = [ip.strip() for ip in str(al['ip_subnetworks']).split(',') if ip.strip()]
+                    ips = [ip.strip() + '/32' if '/' not in ip.strip() else ip.strip() for ip in str(al['ip_subnetworks']).split(',') if ip.strip()]
                     f.write(f'      ip_subnetworks = {json.dumps(ips)}\n')
                 if al.get('members'):
                     members = [m.strip() for m in str(al['members']).split(',') if m.strip()]
@@ -436,6 +436,28 @@ labels = {{
 }}
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f: f.write(tfvars_content)
+
+
+    # --- Silence Undeclared Variable Warnings ---
+    global_keys = [
+        "terraform_service_account_email", "gcs_backend_bucket", "organization_domain",
+        "gcp_region", "project_id_prefix", "core_billing_linked", "enable_vpc_host_projects",
+        "enable_shared_vpc", "enable_vpc_sc", "enable_org_policies", "enable_simplified_admin_groups",
+        "allow_resource_destruction", "enable_tags", "billing_account_id"
+    ]
+    for root, dirs, files in os.walk(os.path.join(os.path.dirname(__file__), '../')):
+        if 'main.tf' in files and '.terraform' not in root and 'modules' not in root:
+            existing_vars = set()
+            if 'variables.tf' in files:
+                with open(os.path.join(root, 'variables.tf'), 'r') as vf:
+                    existing_vars.update(re.findall(r'variable\s+"([^"]+)"', vf.read()))
+            
+            missing_vars = [k for k in global_keys if k not in existing_vars]
+            if missing_vars:
+                with open(os.path.join(root, 'auto_global_vars.tf'), 'w') as fv:
+                    fv.write('# Auto-generated file to silence undeclared variable warnings.\n')
+                    for mv in missing_vars:
+                        fv.write(f'variable "{mv}" {{ type = any, default = null }}\n')
 
     print(f"✅ Generated all resources successfully")
 
