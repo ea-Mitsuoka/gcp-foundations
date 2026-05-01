@@ -249,7 +249,7 @@ def generate_resources():
                 writer = csv.writer(csv_file)
                 for row in ws.iter_rows(values_only=True):
                     if not any(cell is not None and str(cell).strip() != "" for cell in row): continue
-                    filtered_row = [str(row[i]) if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
+                    filtered_row = [str(row[i]).strip() if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
                     writer.writerow(filtered_row)
 
     export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
@@ -380,9 +380,9 @@ def generate_resources():
             tf_block += f'  parent = "{parent_resource}"\n'
             tf_block += f'  spec {{\n'
             if is_true(p.get('enforce')):
-                tf_block += f'    rules {{\n      enforce = "true"\n    }}\n'
+                tf_block += f'    rules {{\n      enforce = "TRUE"\n    }}\n'
             elif str(p.get('enforce')).strip().lower() == 'false':
-                 tf_block += f'    rules {{\n      enforce = "false"\n    }}\n'
+                 tf_block += f'    rules {{\n      enforce = "FALSE"\n    }}\n'
             else:
                 values = [v.strip() for v in str(p.get('allow_list') or '').split(',') if v.strip()]
                 tf_block += f'    rules {{\n      values {{\n        allowed_values = {json.dumps(values)}\n      }}\n    }}\n'

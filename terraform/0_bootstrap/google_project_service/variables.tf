@@ -15,6 +15,8 @@ variable "project_apis" {
     "orgpolicy.googleapis.com",
     "logging.googleapis.com",
     "pubsub.googleapis.com",
-    "cloudasset.googleapis.com"
+    "cloudasset.googleapis.com",
+    "accesscontextmanager.googleapis.com",
+    "billingbudgets.googleapis.com"
   ]
 }
