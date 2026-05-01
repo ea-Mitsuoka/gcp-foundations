@@ -4,11 +4,6 @@ variable "project_apis" {
   default = [
     "monitoring.googleapis.com",
     "logging.googleapis.com",
-    "cloudfunctions.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "cloudscheduler.googleapis.com",
-    "run.googleapis.com",
-    "artifactregistry.googleapis.com",
     "compute.googleapis.com"
   ]
 }

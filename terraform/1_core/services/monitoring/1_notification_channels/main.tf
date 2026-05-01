@@ -16,7 +16,7 @@ locals {
 # 通知チャネルを logsink プロジェクトに作成
 resource "google_monitoring_notification_channel" "email" {
   for_each     = local.unique_emails_to_notify
-  project      = data.terraform_remote_state.logsink_project.outputs.project_id
+  project      = data.terraform_remote_state.monitoring_project.outputs.project_id
   display_name = "Email Channel for ${each.key}"
   type         = "email"
   labels       = { email_address = each.key }

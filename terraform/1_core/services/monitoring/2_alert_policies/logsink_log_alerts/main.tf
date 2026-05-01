@@ -22,7 +22,7 @@ module "log_match_alerts" {
 
   source = "../../../../../modules/log-match-alert-factory"
 
-  scoping_project_id   = data.terraform_remote_state.logsink_project.outputs.project_id
+  scoping_project_id   = data.terraform_remote_state.monitoring_project.outputs.project_id
   monitored_project_id = data.terraform_remote_state.logsink_project.outputs.project_id
   display_name         = each.value.alert_display_name
   filter               = "resource.labels.project_id=\"${data.terraform_remote_state.logsink_project.outputs.project_id}\" AND (${each.value.metric_filter})"
