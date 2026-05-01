@@ -8,13 +8,14 @@ resource "google_monitoring_monitored_project" "monitored_projects" {
   # for_each を使い、取得したプロジェクトのリストからリソースを動的に作成
   # toset(...) でプロジェクトIDの重複をなくし、一意なセットに変換
   # if p.project_id != scoping_project_id で、スコーピングプロジェクト自身は対象から除外
+  # SSoTの要件に従い、monitoringラベルが明示的にfalseのものは監視スコープから除外する
   for_each = toset([
     for p in data.google_projects.all_projects.projects : p.project_id
     if p.project_id != data.terraform_remote_state.project.outputs.project_id && try(p.labels["monitoring"], "true") == "true"
   ])
 
-  # 指標スコープの指定
-  metrics_scope = "projects/${data.terraform_remote_state.project.outputs.project_id}"
+  # 指標スコープの指定 (GCP API 仕様に従い locations/global/metricsScopes/ プレフィックスを使用)
+  metrics_scope = "locations/global/metricsScopes/${data.terraform_remote_state.project.outputs.project_id}"
 
   # 監視対象となるプロジェクトID
   name = each.key

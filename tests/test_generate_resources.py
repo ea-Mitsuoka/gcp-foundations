@@ -28,7 +28,6 @@ def test_validate_project_name_with_prefix(validator):
     assert validator.validate_gcp_resource_name("app-01", "project", prefix="my-company") is None
     assert validator.validate_gcp_resource_name("a"*20, "project", prefix="my-company") is not None # prefix(10) + hypen(1) + name(20) = 31 > 30
 
-
 def test_validate_folder_name_valid(validator):
     assert validator.validate_gcp_resource_name("Production", "folder") is None
     assert validator.validate_gcp_resource_name("Shared VPC", "folder") is None
@@ -79,7 +78,6 @@ def test_validate_hierarchy_missing_parent(validator):
     errors = validator.validate_hierarchy(resources)
     assert any("not defined" in e for e in errors)
 
-
 def test_validate_hierarchy_duplicate_names(validator):
     resources = [
         {"resource_type": "folder", "resource_name": "app-01", "parent_name": "organization_id"},
@@ -87,6 +85,33 @@ def test_validate_hierarchy_duplicate_names(validator):
     ]
     errors = validator.validate_hierarchy(resources)
     assert any("Duplicate resource name" in e for e in errors)
+
+# --- Project Reference and Org Policy Validation Tests ---
+
+def test_validate_project_refs(validator):
+    resources = [
+        {"resource_type": "project", "resource_name": "app1", "shared_vpc": "valid-subnet", "vpc_sc": "valid-perimeter"},
+        {"resource_type": "project", "resource_name": "app2", "shared_vpc": "invalid-subnet", "vpc_sc": "invalid-perimeter"}
+    ]
+    subnets = [{"subnet_name": "valid-subnet"}]
+    perimeters = [{"perimeter_name": "valid-perimeter"}]
+    errors = validator.validate_project_refs(resources, subnets, perimeters)
+    assert len(errors) == 2
+    assert any("invalid-subnet" in e for e in errors)
+    assert any("invalid-perimeter" in e for e in errors)
+
+def test_validate_org_policies(validator):
+    folders = {"shared"}
+    projects = {"prd-app-01"}
+    policies = [
+        {"target_name": "organization_id"},
+        {"target_name": "shared"},
+        {"target_name": "prd-app-01"},
+        {"target_name": "invalid-target"}
+    ]
+    errors = validator.validate_org_policies(policies, folders, projects)
+    assert len(errors) == 1
+    assert "invalid-target" in errors[0]
 
 # --- Tag Validation Tests ---
 
