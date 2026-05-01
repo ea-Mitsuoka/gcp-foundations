@@ -7,7 +7,8 @@ resource "google_folder" "production" {
 }
 
 output "production_folder_id" {
-  value = google_folder.production.id
+  description = "The resource ID of the production folder."
+  value       = google_folder.production.id
 }
 
 resource "google_folder" "development" {
@@ -17,6 +18,7 @@ resource "google_folder" "development" {
 }
 
 output "development_folder_id" {
-  value = google_folder.development.id
+  description = "The resource ID of the development folder."
+  value       = google_folder.development.id
 }
 

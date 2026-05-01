@@ -30,8 +30,9 @@ generate:
 	cd terraform && terraform fmt -recursive
 
 lint:
-	cd terraform && terraform fmt -recursive
-	cd terraform && tflint --init && tflint --recursive
+	tflint --init
+	tflint --recursive --config $(shell pwd)/.tflint.hcl --chdir terraform
+	cd terraform && terraform fmt -recursive -check || (echo "⚠️ Formatting issues found. Running auto-fix..."; cd terraform && terraform fmt -recursive)
 	find terraform/scripts -name "*.sh" -exec shellcheck -s bash {} +
 	@echo ""
 	@echo "✅ Lint check passed! Next: Run 'make deploy' to apply changes."
