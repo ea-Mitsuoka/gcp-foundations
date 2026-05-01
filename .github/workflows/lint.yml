@@ -69,7 +69,7 @@ jobs:
         run: tflint --init
 
       - name: Run TFLint
-        run: tflint --recursive
+        run: tflint --recursive --config ${{ github.workspace }}/.tflint.hcl --chdir terraform
 
   ####################################################
   # Job 2: Discover Terraform root directories (for validate job)
