@@ -97,6 +97,31 @@ class ResourceValidator:
                 errors.append(f"[notifications] Row {idx}: Refers to undefined alert '{name}'.")
         return errors
 
+    @staticmethod
+    def validate_project_refs(resources, subnets, perimeters):
+        errors = []
+        subnet_names = {str(s.get('subnet_name') or '').strip() for s in subnets if s.get('subnet_name')}
+        perimeter_names = {str(p.get('perimeter_name') or '').strip() for p in perimeters if p.get('perimeter_name')}
+        for idx, r in enumerate(resources, start=2):
+            if str(r.get('resource_type') or '').strip().lower() == 'folder': continue
+            subnet = str(r.get('shared_vpc') or '').strip()
+            if subnet and subnet not in subnet_names:
+                errors.append(f"[resources] Row {idx}: Refers to undefined shared_vpc subnet '{subnet}'.")
+            vpc_sc = str(r.get('vpc_sc') or '').strip()
+            if vpc_sc and vpc_sc not in perimeter_names:
+                errors.append(f"[resources] Row {idx}: Refers to undefined vpc_sc perimeter '{vpc_sc}'.")
+        return errors
+
+    @staticmethod
+    def validate_org_policies(org_policies, folders, projects):
+        errors = []
+        valid_targets = {'organization_id'} | folders | projects
+        for idx, p in enumerate(org_policies, start=2):
+            target = str(p.get('target_name') or '').strip()
+            if target and target not in valid_targets:
+                errors.append(f"[org_policies] Row {idx}: Target '{target}' is not defined as a folder or project.")
+        return errors
+
 def sanitize_id(name):
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
@@ -197,6 +222,20 @@ def generate_resources():
             if res_type == 'folder': folders_map[res_name] = str(row_dict.get('parent_name') or '').strip()
             elif res_type == 'project': projects.append(row_dict)
 
+    subnets_data = []
+    if 'shared_vpc_subnets' in wb.sheetnames:
+        ws = wb['shared_vpc_subnets']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if any(row): subnets_data.append(dict(zip(headers, row)))
+
+    org_policies_data = []
+    if 'org_policies' in wb.sheetnames:
+        ws = wb['org_policies']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if any(row): org_policies_data.append(dict(zip(headers, row)))
+
     alert_defs = []
     notifications = []
     if 'alert_definitions' in wb.sheetnames:
@@ -216,12 +255,22 @@ def generate_resources():
     if resources_data:
         hierarchy_errors = validator.validate_hierarchy(resources_data)
         if hierarchy_errors: errors.extend(hierarchy_errors)
+        
+        ref_errs = validator.validate_project_refs(resources_data, subnets_data, perimeters)
+        if ref_errs: errors.extend(ref_errs)
+
         for idx, r in enumerate(resources_data, start=2):
             name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'), prefix=project_id_prefix)
             if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
+    if org_policies_data:
+        folder_names = set(folders_map.keys())
+        project_names = {p['resource_name'] for p in projects}
+        op_errs = validator.validate_org_policies(org_policies_data, folder_names, project_names)
+        if op_errs: errors.extend(op_errs)
+
     if errors:
         print("\n❌ Configuration errors detected:")
         for err in errors: print(f"  - {err}")
