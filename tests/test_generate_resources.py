@@ -136,3 +136,8 @@ def test_validate_alerts_duplicate(validator):
     alert_defs = [{"alert_name": "alert1"}, {"alert_name": "alert1"}]
     errors = validator.validate_alerts([], alert_defs)
     assert any("Duplicate alert_name" in e for e in errors)
+
+def test_validate_log_sinks_duplicate(validator):
+    log_sinks = [{"log_type": "エラーログ"}, {"log_type": "エラーログ"}]
+    errors = validator.validate_log_sinks(log_sinks)
+    assert any("Duplicate log_type" in e for e in errors)

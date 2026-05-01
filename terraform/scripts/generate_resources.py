@@ -129,6 +129,18 @@ class ResourceValidator:
                 errors.append(f"[org_policies] Row {idx}: Target '{target}' is not defined as a folder or project.")
         return errors
 
+    @staticmethod
+    def validate_log_sinks(log_sinks):
+        errors = []
+        seen_types = set()
+        for idx, sink in enumerate(log_sinks, start=2):
+            l_type = str(sink.get('log_type') or '').strip()
+            if l_type:
+                if l_type in seen_types:
+                    errors.append(f"[log_sinks] Row {idx}: Duplicate log_type '{l_type}'. Log types must be unique.")
+                seen_types.add(l_type)
+        return errors
+
 def sanitize_id(name):
     if not name: return "unknown"
     return str(name).replace("-", "_").replace(" ", "_").replace(".", "_")
@@ -235,6 +247,13 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if any(row): subnets_data.append(dict(zip(headers, row)))
+
+    log_sinks_data = []
+    if 'log_sinks' in wb.sheetnames:
+        ws = wb['log_sinks']
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if any(row): log_sinks_data.append(dict(zip(headers, row)))
 
     org_policies_data = []
     if 'org_policies' in wb.sheetnames:
