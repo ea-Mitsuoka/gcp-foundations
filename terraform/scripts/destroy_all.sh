@@ -9,9 +9,15 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
 
 INCLUDE_BASE=false
-if [[ "$1" == "--all" ]]; then
-  INCLUDE_BASE=true
-fi
+FROM_LAYER=1
+
+for arg in "$@"; do
+  if [[ "$arg" == "--all" ]]; then
+    INCLUDE_BASE=true
+  elif [[ "$arg" == --from-layer=* ]]; then
+    FROM_LAYER="${arg#*=}"
+  fi
+done
 
 # 破壊許可フラグの確認
 ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
@@ -24,9 +30,9 @@ fi
 
 echo "⚠️  WARNING: This will destroy GCP resources managed by this repository."
 if [ "$INCLUDE_BASE" = true ]; then
-  echo "🔥 MODE: ALL (Including management projects like logsink, monitoring, and vpc-host)"
+  echo "🔥 MODE: ALL (Layer ${FROM_LAYER}+, Including management projects like logsink, monitoring, and vpc-host)"
 else
-  echo "🛡️  MODE: STANDARD (Excluding management projects)"
+  echo "🛡️  MODE: STANDARD (Layer ${FROM_LAYER}+, Excluding management projects)"
 fi
 echo "----------------------------------------------------------"
 read -r -p "Are you sure you want to proceed? (type 'DESTROY' to confirm): " confirm
@@ -53,31 +59,42 @@ for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   fi
 done
 
-# 基本的な削除対象リスト
-DESTROY_TARGETS=(
-  "${PROJECT_DIRS[@]}"
-  "terraform/3_folders"
-  "terraform/2_organization"
-  "terraform/1_core/services/vpc-host"
-  "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
-  "terraform/1_core/services/monitoring/1_notification_channels"
-  "terraform/1_core/services/monitoring/scoping"
-  "terraform/1_core/services/monitoring/iam"
-  "terraform/1_core/services/monitoring/google_project_service"
-  "terraform/1_core/services/logsink/asset_inventory_bq_export"
-  "terraform/1_core/services/logsink/sinks"
-  "terraform/1_core/services/logsink/datasets"
-  "terraform/1_core/services/logsink/iam"
-  "terraform/1_core/services/logsink/google_project_service"
-)
+# 削除対象リストの動的構築
+DESTROY_TARGETS=()
 
-# --all の場合のみ追加される管理プロジェクト（器）
-if [ "$INCLUDE_BASE" = true ]; then
+if [ "$FROM_LAYER" -le 4 ]; then
+  DESTROY_TARGETS+=("${PROJECT_DIRS[@]}")
+fi
+
+if [ "$FROM_LAYER" -le 3 ]; then
+  DESTROY_TARGETS+=("terraform/3_folders")
+fi
+
+if [ "$FROM_LAYER" -le 2 ]; then
+  DESTROY_TARGETS+=("terraform/2_organization")
+fi
+
+if [ "$FROM_LAYER" -le 1 ]; then
   DESTROY_TARGETS+=(
-    "terraform/1_core/base/vpc-host"
-    "terraform/1_core/base/monitoring"
-    "terraform/1_core/base/logsink"
+    "terraform/1_core/services/vpc-host"
+    "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
+    "terraform/1_core/services/monitoring/1_notification_channels"
+    "terraform/1_core/services/monitoring/scoping"
+    "terraform/1_core/services/monitoring/iam"
+    "terraform/1_core/services/monitoring/google_project_service"
+    "terraform/1_core/services/logsink/asset_inventory_bq_export"
+    "terraform/1_core/services/logsink/sinks"
+    "terraform/1_core/services/logsink/datasets"
+    "terraform/1_core/services/logsink/iam"
+    "terraform/1_core/services/logsink/google_project_service"
   )
+  if [ "$INCLUDE_BASE" = true ]; then
+    DESTROY_TARGETS+=(
+      "terraform/1_core/base/vpc-host"
+      "terraform/1_core/base/monitoring"
+      "terraform/1_core/base/logsink"
+    )
+  fi
 fi
 
 for dir in "${DESTROY_TARGETS[@]}"; do

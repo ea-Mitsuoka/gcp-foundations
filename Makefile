@@ -55,10 +55,10 @@ deploy:
 	bash terraform/scripts/deploy_all.sh
 
 destroy:
-	bash terraform/scripts/destroy_all.sh $(filter --all,$(MAKECMDGOALS))
+	bash terraform/scripts/destroy_all.sh $(filter-out $@,$(MAKECMDGOALS))
 
-# ダミーターゲットを用意して --all を引数として扱えるようにする
---all:
+# 任意の引数（--all や --from-layer=X など）をMakeのエラーにしないためのダミーターゲット
+%:
 	@:
 
 delivery:
