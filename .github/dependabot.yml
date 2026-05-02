@@ -1,10 +1,36 @@
 version: 2
 updates:
+  # 1. GitHub Actions のアップデート (すべてのActionを1つのPRにまとめる)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*" # 全てのActionの更新を1つのPRにマージ
+
+  # 2. Terraform - カナリア監視 (基盤の心臓部)
+  # 全ディレクトリを追うとPRが乱立するため、代表として 0_bootstrap のみを監視。
+  # google と google-beta の両方の更新を1つのPRにまとめる。
   - package-ecosystem: "terraform"
-    directory: "/terraform/"
+    directory: "/terraform/0_bootstrap"
     schedule:
       interval: "monthly"
+    groups:
+      tf-providers:
+        patterns:
+          - "*" 
+
+  # 3. Terraform - コアモジュール監視
+  # 最も利用頻度の高い共通モジュールを監視対象とする。
+  - package-ecosystem: "terraform"
+    directory: "/terraform/modules/project-factory"
+    schedule:
+      interval: "monthly"
+    groups:
+      tf-providers:
+        patterns:
+          - "*"
+# # 例: v6.48.0 から v6.49.0 へ全ディレクトリ一括置換するワンライナー
+# find terraform -name "versions.tf" -type f -exec sed -i '' 's/~> 6.48.0/~> 6.49.0/g' {} +
