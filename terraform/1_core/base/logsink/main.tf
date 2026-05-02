@@ -10,9 +10,10 @@ module "logsink_project" {
 
   # 2. モジュールに必要な変数を渡す（ここで命名規則を定義）
   # 修正点: データソースからではなく、変数を直接使用
-  project_id      = "${var.project_id_prefix}-${var.project_name}"
-  name            = "${var.project_id_prefix}-${var.project_name}"
-  organization_id = data.google_organization.org.org_id
-  labels          = var.labels
+  project_id          = "${var.project_id_prefix}-${var.project_name}"
+  name                = "${var.project_id_prefix}-${var.project_name}"
+  organization_id     = data.google_organization.org.org_id
+  labels              = var.labels
+  deletion_protection = var.allow_resource_destruction != true
   # billing_accountやfolder_idなども必要に応じてここで指定
 }

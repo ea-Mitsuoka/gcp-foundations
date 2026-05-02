@@ -556,7 +556,7 @@ labels = {{
         "allow_resource_destruction", "enable_tags", "billing_account_id"
     ]
     for root, dirs, files in os.walk(os.path.join(os.path.dirname(__file__), '../')):
-        if 'main.tf' in files and '.terraform' not in root and 'modules' not in root:
+        if any(f.endswith('.tf') for f in files) and '.terraform' not in root and 'modules' not in root:
             existing_vars = set()
             if 'variables.tf' in files:
                 with open(os.path.join(root, 'variables.tf'), 'r') as vf:
