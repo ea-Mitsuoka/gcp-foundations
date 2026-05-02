@@ -336,7 +336,7 @@ def generate_resources():
                 f.write(
                     f'resource "google_tags_tag_value" "{vid}" {{\n'
                     f'  count = var.enable_tags ? 1 : 0\n'
-                    f'  parent = google_tags_tag_key.{kid}[0].id\n'
+                    f'  parent = try(google_tags_tag_key.{kid}[0].id, "")\n'
                     f'  short_name = "{val}"\n'
                     f'}}\n\n'
                 )

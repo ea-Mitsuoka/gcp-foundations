@@ -13,7 +13,7 @@ locals {
   unique_emails_to_notify = toset([for r in local.active_notifications : r.user_email])
 }
 
-# 通知チャネルを logsink プロジェクトに作成
+# 通知チャネルを monitoring プロジェクトに作成
 resource "google_monitoring_notification_channel" "email" {
   for_each     = local.unique_emails_to_notify
   project      = data.terraform_remote_state.monitoring_project.outputs.project_id

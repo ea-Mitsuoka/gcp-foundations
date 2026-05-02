@@ -46,7 +46,7 @@ resource "google_project" "this" {
 
 # 予算通知用のメールチャネルを作成 (通知先と管理プロジェクトの両方が指定されている場合のみ)
 resource "google_monitoring_notification_channel" "budget_emails" {
-  for_each     = var.monitoring_project_id != null ? toset(var.budget_alert_emails) : []
+  for_each     = (var.monitoring_project_id != null && var.budget_amount > 0 && var.billing_account != null) ? toset(var.budget_alert_emails) : []
   project      = var.monitoring_project_id
   display_name = "Budget Alert Email - ${each.key}"
   type         = "email"
