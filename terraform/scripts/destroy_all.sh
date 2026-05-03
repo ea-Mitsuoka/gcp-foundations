@@ -9,13 +9,12 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
 
 INCLUDE_BASE=false
-FROM_LAYER=1
+# Makefile から渡される環境変数 LAYER を受け取る（未指定ならデフォルト 1）
+FROM_LAYER=${LAYER:-1}
 
 for arg in "$@"; do
-  if [[ "$arg" == "--all" ]]; then
+  if [[ "$arg" == "ALL" ]]; then
     INCLUDE_BASE=true
-  elif [[ "$arg" == --from-layer=* ]]; then
-    FROM_LAYER="${arg#*=}"
   fi
 done
 
