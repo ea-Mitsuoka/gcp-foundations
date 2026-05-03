@@ -135,14 +135,21 @@ resource "google_project_service_identity" "pubsub_sa" {
   service  = "pubsub.googleapis.com"
 }
 
+# Asset Inventoryサービスエージェントを明示的に強制生成
+resource "google_project_service_identity" "asset_inventory_sa" {
+  provider = google-beta
+  project  = data.terraform_remote_state.project.outputs.project_id
+  service  = "cloudasset.googleapis.com"
+}
+
 
 # 必要なIAM設定：
-# Cloud Asset InventoryのサービスエージェントにPub/Subトピックへの発行権限を付与
+# Cloud Asset InventoryのプロジェクトレベルサービスエージェントにPub/Subトピックへの発行権限を付与
 resource "google_pubsub_topic_iam_member" "asset_inventory_sa_publisher" {
   project = data.terraform_remote_state.project.outputs.project_id
   topic   = google_pubsub_topic.asset_inventory_feed.name
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:service-org-${data.google_organization.org.org_id}@gcp-sa-cloudasset.iam.gserviceaccount.com"
+  member  = google_project_service_identity.asset_inventory_sa.member
 }
 
 # Pub/SubサービスエージェントにBigQueryデータ編集者ロールを明示的に付与
