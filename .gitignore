@@ -7,6 +7,7 @@
 *.tfvars
 *.tfbackend
 tfplan
+**/auto_*.tf
 
 # Environment files
 domain.env
