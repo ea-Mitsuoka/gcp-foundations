@@ -6,7 +6,8 @@ variable "project_apis" {
     "pubsub.googleapis.com",
     "cloudasset.googleapis.com",
     "logging.googleapis.com",
-    "storage.googleapis.com"
+    "storage.googleapis.com",
+    "serviceusage.googleapis.com"
   ]
 }
 
