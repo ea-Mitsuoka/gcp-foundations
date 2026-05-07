@@ -53,7 +53,7 @@ run "create_project_folder_level" {
   }
 
   assert {
-    condition     = google_project.this.folder_id == "folders/987654321"
+    condition     = google_project.this.folder_id == "987654321"
     error_message = "Folder ID does not match expected value"
   }
 
