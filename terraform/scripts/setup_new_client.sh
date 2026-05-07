@@ -153,19 +153,19 @@ print_info "Updating configuration files..."
 
 cat <<EOF > "${REPO_ROOT}/terraform/common.tfvars"
 terraform_service_account_email = "${SA_EMAIL}"
-gcs_backend_bucket               = "${GCS_BUCKET_TFSTATE}"
-organization_domain              = "${CUSTOMER_DOMAIN}"
-billing_account_id               = "${BILLING_ACCOUNT_ID}"
-gcp_region                       = "${GCP_REGION}"
-project_id_prefix                = "${PROJECT_ID_PREFIX}"
-core_billing_linked              = false
+gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
+organization_domain             = "${CUSTOMER_DOMAIN}"
+billing_account_id              = "${BILLING_ACCOUNT_ID}"
+gcp_region                      = "${GCP_REGION}"
+project_id_prefix               = "${PROJECT_ID_PREFIX}"
+core_billing_linked             = false
 enable_vpc_host_projects        = ${ENABLE_VPC}
-enable_shared_vpc                = ${ENABLE_VPC}
-enable_vpc_sc                    = ${ENABLE_VPC_SC}
-enable_org_policies              = ${ENABLE_ORG_POLICIES}
-enable_tags                      = ${ENABLE_TAGS}
+enable_shared_vpc               = ${ENABLE_VPC}
+enable_vpc_sc                   = ${ENABLE_VPC_SC}
+enable_org_policies             = ${ENABLE_ORG_POLICIES}
+enable_tags                     = ${ENABLE_TAGS}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
-allow_resource_destruction       = false
+allow_resource_destruction      = false
 EOF
 
 # (Other tfvars generation ...)
