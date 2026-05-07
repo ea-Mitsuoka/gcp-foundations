@@ -17,6 +17,7 @@ variable "project_apis" {
     "pubsub.googleapis.com",
     "cloudasset.googleapis.com",
     "accesscontextmanager.googleapis.com",
+    "cloudbilling.googleapis.com",
     "billingbudgets.googleapis.com"
   ]
 }
