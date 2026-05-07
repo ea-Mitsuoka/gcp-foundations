@@ -116,3 +116,20 @@ resource "google_tags_tag_binding" "project_tags" {
   tag_value  = data.terraform_remote_state.organization[0].outputs.tag_value_ids[each.key]
   depends_on = [module.project]
 }
+
+
+# --------------------------------------------------------------------------------
+# 中央監視プロジェクトへの自動登録 (Push型アーキテクチャ)
+# L1での一括取得による伝播遅延・デッドロックを回避し、プロジェクト作成時に即時登録します
+# --------------------------------------------------------------------------------
+resource "google_monitoring_monitored_project" "central_monitoring_registration" {
+  count = var.central_monitoring && var.mgmt_project_id != null && var.mgmt_project_id != "" ? 1 : 0
+
+  metrics_scope = "locations/global/metricsScopes/${var.mgmt_project_id}"
+  name          = module.project.project_id
+
+  depends_on = [
+    module.project,
+    google_project_service.compute_api
+  ]
+}
