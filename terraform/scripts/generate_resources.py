@@ -302,6 +302,22 @@ def generate_resources():
         for err in errors: print(f"  - {err}")
         sys.exit(1)
 
+
+    # === 孤立プロジェクト (Orphan Projects) のクリーンアップ ===
+    valid_project_names = {str(p.get('resource_name') or '').strip() for p in projects if p.get('resource_name')}
+    projects_dir = os.path.join(os.path.dirname(__file__), '../4_projects')
+    if os.path.exists(projects_dir):
+        for entry in os.listdir(projects_dir):
+            if entry == 'template' or entry.startswith('.'): continue
+            proj_path = os.path.join(projects_dir, entry)
+            if os.path.isdir(proj_path) and entry not in valid_project_names:
+                tfvars_path = os.path.join(proj_path, 'terraform.tfvars')
+                if os.path.exists(tfvars_path):
+                    os.remove(tfvars_path)
+                    print(f"⚠️  WARNING: Project '{entry}' was removed from SSoT (Excel).")
+                    print(f"   -> Deleted 'terraform.tfvars' to exclude it from deployment.")
+                    print(f"   -> Your custom code (if any) is preserved. If GCP resources exist, they must be managed/destroyed manually.")
+
     def is_true(val):
         if val is None: return False
         if isinstance(val, bool): return val
