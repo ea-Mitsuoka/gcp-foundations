@@ -39,7 +39,7 @@ ______________________________________________________________________
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-009** | **TC-010** | ⚠️ **【重要】**Excel差し替えによるデッドロックを防ぐため、古いExcelを戻して `allow_resource_destruction=true` とし、**`make destroy` でL1〜L4を完全に更地にする**。<br>その後、`TC010_016_019_Network_Success.xlsx` に差し替え、`common.tfvars` で `enable_shared_vpc = true` に設定。 |
+| **TC-009** | **TC-010** | ⚠️ **【最重要：異常系テストからの回復】**<br>直前のテスト(TC-004〜009)で `make generate` が意図的に失敗しているため、**自動生成された変数ファイル(`auto_*.tf`)がリポジトリから削除された状態**になっています。このままでは `make destroy` が変数未定義エラーで失敗するため、以下の回復手順が必須です。<br><br>1. **正常なExcelで変数を再生成:**<br> `cp tests/fixtures/TC001_to_003_Basic.xlsx gcp-foundations.xlsx`<br> `make generate`<br>2. **リソースの完全消去:**<br> `common.tfvars` で `allow_resource_destruction=true` を確認。<br> `make destroy ALL`<br>3. **次期テストの準備:**<br> `TC010_016_019_Network_Success.xlsx` を `gcp-foundations.xlsx` にコピー。<br> `common.tfvars` で `enable_shared_vpc = true` に設定。 |
 | **TC-010** | **TC-011** | ⚠️ デプロイは行わないため、**リソースは残したまま** `TC011_012_014_015_018_Network_Err.xlsx` に差し替え（重複CIDRの確認）。 |
 | **TC-011** | **TC-012** | 重複CIDRを解消し、存在しないサブネット名を `resources` シートに入力。 |
 | **TC-012** | **TC-013** | `common.tfvars` の `enable_shared_vpc` を `false` に変更。 |
