@@ -118,7 +118,7 @@ ______________________________________________________________________
 | `terraform_service_account_email` | Terraform 実行用サービスアカウント。 | 自動生成された値のままでOK。 |
 | `gcs_backend_bucket` | tfstate を保存するバケット名。 | 自動生成された値のままでOK。 |
 | `organization_domain` | 管理対象のドメイン。 | 誤りがあれば修正。 |
-| `billing_account_id` | **【重要】** 請求先アカウント ID。 | 誤りがあれば修正。予算アラートに使用。 |
+| `billing_account_id` | 請求先アカウント ID。 | `make setup` 時に指定した値が自動設定されます。変更したい場合のみ修正してください。 |
 | `core_billing_linked` | **【重要】** 共通プロジェクトの課金紐付けフラグ。 | **手動で課金リンクを完了した後、`true` に変更してください。** |
 | `enable_shared_vpc` | 組織全体で Shared VPC を利用するか。 | ネットワーク設計の変更時に調整。 |
 | `enable_org_policies` | 組織ポリシーを有効化するか。 | **移行作業中は `false`、ガードレール適用時に `true`。** |

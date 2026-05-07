@@ -68,9 +68,36 @@ echo "domain=\"${CUSTOMER_DOMAIN}\"" > "$DOMAIN_ENV_PATH"
 print_success "Created domain.env with domain: $CUSTOMER_DOMAIN"
 fi
 
+print_info "Fetching available Billing Accounts..."
+AVAILABLE_BILLING=$(gcloud billing accounts list --format="table(name,displayName)" 2>/dev/null || true)
+if [ -n "$AVAILABLE_BILLING" ]; then
+    echo "$AVAILABLE_BILLING"
+    AUTO_BILLING_ID=$(gcloud billing accounts list --format="value(ACCOUNT_ID)" --limit=1 2>/dev/null || true)
+else
+    AUTO_BILLING_ID=""
+fi
+
 print_info "Please provide the following information for the new client."
-read -r -p "Enter the Billing Account ID (e.g., 012345-6789AB-CDEF01): " BILLING_ACCOUNT_ID
-read -r -p "Enter the GCP region for GCS buckets (e.g., asia-northeast1): " GCP_REGION
+print_info "(If you are testing without billing, type 'dummy' to use a dummy ID)"
+if [ -n "$AUTO_BILLING_ID" ]; then
+    read -r -p "Enter the Billing Account ID [Default: $AUTO_BILLING_ID]: " BILLING_ACCOUNT_ID
+    BILLING_ACCOUNT_ID=${BILLING_ACCOUNT_ID:-$AUTO_BILLING_ID}
+else
+    read -r -p "Enter the Billing Account ID: " BILLING_ACCOUNT_ID
+fi
+
+if [ -z "$BILLING_ACCOUNT_ID" ]; then
+    print_error "Billing Account ID cannot be empty."
+    exit 1
+fi
+
+if [ "$BILLING_ACCOUNT_ID" == "dummy" ] || [ "$BILLING_ACCOUNT_ID" == "012345-6789AB-CDEF01" ]; then
+    BILLING_ACCOUNT_ID="012345-6789AB-CDEF01"
+    print_warning "Using dummy Billing Account ID for testing: ${BILLING_ACCOUNT_ID}"
+fi
+
+read -r -p "Enter the GCP region for GCS buckets [Default: asia-northeast1]: " GCP_REGION
+GCP_REGION=${GCP_REGION:-asia-northeast1}
 
 read -r -p "Do you want to enable Shared VPC Host Projects in 1_core? (true/false) [default: false]: " ENABLE_VPC
 ENABLE_VPC=$(echo "${ENABLE_VPC:-false}" | tr '[:upper:]' '[:lower:]')
@@ -167,10 +194,9 @@ fi
 echo
 print_warning "-------------------- MANUAL ACTION REQUIRED --------------------"
 print_info "GCP requires an active billing account to enable APIs and create GCS buckets."
-print_info "Please open a NEW terminal window and run the following command,"
-print_info "replacing <YOUR_BILLING_ID> with the actual Billing Account ID:"
+print_info "Please open a NEW terminal window and run the following command to link the billing account:"
 echo
-echo "  gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=<YOUR_BILLING_ID>"
+echo "  gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=${BILLING_ACCOUNT_ID}"
 echo
 print_warning "----------------------------------------------------------------"
 read -r -p "Press [Enter] AFTER you have successfully linked the billing account..."
@@ -315,9 +341,20 @@ EOF
 print_success "Configuration files and tfvars generated successfully."
 
 echo
+print_warning "=========================================================="
+print_success "✅ セットアップが完了しました！ (Setup Completed)"
+print_warning "=========================================================="
+print_warning "[Action Required for CI/CD]"
+print_info "GitHub Actions を正常に動作させるために、GitHubリポジトリの Secrets に以下の値を必ず登録してください："
+print_info "  - BILLING_ACCOUNT_ID       : ${BILLING_ACCOUNT_ID}"
+print_info "  - TF_SERVICE_ACCOUNT_EMAIL : ${SA_EMAIL}"
+print_info "  - GCS_BACKEND_BUCKET       : ${GCS_BUCKET_TFSTATE}"
+print_info "  - ORGANIZATION_DOMAIN      : ${CUSTOMER_DOMAIN}"
+print_info "  - GCP_REGION               : ${GCP_REGION}"
+print_warning "----------------------------------------------------------"
 print_warning "-------------------- NEXT STEPS --------------------"
 print_info "1. Run 'make generate' to create/update the SSoT spreadsheet (gcp-foundations.xlsx)."
 print_info "2. Open the spreadsheet and define your folders, projects, subnets, and policies."
 print_info "3. Follow 'docs/setup/initial_setup.md' to deploy the environment."
-print_warning "----------------------------------------------------"
+print_warning "=========================================================="
 echo
