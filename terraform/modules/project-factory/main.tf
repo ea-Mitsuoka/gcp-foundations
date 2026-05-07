@@ -6,7 +6,7 @@ resource "google_project" "this" {
   org_id    = (var.folder_id == null || var.folder_id == "") ? replace(var.organization_id, "organizations/", "") : null
   folder_id = (var.folder_id == null || var.folder_id == "") ? null : replace(var.folder_id, "folders/", "")
   # billing_account はプロジェクト作成後に管理者アカウントで設定するため、ここでは定義しない
-  billing_account = var.billing_account
+  billing_account     = var.billing_account
   labels              = { for k, v in var.labels : k => v if v != "" && v != null }
   auto_create_network = var.auto_create_network
   deletion_policy     = var.deletion_protection ? "PREVENT" : "DELETE"
