@@ -82,9 +82,12 @@ fi
 # --- Step 4: Define Variables based on Selection ---
 # プレフィックスのデフォルト案を決定
 if [ -n "$MGMT_PROJECT_ID" ]; then
-    SUGGESTED_PREFIX=$(echo "$MGMT_PROJECT_ID" | sed 's/-tfstate-.*//')
+    # 後方一致による削除 (${変数%%パターン})
+    SUGGESTED_PREFIX="${MGMT_PROJECT_ID%%-tfstate-*}"
 else
-    SUGGESTED_PREFIX=$(echo "$CUSTOMER_DOMAIN" | cut -d'.' -f1 | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-' | cut -c1-14 | sed 's/-$//')
+    SUGGESTED_PREFIX=$(echo "$CUSTOMER_DOMAIN" | cut -d'.' -f1 | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-' | cut -c1-14)
+    # 末尾のハイフン削除 (${変数%-})
+    SUGGESTED_PREFIX="${SUGGESTED_PREFIX%-}"
 fi
 
 # common.tfvars があれば既存値を優先
