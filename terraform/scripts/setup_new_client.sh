@@ -52,7 +52,7 @@ fi
 print_info "Searching for ACTIVE tfstate projects in your environment..."
 
 # 組織直下という制限を外し、ゴミ箱に入っていない(ACTIVE) tfstateプロジェクトを全検索
-PROJECTS_OUTPUT=$(gcloud projects list --filter="lifecycleState=ACTIVE AND id:*tfstate*" --format="value(projectId)")
+PROJECTS_OUTPUT=$(gcloud projects list --filter="lifecycleState=ACTIVE AND (projectId:*tfstate* OR name:*tfstate*)" --format="value(projectId)")
 
 TFSTATE_PROJECTS=()
 if [ -n "$PROJECTS_OUTPUT" ]; then
@@ -165,8 +165,9 @@ fi
 # 2. Billing
 CURRENT_BILLING=$(gcloud billing projects describe "${MGMT_PROJECT_ID}" --format="value(billingAccountName)" 2>/dev/null || true)
 if [[ "$CURRENT_BILLING" != *"$BILLING_ACCOUNT_ID" ]]; then
-    print_warning "LINK BILLING MANUALLY: gcloud billing projects link ${MGMT_PROJECT_ID} --billing-account=${BILLING_ACCOUNT_ID}"
-    read -r -p "Press [Enter] after linking billing..."
+    print_info "Linking billing account automatically..."
+    gcloud billing projects link "${MGMT_PROJECT_ID}" --billing-account="${BILLING_ACCOUNT_ID}" --quiet >/dev/null 2>&1
+    print_success "Billing account linked successfully."
 fi
 
 # 3. APIs
@@ -212,9 +213,12 @@ done
 gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" --member="user:$(gcloud config get-value account)" --role="roles/iam.serviceAccountTokenCreator" --project="${MGMT_PROJECT_ID}" --quiet >/dev/null 2>&1
 gcloud storage buckets add-iam-policy-binding "gs://${GCS_BUCKET_TFSTATE}" --member="serviceAccount:${SA_EMAIL}" --role="roles/storage.objectAdmin" --quiet >/dev/null 2>&1
 
+print_info "Granting Billing User role to Service Account directly on the Billing Account..."
+gcloud beta billing accounts add-iam-policy-binding "${BILLING_ACCOUNT_ID}"   --member="serviceAccount:${SA_EMAIL}"   --role="roles/billing.user"   --quiet >/dev/null 2>&1
+
 # --- Step 7: File Generation ---
 print_info "Updating configuration files..."
-CURRENT_LINK_STATUS=$(grep "core_billing_linked" "$COMMON_VARS_PATH" 2>/dev/null | cut -d'=' -f2 | tr -d ' ' || echo "false")
+CURRENT_LINK_STATUS="true" # Billing is now fully automated
 
 cat <<EOF > "${COMMON_VARS_PATH}"
 terraform_service_account_email = "${SA_EMAIL}"
