@@ -297,6 +297,15 @@ def generate_resources():
         op_errs = validator.validate_org_policies(org_policies_data, folder_names, project_names)
         if op_errs: errors.extend(op_errs)
 
+    if subnets_data:
+        used_cidrs = []
+        for idx, s in enumerate(subnets_data, start=2):
+            cidr = str(s.get('ip_cidr_range') or '').strip()
+            if cidr:
+                err = validator.validate_cidr(cidr, used_cidrs)
+                if err: errors.append(f"[shared_vpc_subnets] Row {idx}: {err}")
+                else: used_cidrs.append(ipaddress.ip_network(cidr, strict=True))
+
     if errors:
         print("\n❌ Configuration errors detected:")
         for err in errors: print(f"  - {err}")
@@ -387,7 +396,6 @@ def generate_resources():
             ws = wb['shared_vpc_subnets']
             headers = [cell.value for cell in ws[1]]
             subnet_outputs = []
-            used_cidrs = []
             for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
                 if not any(row): continue
                 s = dict(zip(headers, row))
@@ -395,10 +403,6 @@ def generate_resources():
                 env = str(s.get('host_project_env') or '').strip().lower()
                 cidr = str(s.get('ip_cidr_range') or '').strip()
                 region = str(s.get('region') or '').strip()
-                if cidr:
-                    err = validator.validate_cidr(cidr, used_cidrs)
-                    if err: errors.append(f"[shared_vpc_subnets] Row {idx}: {err}")
-                    else: used_cidrs.append(ipaddress.ip_network(cidr, strict=True))
                 if s_name and env in ['prod', 'dev']:
                     sid = sanitize_id(s_name)
                     f.write(
