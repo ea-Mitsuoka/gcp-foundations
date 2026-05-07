@@ -8,12 +8,55 @@ ______________________________________________________________________
 
 本基盤は複数の Terraform レイヤー（L0〜L4）で構成されています。個別のディレクトリで `terraform destroy` を実行すると依存関係エラー（デッドロック）が発生する可能性があるため、必ずルートディレクトリで `make destroy` を使用してください。
 
-### 事前準備: 破壊保護の解除
+### 事前準備: 破壊保護の解除【最終決定版】
 
-誤操作を防ぐため、デフォルトでは全削除機能はロックされています。実行前に `terraform/common.tfvars` を編集し、保護を解除してください。
+誤操作を防ぐため、L1管理プロジェクトとL4アプリプロジェクトの両方に削除ロック（`deletion_policy = "PREVENT"`）がかかっています。環境を解体するには、**全階層のロックを事前に解除する以下の手順が必須です。**
+
+**ステップ1: 破壊的変更の許可**
+
+まず `terraform/common.tfvars` を編集し、全リソースのロックを解除するフラグを立てます。
 
 ```hcl
 allow_resource_destruction = true
+```
+
+**ステップ2: L1管理プロジェクトのロックを強制解除**
+
+`make deploy`では更新が及ばないL1管理プロジェクト群のロックを、各ディレクトリで `terraform apply` を実行して個別に解除します。
+
+```bash
+# logsink プロジェクトのロック解除
+cd terraform/1_core/base/logsink
+terraform apply -var-file="../../../common.tfvars" -auto-approve
+
+# monitoring プロジェクトのロック解除
+cd ../monitoring
+terraform apply -var-file="../../../common.tfvars" -auto-approve
+
+# vpc-host プロジェクトのロック解除
+cd ../vpc-host
+terraform apply -var-file="../../../common.tfvars" -auto-approve
+
+# ルートディレクトリに戻る
+cd ../../../../
+```
+
+**ステップ3: L2-L4プロジェクトのロックを解除**
+
+次に、`make deploy` を実行して残りの全プロジェクト（L4）とその他リソースのロックを解除します。
+
+```bash
+make deploy
+```
+
+> **解説:** ステップ2と3を経て、初めて管理下にある全リソースの `deletion_policy` が `PREVENT` から `DELETE` に更新され、GCPが削除を受け入れる状態になります。
+
+**ステップ4: 解体の実行**
+
+全てのロックが外れたことを確認したら、完全解体コマンドを実行します。
+
+```bash
+make destroy ALL
 ```
 
 ______________________________________________________________________
