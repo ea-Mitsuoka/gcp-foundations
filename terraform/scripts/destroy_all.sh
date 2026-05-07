@@ -2,14 +2,13 @@
 set -e
 
 # ------------------------------------------------------------------------------
-# GCP Foundations - Global Destruction Script
+# GCP Foundations - Global Destruction Script (Auto-Unlock Enabled)
 # ------------------------------------------------------------------------------
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
 
 INCLUDE_BASE=false
-# Makefile から渡される環境変数 LAYER を受け取る（未指定ならデフォルト 1）
 FROM_LAYER=${LAYER:-1}
 
 for arg in "$@"; do
@@ -39,13 +38,6 @@ if [[ "$confirm" != "DESTROY" ]]; then
     echo "Aborted."
     exit 1
 fi
-
-# 削除順序の定義（デプロイの逆順）
-# 1. アプリプロジェクト (L4)
-# 2. フォルダ (L3)
-# 3. 組織ポリシー・VPC-SC (L2)
-# 4. 共通サービス (L1 Services)
-# 5. (Optional) 共通基盤プロジェクト (L1 Base)
 
 # L4 プロジェクトを動的に検出
 PROJECT_DIRS=()
@@ -101,19 +93,23 @@ for dir in "${DESTROY_TARGETS[@]}"; do
     continue
   fi
 
-  echo ">>> Destroying: ${dir}"
+  echo ">>> Processing: ${dir}"
   cd "${ROOT_DIR}/${dir}"
   
   # 初期化
   terraform init -backend-config="${ROOT_DIR}/terraform/common.tfbackend" -reconfigure > /dev/null
 
-  # tfvarsの有無を確認
   TFVARS_ARGS=()
   if [ -f "terraform.tfvars" ]; then
     TFVARS_ARGS+=("-var-file=terraform.tfvars")
   fi
 
-  # 削除実行
+  # 自動ロック解除 (Apply)
+  echo "    🔓 1/2: Unlocking resources (Applying DELETE policy)..."
+  terraform apply -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve > /dev/null
+
+  # 削除実行 (Destroy)
+  echo "    💥 2/2: Destroying resources..."
   terraform destroy -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve
   
   echo "----------------------------------------------------------"
