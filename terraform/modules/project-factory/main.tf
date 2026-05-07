@@ -2,8 +2,9 @@
 resource "google_project" "this" {
   project_id = var.project_id
   name       = var.name
-  org_id     = var.folder_id == null ? var.organization_id : null
-  folder_id  = var.folder_id
+  # "organizations/" や "folders/" が含まれていたら自動で取り除く防弾仕様
+  org_id    = (var.folder_id == null || var.folder_id == "") ? replace(var.organization_id, "organizations/", "") : null
+  folder_id = (var.folder_id == null || var.folder_id == "") ? null : replace(var.folder_id, "folders/", "")
   # billing_account はプロジェクト作成後に管理者アカウントで設定するため、ここでは定義しない
   # billing_account = var.billing_account
   labels              = { for k, v in var.labels : k => v if v != "" && v != null }

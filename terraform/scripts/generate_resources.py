@@ -522,13 +522,14 @@ def generate_resources():
                     f.write(f'terraform {{\n  backend "gcs" {{\n    bucket = ""\n    prefix = "projects/{app_name}"\n  }}\n}}\n')
 
         parent_folder = str(proj.get('parent_name') or '').strip()
-        folder_id_val = "" if parent_folder == 'organization_id' else sanitize_id(parent_folder)
+        # organization_id の場合は HCLの予約語 null を出力し、それ以外はダブルクォーテーションで囲む
+        folder_id_val = "null" if parent_folder == 'organization_id' else f'"{sanitize_id(parent_folder)}"'
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
 app_name            = "{app_name}"
 environment         = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-folder_id           = "{folder_id_val}"
+folder_id           = {folder_id_val}
 shared_vpc_env      = "{'dev' if app_name.startswith('dev-') and proj.get('shared_vpc') else 'prod' if proj.get('shared_vpc') else 'none'}"
 shared_vpc_subnet   = "{str(proj.get('shared_vpc') or '').strip()}"
 vpc_sc              = "{str(proj.get('vpc_sc') or '').strip()}"
