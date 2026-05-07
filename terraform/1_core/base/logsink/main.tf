@@ -13,6 +13,7 @@ module "logsink_project" {
   project_id          = "${var.project_id_prefix}-${var.project_name}"
   name                = "${var.project_id_prefix}-${var.project_name}"
   organization_id     = data.google_organization.org.org_id
+  billing_account     = var.billing_account_id
   labels              = var.labels
   deletion_protection = var.allow_resource_destruction != true
   # billing_accountやfolder_idなども必要に応じてここで指定
