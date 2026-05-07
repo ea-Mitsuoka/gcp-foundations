@@ -101,18 +101,32 @@ ENABLE_ORG_POLICIES=$(get_bool_input "Enable Org Policies?" "false")
 ENABLE_TAGS=$(get_bool_input "Enable Org Tags?" "false")
 ENABLE_SIMPLIFIED_GROUPS=$(get_bool_input "Enable Simplified Admin Groups?" "false")
 
-# --- Step 4: Resource Name Generation ---
+# --- Step 4: Resource Name Generation (Scoped to Org Root) ---
 ORGANIZATION_ID="$(gcloud organizations list --filter="displayName=${CUSTOMER_DOMAIN}" --format="value(ID)")"
 if [ -z "$ORGANIZATION_ID" ]; then
     print_error "Could not find Org ID for '$CUSTOMER_DOMAIN'. Check permissions."
     exit 1
 fi
 
-# Management project ID logic (Uses the prefix + tfstate + random suffix)
-EXISTING_PROJECT=$(gcloud projects list --filter="id:${PROJECT_ID_PREFIX}-tfstate-*" --format="value(projectId)" | head -n 1)
+print_info "Searching for existing tfstate project at the Organization ROOT..."
+
+# 組織直下(parent.type=organization)にある、名前またはIDに 'tfstate' を含むプロジェクトのみを抽出
+EXISTING_PROJECT=$(gcloud projects list \
+    --filter="parent.type=organization AND parent.id=${ORGANIZATION_ID} AND (projectId:*tfstate* OR name:*tfstate*)" \
+    --format="value(projectId)" | head -n 1)
+
 if [ -n "$EXISTING_PROJECT" ]; then
+    print_success "Existing tfstate project found at Org Root: ${EXISTING_PROJECT}"
     MGMT_PROJECT_ID="$EXISTING_PROJECT"
+    
+    # 既存IDからプレフィックスを抽出 (例: adradarstore-tfstate-8e8d -> adradarstore)
+    # 14文字制限を考慮したプレフィックスとして再利用
+    DETECTED_PREFIX=$(echo "$MGMT_PROJECT_ID" | sed 's/-tfstate-.*//')
+    PROJECT_ID_PREFIX="$DETECTED_PREFIX"
+    print_info "Detected prefix from existing project: $PROJECT_ID_PREFIX"
 else
+    print_info "No existing tfstate project found at Org Root. Creating a new one."
+    # 以前の対話で決定した 14文字バリデーション済みの PROJECT_ID_PREFIX を使用
     MGMT_PROJECT_ID="${PROJECT_ID_PREFIX}-tfstate-$(openssl rand -hex 2)"
 fi
 
