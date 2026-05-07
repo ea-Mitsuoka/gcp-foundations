@@ -85,7 +85,7 @@ for proj_dir in "${ROOT_DIR}/terraform/4_projects"/*/; do
   if [ -d "$proj_dir" ]; then
     proj_name="$(basename "$proj_dir")"
     # テンプレートディレクトリはデプロイ対象から除外する
-    if [ "$proj_name" != "template" ]; then
+    if [ "$proj_name" != "template" ] && [ -f "${proj_dir}terraform.tfvars" ]; then
       TARGET_DIRS+=("terraform/4_projects/${proj_name}")
     fi
   fi
