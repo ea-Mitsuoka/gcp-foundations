@@ -100,7 +100,7 @@ ______________________________________________________________________
 
 `make setup` を実行すると、プロジェクトルートの `terraform/` ディレクトリに `common.tfvars` および `common.tfbackend` が自動生成されます。これらは基盤全体の動作を制御する極めて重要なファイルです。
 
-#### 📄 common.tfvars の主要パラメータ
+#### 📄 common.tfvars のパラメータ
 
 自動生成された内容を確認し、必要に応じて値を調整してください。
 
@@ -110,9 +110,14 @@ ______________________________________________________________________
 | `gcs_backend_bucket` | tfstate を保存するバケット名。 | 自動生成された値のままでOK。 |
 | `organization_domain` | 管理対象のドメイン。 | 誤りがあれば修正。 |
 | `billing_account_id` | 請求先アカウント ID。 | `make setup` 時に指定した値が自動設定されます。変更したい場合のみ修正してください。 |
+| `gcp_region` | リソースを作成するGCPのデフォルトリージョン。 | `make setup` 時に指定。地理的な要件に応じて変更。 |
+| `project_id_prefix` | 各プロジェクトIDの接頭辞として使われる文字列。 | `make setup` 時に指定。変更すると全プロジェクトのIDが変わるため、原則として初期設定から変更しない。 |
 | `core_billing_linked` | **【重要】** 共通プロジェクトの課金紐付けフラグ。 | `make setup` 完了時点で自動的に `true` に設定されます。原則として変更不要です。 |
 | `enable_shared_vpc` | 組織全体で Shared VPC を利用するか。 | ネットワーク設計の変更時に調整。 |
+| `enable_vpc_sc` | VPC Service Controlsを有効化し、サービス境界を構成するか。 | セキュリティ要件の変更時に調整。 |
 | `enable_org_policies` | 組織ポリシーを有効化するか。 | **移行作業中は `false`、ガードレール適用時に `true`。** |
+| `enable_tags` | 組織レベルのリソースタグ（Key-Value）を有効化するか。 | ガバナンス要件の変更時に調整。 |
+| `enable_simplified_admin_groups` | IAM管理グループを2つ（組織/請求）に集約するか。 | `make setup` 時に指定。変更は推奨されない。 |
 | `allow_resource_destruction` | `terraform destroy` を許可するか。 | 原則 `false`。撤収時のみ `true`。 |
 
 #### 📄 common.tfbackend の役割
@@ -123,7 +128,8 @@ ______________________________________________________________________
 bucket = "example-com-tfstate-xxxx-bucket"
 ```
 
-各レイヤーの `terraform init` 時に、このファイルを `-backend-config` として指定することで、状態の共有が可能になります。
+各レイヤーの `terraform init` 時に、このファイルを `-backend-config` として指定することで、状態の共有が可能になります。  
+(例:`terraform init -backend-config="bucket=adradarstore-tfstate-8e8d-bucket"`)
 
 ______________________________________________________________________
 
