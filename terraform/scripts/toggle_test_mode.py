@@ -10,10 +10,13 @@ if os.path.exists(path):
         if re.search(r"-[0-9a-f]{2}$", curr):
             new = re.sub(r"-[0-9a-f]{2}$", "", curr)
             print(f"✅ テストモード【OFF】: プレフィックスを '{new}' (本番固定名) に戻しました。")
+            if os.path.exists(".test_mode_env"): os.remove(".test_mode_env")
         else:
             s = "".join(random.choices("abcdef0123456789", k=2))
             new = f"{curr}-{s}"
             print(f"🧪 テストモード【ON】: プレフィックスを '{new}' に変更しました。")
+            with open(".test_mode_env", "w") as env_f:
+                env_f.write("export SKIP_MANAGEMENT_PROJECTS=true\n")
         
         with open(path, "w") as f:
             f.write(c.replace(f'"{curr}"', f'"{new}"'))

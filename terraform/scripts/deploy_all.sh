@@ -95,6 +95,11 @@ done
 CORE_BILLING_LINKED=$(grep "core_billing_linked" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
 
 for dir in "${TARGET_DIRS[@]}"; do
+  # [TEST MODE] logsinkとmonitoringのスキップ制御
+  if [[ "$SKIP_MANAGEMENT_PROJECTS" == "true" ]] && [[ "$dir" == *"logsink"* || "$dir" == *"monitoring"* ]]; then
+    echo "⏭️ Skipping ${dir} (SKIP_MANAGEMENT_PROJECTS is true)"
+    continue
+  fi
   if [ ! -d "${ROOT_DIR}/${dir}" ]; then
     echo "Skipping ${dir} (Directory not found)"
     continue

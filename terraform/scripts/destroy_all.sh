@@ -89,6 +89,11 @@ if [ "$FROM_LAYER" -le 1 ]; then
 fi
 
 for dir in "${DESTROY_TARGETS[@]}"; do
+  # [TEST MODE] logsinkとmonitoringのスキップ制御
+  if [[ "$SKIP_MANAGEMENT_PROJECTS" == "true" ]] && [[ "$dir" == *"logsink"* || "$dir" == *"monitoring"* ]]; then
+    echo "⏭️ Skipping ${dir} (SKIP_MANAGEMENT_PROJECTS is true)"
+    continue
+  fi
   if [ ! -d "${ROOT_DIR}/${dir}" ]; then
     continue
   fi

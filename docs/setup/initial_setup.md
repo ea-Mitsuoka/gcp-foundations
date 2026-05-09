@@ -128,7 +128,7 @@ ______________________________________________________________________
 bucket = "example-com-tfstate-xxxx-bucket"
 ```
 
-各レイヤーの `terraform init` 時に、このファイルを `-backend-config` として指定することで、状態の共有が可能になります。  
+各レイヤーの `terraform init` 時に、このファイルを `-backend-config` として指定することで、状態の共有が可能になります。\
 (例:`terraform init -backend-config="bucket=adradarstore-tfstate-8e8d-bucket"`)
 
 ______________________________________________________________________
