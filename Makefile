@@ -52,10 +52,20 @@ test-py:
 	uv run pytest tests/
 
 deploy:
-	bash terraform/scripts/deploy_all.sh
+	@if [ -f .test_mode_env ]; then \
+		echo "🧪 Test Mode Active: Skipping management projects (logsink/monitoring)."; \
+		. ./.test_mode_env && export SKIP_MANAGEMENT_PROJECTS=true && bash terraform/scripts/deploy_all.sh; \
+	else \
+		bash terraform/scripts/deploy_all.sh; \
+	fi
 
 destroy:
-	bash terraform/scripts/destroy_all.sh $(filter-out $@,$(MAKECMDGOALS))
+	@if [ -f .test_mode_env ]; then \
+		echo "🧪 Test Mode Active: Skipping management projects (logsink/monitoring)."; \
+		. ./.test_mode_env && export SKIP_MANAGEMENT_PROJECTS=true && bash terraform/scripts/destroy_all.sh $(filter-out $@,$(MAKECMDGOALS)); \
+	else \
+		bash terraform/scripts/destroy_all.sh $(filter-out $@,$(MAKECMDGOALS)); \
+	fi
 
 # 任意の引数（--all や --from-layer=X など）をMakeのエラーにしないためのダミーターゲット
 %:

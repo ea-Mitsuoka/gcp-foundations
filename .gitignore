@@ -45,3 +45,6 @@ koushiki/
 notifications.csv
 alert_definitions.csv
 gcp_log_sink_config.csv
+
+# Test mode environment variable file
+.test_mode_env
