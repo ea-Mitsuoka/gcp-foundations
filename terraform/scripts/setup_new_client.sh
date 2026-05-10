@@ -166,11 +166,19 @@ if ! gcloud projects describe "${MGMT_PROJECT_ID}" >/dev/null 2>&1; then
 fi
 
 # 2. Billing
+CURRENT_LINK_STATUS="true"
 CURRENT_BILLING=$(gcloud billing projects describe "${MGMT_PROJECT_ID}" --format="value(billingAccountName)" 2>/dev/null || true)
 if [[ "$CURRENT_BILLING" != *"$BILLING_ACCOUNT_ID" ]]; then
     print_info "Linking billing account automatically..."
-    gcloud billing projects link "${MGMT_PROJECT_ID}" --billing-account="${BILLING_ACCOUNT_ID}" --quiet >/dev/null 2>&1
-    print_success "Billing account linked successfully."
+    if gcloud billing projects link "${MGMT_PROJECT_ID}" --billing-account="${BILLING_ACCOUNT_ID}" --quiet >/dev/null 2>&1; then
+        print_success "Billing account linked successfully."
+    else
+        print_warning "Failed to link billing account automatically (Dummy ID or insufficient permissions)."
+        echo "Please link the billing account manually in another terminal:"
+        echo "  gcloud billing projects link \"${MGMT_PROJECT_ID}\" --billing-account=\"YOUR_BILLING_ID\""
+        read -r -p "Press [Enter] after linking manually to continue (or press Enter to skip and link later): "
+        CURRENT_LINK_STATUS="false"
+    fi
 fi
 
 # 3. APIs
