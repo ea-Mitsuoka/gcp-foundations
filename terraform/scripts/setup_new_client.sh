@@ -259,4 +259,22 @@ project_id = "${MGMT_PROJECT_ID}"
 EOF
 done
 
+# --- Step 8: Apply Bootstrap ---
+print_info "Applying Layer 0 (Bootstrap) using Terraform..."
+export TF_IN_AUTOMATION="true"
+
+for dir in "0_bootstrap" "0_bootstrap/iam" "0_bootstrap/google_project_service"; do
+    print_info "Applying ${dir}..."
+    cd "${REPO_ROOT}/terraform/${dir}"
+    
+    if [ "$dir" == "0_bootstrap" ]; then
+        terraform init -backend-config="../common.tfbackend" -reconfigure >/dev/null
+        terraform apply -var-file="../common.tfvars" -var-file="terraform.tfvars" -auto-approve
+    else
+        terraform init -backend-config="../../common.tfbackend" -reconfigure >/dev/null
+        terraform apply -var-file="../../common.tfvars" -var-file="terraform.tfvars" -auto-approve
+    fi
+    cd "${REPO_ROOT}"
+done
+
 print_success "Setup Complete. Resources verified. Now run 'make generate' and 'make deploy'."
