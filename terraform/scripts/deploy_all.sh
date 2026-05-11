@@ -128,7 +128,8 @@ for dir in "${TARGET_DIRS[@]}"; do
     INIT_ARGS=("-backend=false" "-reconfigure" "-backend-config=bucket=dummy-bucket")
   fi
 
-  terraform init "${INIT_ARGS[@]}"
+  # init の冗長な標準出力を捨ててログをスッキリさせる（エラー時は stderr が出力されます）
+  terraform init "${INIT_ARGS[@]}" > /dev/null
   
   # terraform.tfvarsが存在する場合のみ読み込むためのハンドリング
   TFVARS_ARGS=()
