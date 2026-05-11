@@ -73,16 +73,21 @@ VPC Service Controls のサービス境界を定義します。
 | **ip_subnetworks** | 許可するIP範囲（カンマ区切り） | `1.2.3.4/32` |
 | **members** | 許可するユーザー/サービスアカウント（カンマ区切り） | `user:admin@example.com` |
 
-### 6. `org_policies` シート
+### 6. `org_policies` シート (★重要: 入力ルール変更)
 
-フォルダやプロジェクトに対して強制または許可する「組織ポリシー」を定義します。
+フォルダやプロジェクトに対して強制または許可する「組織ポリシー」を定義します。GCPのポリシーには「ブール型」と「リスト型」があり、入力方法が異なります 。
 
-| 列名 | 説明 | 例 |
+| 列名 | 説明 | 入力ルール |
 | :--- | :--- | :--- |
-| **target_name** | 適用先リソース名（`organization_id` または `resources`シートで定義した名称） | `organization_id`, `shared`, `prd-app-01` |
-| **policy_id** | ポリシーの名前（ID） | `compute.disableExternalIPProxy` |
-| **enforce** | 強制するかどうか（ブール値。TRUEで制限有効） | `TRUE`, `FALSE` |
-| **allow_list** | 許可リスト（カンマ区切り。ロケーション制限等で使用） | `asia-northeast1`, `us-central1` |
+| **target_name** | 適用先リソース名 | `organization_id` または `resources` シートの名称。 |
+| **policy_id** | ポリシーの名前（ID） | `compute.vmExternalIpAccess` 等。 |
+| **enforce** | 強制フラグ（ブール型用） | **ブール型（ON/OFFのみ）の場合**: `TRUE` または `FALSE` を入力。<br>**リスト型（許可リスト指定）の場合**: 必ず**空欄**にしてください。 |
+| **allow_list** | 許可リスト（リスト型用） | `enforce` 列が空欄の場合のみ有効。カンマ区切りで値を入力（例: `INTERNAL`）。 |
+
+> **💡 入力のヒント**:
+>
+> - **ブール型制約** (例: 外部IP禁止): `enforce` に `TRUE` を入力し、`allow_list` は空欄にする 。
+> - **リスト型制約** (例: ロケーション制限、LBタイプ制限): `enforce` は**空欄**にし、`allow_list` に許可する値を記述する 。
 
 ### 7. `notifications` シート
 
@@ -114,7 +119,7 @@ VPC Service Controls のサービス境界を定義します。
 | **log_type** | ログの分類名（`locals.tf` のマッピングで使用） | `管理アクティビティ監査ログ` |
 | **filter** | ログを抽出するクエリフィルタ | `protoPayload.methodName:*` |
 | **destination_type** | 宛先の種類（`BigQuery` または `Cloud Storage`） | `BigQuery` |
-| **destination_parent** | 宛先リソース名のベース（データセット名など） | `audit_logs` |
+| **destination_parent** | 宛先リソース名のベース（BQデータセットの場合ハイフンは自動でアンダースコアへ変換する） | `audit_logs` |
 | **retention_days** | ログの保持期間（日単位） | `365` |
 
 ### 10. リージョン設定の整合性と挙動
