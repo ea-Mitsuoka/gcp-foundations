@@ -14,6 +14,7 @@ help:
 	@echo "  make deploy    - Run the global deployment script"
 	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
 	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
+	@echo "  make test-mode - Toggle test mode (random prefix & skip management projects)"
 	@echo "  make clean     - Remove local terraform state and cache files"
 
 install:
@@ -73,6 +74,10 @@ destroy:
 
 delivery:
 	bash terraform/scripts/handover.sh
+
+test-mode:
+	uv run python terraform/scripts/toggle_test_mode.py
+
 
 clean:
 	find terraform -type d -name ".terraform" -exec rm -rf {} +
