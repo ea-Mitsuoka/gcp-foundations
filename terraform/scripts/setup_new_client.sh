@@ -216,7 +216,7 @@ if [ "$NEW_SA_CREATED" = true ]; then
     done
 fi
 
-ROLES=( "roles/resourcemanager.organizationViewer" "roles/resourcemanager.folderAdmin" "roles/resourcemanager.projectCreator" "roles/billing.user" "roles/logging.admin" "roles/iam.securityAdmin" "roles/serviceusage.serviceUsageAdmin" "roles/monitoring.admin" "roles/cloudasset.owner" "roles/browser" "roles/orgpolicy.policyAdmin" "roles/compute.xpnAdmin" "roles/accesscontextmanager.policyAdmin" )
+ROLES=( "roles/resourcemanager.organizationViewer" "roles/resourcemanager.folderAdmin" "roles/resourcemanager.projectCreator" "roles/billing.user" "roles/logging.admin" "roles/iam.securityAdmin" "roles/serviceusage.serviceUsageAdmin" "roles/monitoring.admin" "roles/cloudasset.owner" "roles/browser" "roles/orgpolicy.policyAdmin" "roles/compute.xpnAdmin" "roles/accesscontextmanager.policyAdmin" "roles/resourcemanager.tagAdmin" )
 for role in "${ROLES[@]}"; do
     gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="$role" --quiet >/dev/null 2>&1
 done
