@@ -78,7 +78,6 @@ delivery:
 test-mode:
 	uv run python terraform/scripts/toggle_test_mode.py
 
-
 clean:
 	find terraform -type d -name ".terraform" -exec rm -rf {} +
 	find terraform -type f -name ".terraform.lock.hcl" -exec rm -f {} +
