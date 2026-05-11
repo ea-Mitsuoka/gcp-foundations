@@ -11,58 +11,6 @@ data "google_organization" "org" {
 }
 
 # --------------------------------------------------------------------------------
-# --------------------------------------------------------------------------------
-# 組織ポリシー (Organization Policies) の定義
-# エンタープライズ環境で必須となる強力なガバナンスベースラインを定義します。
-# 移行作業や初期構築をブロックしないよう、var.enable_org_policies スイッチに連動します。
-# --------------------------------------------------------------------------------
-
-# 1. サービスアカウントキーの作成を禁止
-# セキュリティ漏洩の最大の原因となるJSONキーのダウンロードを組織全体で禁止します。
-# アプリケーションはWorkload Identity、人間はSAの借用(Impersonation)を利用させます。
-resource "google_org_policy_policy" "disable_sa_key_creation" {
-  count  = var.enable_org_policies ? 1 : 0
-  name   = "organizations/${data.google_organization.org.org_id}/policies/iam.disableServiceAccountKeyCreation"
-  parent = "organizations/${data.google_organization.org.org_id}"
-
-  spec {
-    rules {
-      enforce = "true"
-    }
-  }
-}
-
-# 2. デフォルトVPCネットワークの自動作成をスキップ
-# プロジェクト作成時に自動で作られる「default」ネットワークを無効化します。
-# ネットワークはShared VPCホストプロジェクトで中央管理する設計を強制します。
-resource "google_org_policy_policy" "skip_default_network" {
-  count  = var.enable_org_policies ? 1 : 0
-  name   = "organizations/${data.google_organization.org.org_id}/policies/compute.skipDefaultNetworkCreation"
-  parent = "organizations/${data.google_organization.org.org_id}"
-
-  spec {
-    rules {
-      enforce = "true"
-    }
-  }
-}
-
-# 3. 外部IPアドレスの付与を制限
-# VMインスタンスが直接パブリックIPを持つことを原則禁止し、Cloud NAT等を経由させます。
-# 必要に応じて、特定のプロジェクトやフォルダでExcelから例外設定を行う運用を推奨します。
-resource "google_org_policy_policy" "vm_external_ip_access" {
-  count  = var.enable_org_policies ? 1 : 0
-  name   = "organizations/${data.google_organization.org.org_id}/policies/compute.vmExternalIpAccess"
-  parent = "organizations/${data.google_organization.org.org_id}"
-
-  spec {
-    rules {
-      deny_all = "true"
-    }
-  }
-}
-
-# --------------------------------------------------------------------------------
 # 組織IAM設定 (Organization IAM)
 # 管理用Googleグループに対する一元的な権限付与を行います
 # --------------------------------------------------------------------------------
