@@ -7,6 +7,7 @@ set -e
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
+export TF_IN_AUTOMATION="true"  # ★この1行を追加
 
 INCLUDE_BASE=false
 FROM_LAYER=${LAYER:-1}
