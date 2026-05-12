@@ -2,12 +2,12 @@
 set -e
 
 # ------------------------------------------------------------------------------
-# GCP Foundations - Global Destruction Script (Auto-Unlock Enabled)
+# GCP Foundations - Global Destruction Script
 # ------------------------------------------------------------------------------
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 export PATH="${ROOT_DIR}/terraform/scripts:$PATH"
-export TF_IN_AUTOMATION="true"  # ★この1行を追加
+export TF_IN_AUTOMATION="true"
 
 INCLUDE_BASE=false
 FROM_LAYER=${LAYER:-1}
@@ -18,12 +18,19 @@ for arg in "$@"; do
   fi
 done
 
+# テストモードの判定 (Makefileで付与される環境変数)
+TEST_MODE_ACTIVE=${SKIP_MANAGEMENT_PROJECTS:-false}
+
 # 破壊許可フラグの確認
 ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
 
 if [ "$ALLOW_DESTROY" != "true" ]; then
   echo "❌ ERROR: allow_resource_destruction is NOT set to true in common.tfvars."
-  echo "To proceed with destruction, please set 'allow_resource_destruction = true' and run again."
+  if [[ "$TEST_MODE_ACTIVE" == "true" ]]; then
+    echo "To proceed with destruction, please set 'allow_resource_destruction = true' and run again."
+  else
+    echo "To proceed with destruction, please set 'allow_resource_destruction = true', run 'make deploy' to apply the unlock, and then run again."
+  fi
   exit 1
 fi
 
@@ -91,7 +98,7 @@ fi
 
 for dir in "${DESTROY_TARGETS[@]}"; do
   # [TEST MODE] logsinkとmonitoringのスキップ制御
-  if [[ "$SKIP_MANAGEMENT_PROJECTS" == "true" ]] && [[ "$dir" == *"logsink"* || "$dir" == *"monitoring"* ]]; then
+  if [[ "$TEST_MODE_ACTIVE" == "true" ]] && [[ "$dir" == *"logsink"* || "$dir" == *"monitoring"* ]]; then
     echo "⏭️ Skipping ${dir} (SKIP_MANAGEMENT_PROJECTS is true)"
     continue
   fi
@@ -110,13 +117,18 @@ for dir in "${DESTROY_TARGETS[@]}"; do
     TFVARS_ARGS+=("-var-file=terraform.tfvars")
   fi
 
-  # 自動ロック解除 (Apply)
-  echo "    🔓 1/2: Unlocking resources (Applying DELETE policy)..."
-  terraform apply -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve > /dev/null
+  # テストモードのON/OFFで自動ロック解除の挙動を分岐
+  if [[ "$TEST_MODE_ACTIVE" == "true" ]]; then
+    echo "    🔓 1/2: Unlocking resources (Applying DELETE policy in Test Mode)..."
+    terraform apply -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve > /dev/null
 
-  # 削除実行 (Destroy)
-  echo "    💥 2/2: Destroying resources..."
-  terraform destroy -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve
+    echo "    💥 2/2: Destroying resources..."
+    terraform destroy -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve
+  else
+    echo "    💥 Destroying resources..."
+    # 本番モード: ユーザーが事前に make deploy していなければ、ここでTerraformが「PREVENTによる保護」エラーを出し、安全に停止します。
+    terraform destroy -var-file="${ROOT_DIR}/terraform/common.tfvars" "${TFVARS_ARGS[@]}" -auto-approve
+  fi
   
   echo "----------------------------------------------------------"
 done

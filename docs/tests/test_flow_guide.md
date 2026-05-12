@@ -39,7 +39,7 @@ ______________________________________________________________________
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-009** | **TC-010** | ⚠️ **【環境の完全解体と次期テスト準備】**<br>先ほどの修正により、孤立したL4プロジェクトは自動パージされるため、手動でのディレクトリ削除やロック解除は不要になりました。<br><br>1. **正常なExcelに戻す:**<br> `cp tests/fixtures/TC001_to_003_Basic.xlsx gcp-foundations.xlsx`<br>2. **変数を再生成:**<br> `make generate`<br>3. **解体許可の設定:**<br> `common.tfvars` で `allow_resource_destruction = true` を設定。<br>4. **完全解体の実行:**<br> `make destroy ALL`<br>5. **次期テストの準備:**<br> `TC010_016_019_Network_Success.xlsx` を `gcp-foundations.xlsx` にコピー後、`common.tfvars` で `enable_shared_vpc = true` に設定。 |
+| **TC-009** | **TC-010** | ⚠️ **【環境の完全解体と次期テスト準備】**<br>先ほどの修正により、孤立したL4プロジェクトは自動パージされるため、手動でのディレクトリ削除やロック解除は不要になりました。<br><br>1. **正常なExcelに戻す:**<br> `cp tests/fixtures/TC001_to_003_Basic.xlsx gcp-foundations.xlsx`<br>2. **変数を再生成:**<br> `make generate`<br>3. **解体許可の設定:**<br> `common.tfvars` で `allow_resource_destruction = true` を設定。<br>4. **完全解体の実行:**<br> `make deploy`（保護解除の反映）を実行後、`make destroy ALL` を実行。<br>5. **次期テストの準備:**<br> `TC010_016_019_Network_Success.xlsx` を `gcp-foundations.xlsx` にコピー後、`common.tfvars` で `enable_shared_vpc = true` に設定。 |
 | **TC-010** | **TC-011** | ⚠️ デプロイは行わないため、**リソースは残したまま** `TC011_012_014_015_018_Network_Err.xlsx` に差し替え（重複CIDRの確認）。 |
 | **TC-011** | **TC-012** | 重複CIDRを解消し、存在しないサブネット名を `resources` シートに入力。 |
 | **TC-012** | **TC-013** | `common.tfvars` の `enable_shared_vpc` を `false` に変更。 |
@@ -54,7 +54,7 @@ ______________________________________________________________________
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-019** | **TC-020** | ⚠️ **【重要】** `make destroy` でPhase 2のリソースを完全に更地にする。<br>その後、`TC020_to_022_026_Governance_Success.xlsx` に差し替え。`common.tfvars` で `enable_vpc_sc = true` に設定。 |
+| **TC-019** | **TC-020** | ⚠️ **【重要】** `make destroy` でPhase 2のリソースを完全に更地にする。（事前に `make deploy` を実行してロック解除を反映させること）。<br>その後、`TC020_to_022_026_Governance_Success.xlsx` に差し替え。`common.tfvars` で `enable_vpc_sc = true` に設定。 |
 | **TC-020** | **TC-021** | `org_policies` シートにデータを追記。`common.tfvars` の `enable_org_policies = true` を確認。 |
 | **TC-021** | **TC-022** | `tag_definitions` と `resources` の `org_tags` を追記。`common.tfvars` の `enable_tags = true` を確認。 |
 | **TC-022** | **TC-023** | ⚠️ リソースは残したまま、`TC023_024_025_027_028_Governance_Err.xlsx` に差し替え。 |
@@ -85,7 +85,7 @@ ______________________________________________________________________
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-039** | **TC-040** | ⚠️ **【重要】** `make destroy ALL` でPhase 4のリソースを完全に更地にする。<br>その後、`TC040_to_041_Logging_Success.xlsx` に差し替え。 |
+| **TC-039** | **TC-040** | ⚠️ **【重要】** `make destroy ALL` でPhase 4のリソースを完全に更地にする。（事前に `make deploy` を実行すること）。<br>その後、`TC040_to_041_Logging_Success.xlsx` に差し替え。 |
 | **TC-040** | **TC-041** | `allow_resource_destruction = true` を確認。`make destroy` 実行時のデータ削除挙動を確認。 |
 | **TC-041** | **TC-042** | `TC042_to_043_Logging_Err.xlsx` に差し替え（アラート定義重複）。 |
 | **TC-042** | **TC-043** | `alert_documentation` 列の値を削除して空にする。 |
