@@ -189,7 +189,20 @@ gcloud services enable cloudresourcemanager.googleapis.com storage.googleapis.co
 # 4. GCS Bucket
 if ! gcloud storage buckets describe "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" >/dev/null 2>&1; then
     gcloud storage buckets create "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --location="${GCP_REGION}" --uniform-bucket-level-access
-    gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning
+    
+    print_info "Waiting for GCS API to propagate..."
+    MAX_RETRIES=5
+    RETRY_COUNT=0
+    until gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning >/dev/null 2>&1; do
+        RETRY_COUNT=$((RETRY_COUNT+1))
+        if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+            print_error "Failed to update bucket after $MAX_RETRIES attempts."
+            exit 1
+        fi
+        print_warning "API not ready. Retrying in 10s... ($RETRY_COUNT/$MAX_RETRIES)"
+        sleep 10
+    done
+    print_success "Bucket versioning enabled successfully."
 fi
 
 # 5. Service Account
