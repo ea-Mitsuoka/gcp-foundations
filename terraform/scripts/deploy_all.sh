@@ -55,6 +55,22 @@ fi
 # uv run を使うことで、requirements.txtやvenvの管理なしにクリーンに実行可能
 uv run "${ROOT_DIR}/terraform/scripts/generate_resources.py"
 
+# ------------------------------------------------------------------------------
+# ★追加: 安全装置 (Safety Check for Destructive Changes)
+# ------------------------------------------------------------------------------
+ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
+
+if [[ "$ALLOW_DESTROY" == "true" && "$PLAN_ONLY" == "false" && "$TF_IN_AUTOMATION" != "true" ]]; then
+  echo "⚠️ WARNING: allow_resource_destruction is set to TRUE."
+  echo "If you are changing the 'project_id_prefix' or performing a major replacement,"
+  echo "you MUST run 'make destroy ALL' with the OLD prefix first to avoid Ghost State (403/409 errors)."
+  read -r -p "Are you sure you want to proceed with deployment? (y/N): " safety_answer
+  if [[ ! "$safety_answer" =~ ^[Yy]$ ]]; then
+    echo "Deployment aborted by user."
+    exit 1
+  fi
+fi
+# ------------------------------------------------------------------------------
 
 echo ""
 echo "=========================================================="
