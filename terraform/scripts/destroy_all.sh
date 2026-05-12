@@ -26,11 +26,7 @@ ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.
 
 if [ "$ALLOW_DESTROY" != "true" ]; then
   echo "❌ ERROR: allow_resource_destruction is NOT set to true in common.tfvars."
-  if [[ "$TEST_MODE_ACTIVE" == "true" ]]; then
-    echo "To proceed with destruction, please set 'allow_resource_destruction = true' and run again."
-  else
-    echo "To proceed with destruction, please set 'allow_resource_destruction = true', run 'make deploy' to apply the unlock, and then run again."
-  fi
+  echo "To proceed with destruction, please set 'allow_resource_destruction = true', run 'make deploy' to apply the unlock, and then run again."
   exit 1
 fi
 
