@@ -22,6 +22,7 @@ import sys
 import re
 import ipaddress
 import csv
+
 def to_snake_case(name):
     name = re.sub(r'[\.\s-]', '_', str(name))
     name = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -91,12 +92,18 @@ class ResourceValidator:
     def validate_alerts(notifications, alert_defs):
         errors = []
         seen_alerts = set()
-        alert_names_list = [str(a.get('alert_name') or '').strip() for a in alert_defs if a.get('alert_name')]
         
-        for idx, name in enumerate(alert_names_list, start=2):
-            if name in seen_alerts:
-                errors.append(f"[alert_definitions] Row {idx}: Duplicate alert_name '{name}'. Alert names must be unique.")
-            seen_alerts.add(name)
+        for idx, alert in enumerate(alert_defs, start=2):
+            name = str(alert.get('alert_name') or '').strip()
+            if name:
+                if name in seen_alerts:
+                    errors.append(f"[alert_definitions] Row {idx}: Duplicate alert_name '{name}'. Alert names must be unique.")
+                seen_alerts.add(name)
+            
+            # --- ▼ 追加: alert_documentation の必須バリデーション ---
+            doc = str(alert.get('alert_documentation') or '').strip()
+            if not doc:
+                errors.append(f"[alert_definitions] Row {idx}: 'alert_documentation' (説明) は必須項目です。空欄は許可されません。")
 
         for idx, n in enumerate(notifications, start=2):
             name = str(n.get('alert_name') or '').strip()
@@ -139,6 +146,12 @@ class ResourceValidator:
                 if l_type in seen_types:
                     errors.append(f"[log_sinks] Row {idx}: Duplicate log_type '{l_type}'. Log types must be unique.")
                 seen_types.add(l_type)
+            
+            # --- ▼ 追加: BigQuery宛先のハイフン禁止バリデーション ---
+            dest_type = str(sink.get('destination_type') or '').strip().lower()
+            dest_parent = str(sink.get('destination_parent') or '').strip()
+            if dest_type == 'bigquery' and '-' in dest_parent:
+                errors.append(f"[log_sinks] Row {idx}: BigQueryのデータセット名 '{dest_parent}' にハイフン(-)は使用できません。アンダースコア(_)を使用してください。")
         return errors
 
 def sanitize_id(name):
@@ -274,9 +287,14 @@ def generate_resources():
         headers = [cell.value for cell in ws[1]]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if any(row): notifications.append(dict(zip(headers, row)))
+
     if notifications and alert_defs:
         alert_errs = validator.validate_alerts(notifications, alert_defs)
         if alert_errs: errors.extend(alert_errs)
+        
+    if log_sinks_data:
+        sink_errs = validator.validate_log_sinks(log_sinks_data)
+        if sink_errs: errors.extend(sink_errs)
 
     if resources_data:
         hierarchy_errors = validator.validate_hierarchy(resources_data)
@@ -291,6 +309,11 @@ def generate_resources():
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
+            # --- ▼ 追加: owner の GCPラベル形式バリデーション ---
+            owner = str(r.get('owner') or 'unknown').strip()
+            if owner != 'unknown' and not re.match(r'^[a-z0-9_-]{1,63}$', owner):
+                errors.append(f"[resources] Row {idx}: Owner '{owner}' はGCPラベルとして不正な形式です。1-63文字の小文字、数字、ハイフン(-)、アンダースコア(_)のみを使用してください（@や.は不可）。")
+
     if org_policies_data:
         folder_names = set(folders_map.keys())
         project_names = {p['resource_name'] for p in projects}
@@ -370,51 +393,21 @@ def generate_resources():
         for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
         f.write('  }\n}\n\n')
 
+    # --- ▼ 変更: マジックを排除したクリーンなCSV出力 ---
     def export_sheet_to_csv(sheet_name, output_path):
-            if sheet_name in wb.sheetnames:
-                ws = wb[sheet_name]
-                os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                header_row = [cell.value for cell in ws[1]]
-                valid_col_indices = [i for i, h in enumerate(header_row) if h is not None and str(h).strip() != ""]
-                if not valid_col_indices: return
+        if sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            header_row = [cell.value for cell in ws[1]]
+            valid_col_indices = [i for i, h in enumerate(header_row) if h is not None and str(h).strip() != ""]
+            if not valid_col_indices: return
 
-                # --- ▼ 変更: サニタイズおよびデフォルト値対象の列インデックスを特定 ▼ ---
-                dest_type_idx = -1
-                dest_parent_idx = -1
-                doc_idx = -1
-
-                filtered_headers = [str(header_row[i]).strip() for i in valid_col_indices]
-
-                if sheet_name == 'log_sinks':
-                    if 'destination_type' in filtered_headers and 'destination_parent' in filtered_headers:
-                        dest_type_idx = filtered_headers.index('destination_type')
-                        dest_parent_idx = filtered_headers.index('destination_parent')
-
-                if sheet_name == 'alert_definitions':
-                    if 'alert_documentation' in filtered_headers:
-                        doc_idx = filtered_headers.index('alert_documentation')
-                # --------------------------------------------------------
-
-                with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
-                    writer = csv.writer(csv_file)
-                    for row_num, row in enumerate(ws.iter_rows(values_only=True)):
-                        if not any(cell is not None and str(cell).strip() != "" for cell in row): continue
-                        filtered_row = [str(row[i]).strip() if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
-
-                        # row_num > 0 でヘッダー行をスキップし、データ行のみを対象とする
-                        if row_num > 0:
-                            # 1. log_sinks のハイフン置換処理
-                            if sheet_name == 'log_sinks' and dest_type_idx != -1 and dest_parent_idx != -1:
-                                if filtered_row[dest_type_idx].lower() == 'bigquery':
-                                    filtered_row[dest_parent_idx] = filtered_row[dest_parent_idx].replace("-", "_")
-
-                            # --- ▼ 追加: alert_definitions の空欄補完処理 ▼ ---
-                            if sheet_name == 'alert_definitions' and doc_idx != -1:
-                                if not filtered_row[doc_idx].strip():
-                                    filtered_row[doc_idx] = "No documentation provided."
-                            # --------------------------------------------------------
-
-                        writer.writerow(filtered_row)
+            with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
+                writer = csv.writer(csv_file)
+                for row in ws.iter_rows(values_only=True):
+                    if not any(cell is not None and str(cell).strip() != "" for cell in row): continue
+                    filtered_row = [str(row[i]).strip() if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
+                    writer.writerow(filtered_row)
 
     export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
     export_sheet_to_csv('alert_definitions', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'))
@@ -576,6 +569,8 @@ def generate_resources():
         parent_folder = str(proj.get('parent_name') or '').strip()
         # organization_id の場合は HCLの予約語 null を出力し、それ以外はダブルクォーテーションで囲む
         folder_id_val = "null" if parent_folder == 'organization_id' else f'"{sanitize_id(parent_folder)}"'
+        
+        # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
@@ -594,7 +589,7 @@ deletion_protection = true
 
 labels = {{
   env   = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
-  owner = "{str(proj.get('owner') or 'unknown').strip().lower().replace('@', '-at-').replace('.', '-')}"
+  owner = "{str(proj.get('owner') or 'unknown').strip()}"
   app   = "{app_name}"
 }}
 """
