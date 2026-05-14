@@ -166,7 +166,6 @@ if ! gcloud projects describe "${MGMT_PROJECT_ID}" >/dev/null 2>&1; then
 fi
 
 # 2. Billing
-CURRENT_LINK_STATUS="true"
 CURRENT_BILLING=$(gcloud billing projects describe "${MGMT_PROJECT_ID}" --format="value(billingAccountName)" 2>/dev/null || true)
 if [[ "$CURRENT_BILLING" != *"$BILLING_ACCOUNT_ID" ]]; then
     print_info "Linking billing account automatically..."
@@ -177,7 +176,6 @@ if [[ "$CURRENT_BILLING" != *"$BILLING_ACCOUNT_ID" ]]; then
         echo "Please link the billing account manually in another terminal:"
         echo "  gcloud billing projects link \"${MGMT_PROJECT_ID}\" --billing-account=\"YOUR_BILLING_ID\""
         read -r -p "Press [Enter] after linking manually to continue (or press Enter to skip and link later): "
-        CURRENT_LINK_STATUS="false"
     fi
 fi
 
@@ -266,8 +264,6 @@ gcloud beta billing accounts add-iam-policy-binding "${BILLING_ACCOUNT_ID}"   --
 
 # --- Step 7: File Generation ---
 print_info "Updating configuration files..."
-CURRENT_LINK_STATUS="true" # Billing is now fully automated
-
 cat <<EOF > "${COMMON_VARS_PATH}"
 terraform_service_account_email = "${SA_EMAIL}"
 gcs_backend_bucket              = "${GCS_BUCKET_TFSTATE}"
@@ -275,7 +271,6 @@ organization_domain             = "${CUSTOMER_DOMAIN}"
 billing_account_id              = "${BILLING_ACCOUNT_ID}"
 gcp_region                      = "${GCP_REGION}"
 project_id_prefix               = "${PROJECT_ID_PREFIX}"
-core_billing_linked             = ${CURRENT_LINK_STATUS}
 enable_vpc_host_projects        = ${ENABLE_VPC}
 enable_shared_vpc               = ${ENABLE_VPC}
 enable_vpc_sc                   = ${ENABLE_VPC_SC}

@@ -59,7 +59,6 @@ ______________________________________________________________________
 | `organization_domain`| 組織ドメイン | String | 顧客のプライマリドメイン名。 |
 | `gcp_region` | 基準リージョン | String | インフラ全体のデフォルトリージョン。 |
 | `project_id_prefix` | プロジェクト接頭辞 | String | ドメインから算出された安全な接頭辞。 |
-| `core_billing_linked`| コア課金完了フラグ | Boolean | 共通基盤プロジェクトの課金準備が整ったか。 |
 | `enable_shared_vpc` | Shared VPC グローバル | Boolean | 全体で Shared VPC 機能を使うか。 |
 | `enable_vpc_sc` | VPC-SC グローバル | Boolean | 全体で VPC-SC 機能を使うか。 |
 | `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |\\n| `billing_account_id` | 請求先アカウントID | String | `make setup` 時に自動設定されます。予算アラート等の紐付けに使用。 |

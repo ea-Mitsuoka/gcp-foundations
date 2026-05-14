@@ -12,7 +12,6 @@ resource "terraform_data" "variable_validation" {
     var.gcs_backend_bucket,
     var.organization_domain,
     var.project_id_prefix,
-    var.core_billing_linked,
     var.enable_vpc_host_projects,
     var.enable_shared_vpc,
     var.enable_vpc_sc,
