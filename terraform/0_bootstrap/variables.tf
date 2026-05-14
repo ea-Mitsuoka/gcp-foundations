@@ -29,11 +29,6 @@ variable "project_id_prefix" {
   description = "Prefix used for all generated project IDs."
 }
 
-variable "core_billing_linked" {
-  type        = bool
-  description = "Flag indicating if billing is linked to core projects."
-}
-
 variable "enable_vpc_host_projects" {
   type        = bool
   description = "Whether to create Shared VPC host projects."

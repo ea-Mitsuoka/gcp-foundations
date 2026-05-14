@@ -599,7 +599,7 @@ labels = {{
     # --- Silence Undeclared Variable Warnings ---
     global_keys = [
         "terraform_service_account_email", "gcs_backend_bucket", "organization_domain",
-        "gcp_region", "project_id_prefix", "core_billing_linked", "enable_vpc_host_projects",
+        "gcp_region", "project_id_prefix", "enable_vpc_host_projects",
         "enable_shared_vpc", "enable_vpc_sc", "enable_org_policies", "enable_simplified_admin_groups",
         "allow_resource_destruction", "enable_tags", "billing_account_id"
     ]
