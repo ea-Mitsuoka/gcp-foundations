@@ -26,7 +26,7 @@ module "log_match_alerts" {
   monitored_project_id = "Organization-Wide"
   display_name         = each.value.alert_display_name
   filter               = each.value.metric_filter
-  documentation        = each.value.alert_documentation != "" ? each.value.alert_documentation : "No documentation provided."
+  documentation        = each.value.alert_documentation
 
   # 第1段階で作成した通知チャネルを参照
   notification_channel_ids = [

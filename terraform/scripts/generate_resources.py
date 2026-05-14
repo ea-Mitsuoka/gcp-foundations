@@ -371,34 +371,50 @@ def generate_resources():
         f.write('  }\n}\n\n')
 
     def export_sheet_to_csv(sheet_name, output_path):
-        if sheet_name in wb.sheetnames:
-            ws = wb[sheet_name]
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            header_row = [cell.value for cell in ws[1]]
-            valid_col_indices = [i for i, h in enumerate(header_row) if h is not None and str(h).strip() != ""]
-            if not valid_col_indices: return
+            if sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                header_row = [cell.value for cell in ws[1]]
+                valid_col_indices = [i for i, h in enumerate(header_row) if h is not None and str(h).strip() != ""]
+                if not valid_col_indices: return
 
-            # --- ▼ 追加: サニタイズ対象の列インデックスを特定 ▼ ---
-            dest_type_idx = -1
-            dest_parent_idx = -1
-            if sheet_name == 'log_sinks':
+                # --- ▼ 変更: サニタイズおよびデフォルト値対象の列インデックスを特定 ▼ ---
+                dest_type_idx = -1
+                dest_parent_idx = -1
+                doc_idx = -1
+
                 filtered_headers = [str(header_row[i]).strip() for i in valid_col_indices]
-                if 'destination_type' in filtered_headers and 'destination_parent' in filtered_headers:
-                    dest_type_idx = filtered_headers.index('destination_type')
-                    dest_parent_idx = filtered_headers.index('destination_parent')
-            # --------------------------------------------------------
 
-            with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
-                writer = csv.writer(csv_file)
-                for row_num, row in enumerate(ws.iter_rows(values_only=True)):
-                    if not any(cell is not None and str(cell).strip() != "" for cell in row): continue
-                    filtered_row = [str(row[i]).strip() if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
-                    # --- ▼ 追加: BigQuery宛先の場合のハイフン置換処理 ▼ ---
-                    # row_num > 0 でヘッダー行をスキップし、データ行のみを対象とする
-                    if sheet_name == 'log_sinks' and row_num > 0 and dest_type_idx != -1 and dest_parent_idx != -1:
-                        if filtered_row[dest_type_idx].lower() == 'bigquery':
-                            filtered_row[dest_parent_idx] = filtered_row[dest_parent_idx].replace("-", "_")
-                    writer.writerow(filtered_row)
+                if sheet_name == 'log_sinks':
+                    if 'destination_type' in filtered_headers and 'destination_parent' in filtered_headers:
+                        dest_type_idx = filtered_headers.index('destination_type')
+                        dest_parent_idx = filtered_headers.index('destination_parent')
+
+                if sheet_name == 'alert_definitions':
+                    if 'alert_documentation' in filtered_headers:
+                        doc_idx = filtered_headers.index('alert_documentation')
+                # --------------------------------------------------------
+
+                with open(output_path, 'w', newline='', encoding='utf-8') as csv_file:
+                    writer = csv.writer(csv_file)
+                    for row_num, row in enumerate(ws.iter_rows(values_only=True)):
+                        if not any(cell is not None and str(cell).strip() != "" for cell in row): continue
+                        filtered_row = [str(row[i]).strip() if i < len(row) and row[i] is not None else "" for i in valid_col_indices]
+
+                        # row_num > 0 でヘッダー行をスキップし、データ行のみを対象とする
+                        if row_num > 0:
+                            # 1. log_sinks のハイフン置換処理
+                            if sheet_name == 'log_sinks' and dest_type_idx != -1 and dest_parent_idx != -1:
+                                if filtered_row[dest_type_idx].lower() == 'bigquery':
+                                    filtered_row[dest_parent_idx] = filtered_row[dest_parent_idx].replace("-", "_")
+
+                            # --- ▼ 追加: alert_definitions の空欄補完処理 ▼ ---
+                            if sheet_name == 'alert_definitions' and doc_idx != -1:
+                                if not filtered_row[doc_idx].strip():
+                                    filtered_row[doc_idx] = "No documentation provided."
+                            # --------------------------------------------------------
+
+                        writer.writerow(filtered_row)
 
     export_sheet_to_csv('log_sinks', os.path.join(os.path.dirname(__file__), '../1_core/services/logsink/sinks/gcp_log_sink_config.csv'))
     export_sheet_to_csv('alert_definitions', os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/2_alert_policies/logsink_log_alerts/alert_definitions.csv'))
