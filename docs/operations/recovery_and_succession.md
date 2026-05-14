@@ -24,6 +24,7 @@ Terraform の状態（State）が保存されている GCS バケットを特定
 
 1. GCP コンソールで `*-tfstate-xxxx-bucket` という名前のバケットを探します。
 1. `terraform/common.tfbackend` を作成し、そのバケット名を記述します。
+
    ```hcl
    bucket = "example-com-tfstate-abcd-bucket"
    ```
