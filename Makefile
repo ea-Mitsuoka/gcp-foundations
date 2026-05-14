@@ -1,12 +1,13 @@
 # GCP Foundations Makefile
 
-.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery clean
+.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery clean template
 
 help:
 	@echo "Available commands:"
 	@echo "  make install   - Install required Python dependencies using uv"
 	@echo "  make setup     - Initialize GCP seed resources for a new client"
 	@echo "  make check     - Pre-flight check for GCP permissions, billing, and APIs"
+	@echo "  make template  - Generate a blank gcp-foundations.xlsx with suggestion dropdowns"
 	@echo "  make generate  - Generate Terraform resources from gcp-foundations.xlsx"
 	@echo "  make lint      - Run terraform fmt, tflint, and shellcheck"
 	@echo "  make opa       - Run OPA policy checks"
@@ -25,6 +26,9 @@ setup:
 
 check:
 	bash terraform/scripts/preflight_check.sh
+
+template:
+	uv run terraform/scripts/generate_template.py
 
 generate:
 	uv run terraform/scripts/generate_resources.py
