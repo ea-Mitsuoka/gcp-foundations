@@ -199,7 +199,7 @@ def generate_resources():
     required_sheets = {
         "resources": ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
         "tag_definitions": ["tag_key", "allowed_values", "description"],
-        "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services"],
+        "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services", "dry_run"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
         "org_policies": ["target_name", "policy_id", "enforce", "allow_list"],
@@ -479,18 +479,26 @@ def generate_resources():
             if not p.get('perimeter_name'): continue
             sid = sanitize_id(p['perimeter_name'])
             services = [s.strip() for s in str(p.get('restricted_services') or '').split(',') if s.strip()]
+            is_dry_run = is_true(p.get('dry_run'))
             f.write(
                 f'resource "google_access_context_manager_service_perimeter" "{sid}" {{\n'
                 f'  count = var.enable_vpc_sc ? 1 : 0\n'
                 f'  parent = "accessPolicies/${{try(google_access_context_manager_access_policy.access_policy[0].name, "")}}"\n'
                 f'  name = "accessPolicies/${{try(google_access_context_manager_access_policy.access_policy[0].name, "")}}/servicePerimeters/{p["perimeter_name"]}"\n'
                 f'  title = "{p["perimeter_name"]}"\n'
-                f'  status {{\n'
-                f'    restricted_services = {json.dumps(services)}\n'
-                f'  }}\n'
-                f'  lifecycle {{ ignore_changes = [status[0].resources] }}\n'
-                f'}}\n\n'
             )
+            if is_dry_run:
+                f.write(f'  use_explicit_dry_run_spec = true\n')
+                f.write(f'  spec {{\n')
+                f.write(f'    restricted_services = {json.dumps(services)}\n')
+                f.write(f'  }}\n')
+                f.write(f'  lifecycle {{ ignore_changes = [status[0].resources, spec[0].resources] }}\n')
+            else:
+                f.write(f'  status {{\n')
+                f.write(f'    restricted_services = {json.dumps(services)}\n')
+                f.write(f'  }}\n')
+                f.write(f'  lifecycle {{ ignore_changes = [status[0].resources] }}\n')
+            f.write(f'}}\n\n')
             perimeter_ids[p['perimeter_name']] = f"var.enable_vpc_sc ? google_access_context_manager_service_perimeter.{sid}[0].name : null"
         f.write('output "service_perimeter_ids" {\n  description = "Map of VPC-SC perimeter names to their resource IDs."\n  value = {\n')
         for k, v in perimeter_ids.items(): f.write(f'    "{k}" = {v}\n')
