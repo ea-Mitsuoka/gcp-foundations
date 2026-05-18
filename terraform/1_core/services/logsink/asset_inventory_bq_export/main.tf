@@ -4,62 +4,18 @@
 # terraform apply -var-file="$(git-root)/terraform/common.tfvars" -var-file="terraform.tfvars"
 # terraform init -backend-config="$(git-root)/terraform/common.tfbackend" -reconfigure
 
-# 1. Pub/Subスキーマを定義
-resource "google_pubsub_schema" "iam_policy_schema" {
-  provider = google-beta
-  project  = data.terraform_remote_state.project.outputs.project_id
-  name     = "asset-inventory-iam-policy-schema"
-
-  type = "AVRO" # JSONを扱う場合でもAVROかPROTOCOL_BUFFERの指定が必要
-  definition = jsonencode({
-    type = "record",
-    name = "IamPolicy",
-    fields = [
-      { name = "asset_type", type = "string" },
-      { name = "resource", type = "string" },
-      {
-        name = "policy",
-        type = {
-          type = "record",
-          name = "Policy",
-          fields = [
-            { name = "version", type = "int" },
-            {
-              name = "bindings",
-              type = {
-                type = "array",
-                items = {
-                  type = "record",
-                  name = "Binding",
-                  fields = [
-                    { name = "role", type = "string" },
-                    { name = "members", type = { type = "array", items = "string" } }
-                  ]
-                }
-              }
-            },
-            { name = "etag", type = "string" }
-          ]
-        }
-      }
-    ]
-  })
-}
-
-# 2. アセット更新情報を受け取るためのPub/Subトピック
+# --------------------------------------------------------------------------------
+# 1. Pub/Sub スキーマとトピックの定義
+# --------------------------------------------------------------------------------
 resource "google_pubsub_topic" "asset_inventory_feed" {
   provider = google-beta
   project  = data.terraform_remote_state.project.outputs.project_id
   name     = "asset-inventory-iam-policy-feed"
-
-  # 2. トピックにスキーマを関連付ける
-  schema_settings {
-    schema   = google_pubsub_schema.iam_policy_schema.id
-    encoding = "JSON"
-  }
 }
 
-# asset_inventory データセットを"新規作成"する
+# --------------------------------------------------------------------------------
+# 2. BigQuery データセットとテーブルの定義
+# --------------------------------------------------------------------------------
 resource "google_bigquery_dataset" "asset_inventory_dataset" {
   project     = data.terraform_remote_state.project.outputs.project_id
   dataset_id  = "asset_inventory"
@@ -67,84 +23,68 @@ resource "google_bigquery_dataset" "asset_inventory_dataset" {
   description = "Dataset for Cloud Asset Inventory exports."
 }
 
-# 4. エクスポート先のBigQueryテーブル
 resource "google_bigquery_table" "asset_inventory_iam_policy_table" {
   project    = data.terraform_remote_state.project.outputs.project_id
   dataset_id = google_bigquery_dataset.asset_inventory_dataset.dataset_id
   table_id   = "iam_policy"
-
-  # Cloud Asset InventoryのIAMポリシーのスキーマ定義
-  schema = file("${path.module}/iam_policy_schema.json")
+  schema     = file("${path.module}/iam_policy_schema.json")
 
   deletion_protection = false
 }
-# iam_policy_schema.json の内容はGoogle公式ドキュメントを参照してください
-# https://cloud.google.com/asset-inventory/docs/exporting-to-bigquery?hl=ja#iam_policy_analysis_real-time_schema
 
-# 5. Pub/SubからBigQueryへメッセージを書き込むためのSubscription
-resource "google_pubsub_subscription" "asset_inventory_to_bq" {
-  provider = google-beta
-  project  = data.terraform_remote_state.project.outputs.project_id
-  name     = "sub-asset-inventory-to-bq"
-  topic    = google_pubsub_topic.asset_inventory_feed.name
+# --------------------------------------------------------------------------------
+# 綺麗にカラム展開された状態を提供する BigQuery View（仮想テーブル）
+# --------------------------------------------------------------------------------
+resource "google_bigquery_table" "asset_inventory_iam_policy_view" {
+  project    = data.terraform_remote_state.project.outputs.project_id
+  dataset_id = google_bigquery_dataset.asset_inventory_dataset.dataset_id
+  
+  # テーブル名の頭に view を意味する v_ をつけるのが一般的です
+  table_id   = "v_iam_policy"
 
-  bigquery_config {
-    table          = "${google_bigquery_table.asset_inventory_iam_policy_table.project}:${google_bigquery_table.asset_inventory_iam_policy_table.dataset_id}.${google_bigquery_table.asset_inventory_iam_policy_table.table_id}"
-    write_metadata = false
-    # 3. トピックのスキーマを使用するよう設定
-    use_topic_schema = true
-  }
-  # このIAMバインディングが完了するまで待つように設定
-  depends_on = [
-    google_project_iam_member.pubsub_sa_bq_writer
-  ]
-}
+  view {
+    use_legacy_sql = false
+    # ユーザーが叩かなくても、裏側で常にこのSQLが適用された状態になります
+    query = <<EOF
+SELECT
+  CAST(JSON_VALUE(data, '$.window.startTime') AS TIMESTAMP) AS event_time,
+  JSON_VALUE(data, '$.asset.assetType') AS asset_type,
+  JSON_VALUE(data, '$.asset.name') AS resource_name,
 
-# 6. Cloud Asset Inventoryのフィード設定
-resource "google_cloud_asset_organization_feed" "iam_policy_feed" {
-  provider        = google-beta
-  billing_project = data.terraform_remote_state.project.outputs.project_id
-  org_id          = data.google_organization.org.org_id
-  feed_id         = "iam-policy-to-bigquery"
-  content_type    = "IAM_POLICY"
+  -- JSONの配列を、BigQueryネイティブの ARRAY<STRUCT> に美しく再構築します
+  ARRAY(
+    SELECT AS STRUCT
+      JSON_VALUE(binding, '$.role') AS role,
+      JSON_VALUE_ARRAY(binding, '$.members') AS members
+    FROM UNNEST(JSON_QUERY_ARRAY(data, '$.asset.iamPolicy.bindings')) AS binding
+  ) AS policy_bindings,
 
-  # IAMポリシーを持つ可能性のある主要なアセットタイプを指定
-  asset_types = [
-    "cloudresourcemanager.googleapis.com/Project",
-    "cloudresourcemanager.googleapis.com/Folder",
-    "cloudresourcemanager.googleapis.com/Organization"
-  ]
-
-  feed_output_config {
-    # Publish feed to Pub/Sub; subscribe or export from Pub/Sub to BigQuery separately.
-    pubsub_destination {
-      topic = google_pubsub_topic.asset_inventory_feed.id
-    }
+  -- deleted キーが存在しない場合(NULL)は FALSE として扱う安全な書き方
+  IFNULL(CAST(JSON_VALUE(data, '$.deleted') AS BOOL), FALSE) AS is_deleted
+FROM
+  `${google_bigquery_table.asset_inventory_iam_policy_table.project}.${google_bigquery_table.asset_inventory_iam_policy_table.dataset_id}.${google_bigquery_table.asset_inventory_iam_policy_table.table_id}`
+EOF
   }
 
-  # Pub/Subへの発行権限が完全に伝播するのを待つための明示的な依存関係
+  deletion_protection = false
+
+  # ★重要: 必ず物理テーブルが作られてからViewを作成するように強制する
   depends_on = [
-    google_pubsub_topic_iam_member.asset_inventory_sa_publisher
+    google_bigquery_table.asset_inventory_iam_policy_table
   ]
 }
 
-# IAM権限付与の前にサービスエージェントを明示的に強制生成
-resource "google_project_service_identity" "pubsub_sa" {
-  provider = google-beta
-  project  = data.terraform_remote_state.project.outputs.project_id
-  service  = "pubsub.googleapis.com"
-}
-
-# Asset Inventoryサービスエージェントを明示的に強制生成
+# --------------------------------------------------------------------------------
+# 3. Cloud Asset Inventory (CAI) フィードと権限設定
+# --------------------------------------------------------------------------------
+# プロジェクトレベルのCAIサービスエージェントを明示的に生成（GCPに必ず存在するSAです）
 resource "google_project_service_identity" "asset_inventory_sa" {
   provider = google-beta
   project  = data.terraform_remote_state.project.outputs.project_id
   service  = "cloudasset.googleapis.com"
 }
 
-
-# 必要なIAM設定：
-# Cloud Asset InventoryのプロジェクトレベルサービスエージェントにPub/Subトピックへの発行権限を付与
+# 生成されたプロジェクトレベルのSAに、トピックへの書き込み権限を付与
 resource "google_pubsub_topic_iam_member" "asset_inventory_sa_publisher" {
   project = data.terraform_remote_state.project.outputs.project_id
   topic   = google_pubsub_topic.asset_inventory_feed.name
@@ -152,9 +92,61 @@ resource "google_pubsub_topic_iam_member" "asset_inventory_sa_publisher" {
   member  = google_project_service_identity.asset_inventory_sa.member
 }
 
-# Pub/SubサービスエージェントにBigQueryデータ編集者ロールを明示的に付与
+# 組織フィードの作成
+resource "google_cloud_asset_organization_feed" "iam_policy_feed" {
+  provider        = google-beta
+  billing_project = data.terraform_remote_state.project.outputs.project_id
+  org_id          = data.google_organization.org.org_id
+  feed_id         = "iam-policy-to-bigquery"
+  content_type    = "IAM_POLICY"
+
+  asset_types = [
+    "cloudresourcemanager.googleapis.com/Project",
+    "cloudresourcemanager.googleapis.com/Folder",
+    "cloudresourcemanager.googleapis.com/Organization"
+  ]
+
+  feed_output_config {
+    pubsub_destination {
+      topic = google_pubsub_topic.asset_inventory_feed.id
+    }
+  }
+
+  # 権限付与が完了してからフィードを作成する正しい依存関係
+  depends_on = [
+    google_pubsub_topic_iam_member.asset_inventory_sa_publisher
+  ]
+}
+
+# --------------------------------------------------------------------------------
+# 4. Pub/Sub -> BigQuery サブスクリプションと権限設定
+# --------------------------------------------------------------------------------
+resource "google_project_service_identity" "pubsub_sa" {
+  provider = google-beta
+  project  = data.terraform_remote_state.project.outputs.project_id
+  service  = "pubsub.googleapis.com"
+}
+
 resource "google_project_iam_member" "pubsub_sa_bq_writer" {
   project = data.google_project.logsink.project_id
   role    = "roles/bigquery.dataEditor"
   member  = "serviceAccount:${google_project_service_identity.pubsub_sa.email}"
+}
+
+resource "google_pubsub_subscription" "asset_inventory_to_bq" {
+  provider = google-beta
+  project  = data.terraform_remote_state.project.outputs.project_id
+  name     = "sub-asset-inventory-to-bq"
+  topic    = google_pubsub_topic.asset_inventory_feed.name
+
+  bigquery_config {
+    table               = "${google_bigquery_table.asset_inventory_iam_policy_table.project}:${google_bigquery_table.asset_inventory_iam_policy_table.dataset_id}.${google_bigquery_table.asset_inventory_iam_policy_table.table_id}"
+    write_metadata      = false
+    use_topic_schema    = false
+    drop_unknown_fields = true
+  }
+
+  depends_on = [
+    google_project_iam_member.pubsub_sa_bq_writer
+  ]
 }
