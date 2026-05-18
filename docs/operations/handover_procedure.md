@@ -50,7 +50,39 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 4. 後任者によるセットアップ
+## 4. CI/CDパイプライン（GitHub Actions）の有効化案内
+
+本テンプレートには、インフラの変更漏れ（ドリフト）を防ぐための自動検知機能や、Pull Request時の自動Plan機能が標準搭載されています。
+顧客が自身の環境でこれらを有効化し、IaCの自動運用を開始できるよう、以下のセットアップ手順を案内してください。
+
+### ① Workload Identity Federation (WIF) の構築
+
+GitHub Actions が GCP 環境へ安全に（キーレスで）アクセスできるよう、GCP上に WIF を構築するよう案内します。
+発行された `workload_identity_provider` のIDが必要です。
+
+### ② ワークフローのコメントアウト解除
+
+顧客環境の `.github/workflows/` 配下にある以下の YAML ファイルについて、`Authenticate to Google Cloud` ステップのコメントアウト（`#`）を外し、①で取得した WIF プロバイダIDと、Terraform実行用サービスアカウントのメールアドレスを入力してもらいます。
+
+- `drift-detection.yml`
+- `main-apply.yml`
+- `pr-plan.yml`
+
+### ③ GitHub Secrets の登録
+
+顧客の GitHub リポジトリの `Settings > Secrets and variables > Actions` にて、以下の環境変数を登録するよう案内します。
+（※これらは構築時に使用した `terraform/common.tfvars` に記録されている値に相当します）
+
+- `GCS_BACKEND_BUCKET`: tfstate保存用バケット名
+- `TF_SERVICE_ACCOUNT_EMAIL`: Terraform実行用サービスアカウント
+- `ORGANIZATION_DOMAIN`: 組織ドメイン（例: example.com）
+- `BILLING_ACCOUNT_ID`: 請求先アカウントID
+- `PROJECT_ID_PREFIX`: プロジェクトIDのプレフィックス
+- `ENABLE_VPC`, `ENABLE_VPC_SC` などの各種フラグ (true/false)
+
+______________________________________________________________________
+
+## 5. 後任者によるセットアップ
 
 リポジトリを受け取った後任の開発者は、そのままでは Terraform を実行できません（環境依存の設定ファイルが Git 管理外のため）。
 受け取り後の環境復元手順については、以下のガイドを必ず参照してください。
