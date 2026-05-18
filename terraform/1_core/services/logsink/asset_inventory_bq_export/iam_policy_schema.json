@@ -1,46 +1,8 @@
 [
   {
-    "name": "asset_type",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "resource",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "policy",
-    "type": "RECORD",
+    "name": "data",
+    "type": "JSON",
     "mode": "NULLABLE",
-    "fields": [
-      {
-        "name": "version",
-        "type": "INTEGER",
-        "mode": "NULLABLE"
-      },
-      {
-        "name": "bindings",
-        "type": "RECORD",
-        "mode": "REPEATED",
-        "fields": [
-          {
-            "name": "role",
-            "type": "STRING",
-            "mode": "NULLABLE"
-          },
-          {
-            "name": "members",
-            "type": "STRING",
-            "mode": "REPEATED"
-          }
-        ]
-      },
-      {
-        "name": "etag",
-        "type": "STRING",
-        "mode": "NULLABLE"
-      }
-    ]
+    "description": "CAI Feed Raw JSON Message"
   }
 ]

@@ -28,20 +28,22 @@ ______________________________________________________________________
 データは `logsink` プロジェクト内の以下の場所に格納されます。
 
 - **データセット名**: `asset_inventory`
-- **テーブル名**: `iam_policy`
+- **物理テーブル名 (生データ)**: `iam_policy` (JSON型の `data` カラムのみ)
+- **分析用ビュー (展開済み)**: `v_iam_policy` ★分析にはこちらを使用します
 
-### 2.1 主要なスキーマ（カラム）
+### 2.1 分析用ビュー (`v_iam_policy`) のスキーマ
 
-詳細な完全スキーマは [Google Cloud 公式ドキュメント](https://cloud.google.com/asset-inventory/docs/exporting-to-bigquery?hl=ja#iam_policy_analysis_real-time_schema) に準拠しており`terraform/1_core/services/logsink/asset_inventory_bq_export/iam_policy_schema.json`に定義しています。分析時に頻繁に使用する主要カラムは以下の通りです。
+複雑な生 JSON データを BigQuery で分析しやすい形に Terraform が自動で展開したビューです。分析時に頻繁に使用する主要カラムは以下の通りです。
 
 | カラム名 | 型 | 説明 |
 | :--- | :--- | :--- |
+| `event_time` | TIMESTAMP | イベント発生日時（`window.startTime`） |
 | `asset_type` | STRING | アセットの種類（例: `cloudresourcemanager.googleapis.com/Project`） |
-| `resource` | STRING | 対象リソースのフルURI（例: `//cloudresourcemanager.googleapis.com/projects/123456789`） |
-| `policy.version` | INT | ポリシーのバージョン（更新されるたびに増加） |
-| `policy.bindings` | RECORD (REPEATED) | 権限の割り当てリスト（Role と Members のペア） |
-| `policy.bindings.role` | STRING | 付与された IAM ロール（例: `roles/owner`） |
-| `policy.bindings.members` | STRING (REPEATED) | 権限を持つメンバー（例: `user:admin@example.com`, `group:admins@...`） |
+| `resource_name` | STRING | 対象リソースのフルURI（例: `//cloudresourcemanager.googleapis.com/projects/123456789`） |
+| `policy_bindings` | ARRAY<STRUCT> | 権限の割り当てリスト（Role と Members のペアの配列） |
+| `policy_bindings.role` | STRING | 付与された IAM ロール（例: `roles/owner`） |
+| `policy_bindings.members` | ARRAY<STRING> | 権限を持つメンバーの配列（例: `user:admin@...`, `group:admins@...`） |
+| `is_deleted` | BOOL | アセットやポリシーが削除されたイベントかどうかのフラグ |
 
 > **⚠️ 注意点**
 > CAI のデータには「その状態に変更した犯人（Who）」は記録されません。「誰が変更したか」を特定する場合は、Cloud Audit Logs と結合して調査する必要があります。
@@ -58,19 +60,19 @@ ______________________________________________________________________
 
 ```sql
 SELECT
-  resource,
+  resource_name,
   binding.role,
   member
 FROM
-  `[YOUR_PROJECT_ID].asset_inventory.iam_policy`,
-  UNNEST(policy.bindings) AS binding,
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy`,
+  UNNEST(policy_bindings) AS binding,
   UNNEST(binding.members) AS member
 WHERE
   1=1
--- リソースごとに最も新しいバージョン（最新状態）の1行だけを抽出
-QUALIFY ROW_NUMBER() OVER (PARTITION BY resource ORDER BY policy.version DESC) = 1
+-- リソースごとに最も新しいイベント日時の1行だけを抽出
+QUALIFY ROW_NUMBER() OVER (PARTITION BY resource_name ORDER BY event_time DESC) = 1
 ORDER BY
-  resource, binding.role;
+  resource_name, binding.role;
 ```
 
 ### 3.2 【特権監査】現在「オーナー」または「編集者」権限を持つユーザーの特定
@@ -79,19 +81,19 @@ ORDER BY
 
 ```sql
 SELECT
-  resource,
+  resource_name,
   binding.role,
   member
 FROM
-  `[YOUR_PROJECT_ID].asset_inventory.iam_policy`,
-  UNNEST(policy.bindings) AS binding,
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy`,
+  UNNEST(policy_bindings) AS binding,
   UNNEST(binding.members) AS member
 WHERE
   binding.role IN ('roles/owner', 'roles/editor')
   AND member LIKE 'user:%'
-QUALIFY ROW_NUMBER() OVER (PARTITION BY resource ORDER BY policy.version DESC) = 1
+QUALIFY ROW_NUMBER() OVER (PARTITION BY resource_name ORDER BY event_time DESC) = 1
 ORDER BY
-  resource;
+  resource_name;
 ```
 
 ### 3.3 【情報漏洩対策】自社ドメイン以外の権限付与を検知
@@ -100,17 +102,17 @@ ORDER BY
 
 ```sql
 SELECT
-  resource,
+  resource_name,
   binding.role,
   member
 FROM
-  `[YOUR_PROJECT_ID].asset_inventory.iam_policy`,
-  UNNEST(policy.bindings) AS binding,
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy`,
+  UNNEST(policy_bindings) AS binding,
   UNNEST(binding.members) AS member
 WHERE
   member LIKE 'user:%'
   AND member NOT LIKE '%@example.com' -- ここを自社のドメインに変更
-QUALIFY ROW_NUMBER() OVER (PARTITION BY resource ORDER BY policy.version DESC) = 1;
+QUALIFY ROW_NUMBER() OVER (PARTITION BY resource_name ORDER BY event_time DESC) = 1;
 ```
 
 ### 3.4 【フォレンジック】「誰が変更したか」を Audit Logs と結合して追跡
@@ -122,17 +124,17 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY resource ORDER BY policy.version DESC) =
 SELECT
   audit.timestamp AS event_time,
   audit.protopayload_auditlog.authenticationInfo.principalEmail AS changed_by_who, -- 操作実行者
-  cai.resource AS target_resource,
+  cai.resource_name AS target_resource,
   binding.role AS granted_role,
   member AS granted_to_whom
 FROM
   `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity` AS audit
 JOIN
-  `[YOUR_PROJECT_ID].asset_inventory.iam_policy` AS cai
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy` AS cai
   -- Audit Logのラベルと、CAIのリソースIDを結合
-  ON audit.resource.labels.project_id = SPLIT(cai.resource, '/')[ARRAY_LENGTH(SPLIT(cai.resource, '/')) - 1]
+  ON audit.resource.labels.project_id = SPLIT(cai.resource_name, '/')[ARRAY_LENGTH(SPLIT(cai.resource_name, '/')) - 1]
 CROSS JOIN
-  UNNEST(cai.policy.bindings) AS binding
+  UNNEST(cai.policy_bindings) AS binding
 CROSS JOIN
   UNNEST(binding.members) AS member
 WHERE
