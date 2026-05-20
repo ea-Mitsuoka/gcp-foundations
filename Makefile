@@ -1,6 +1,6 @@
 # GCP Foundations Makefile
 
-.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery clean template
+.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery clean template prune
 
 help:
 	@echo "Available commands:"
@@ -17,6 +17,7 @@ help:
 	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
 	@echo "  make test-mode - Toggle test mode (random prefix & skip management projects)"
 	@echo "  make clean     - Remove local terraform state and cache files"
+	@echo "  make prune     - Remove orphan 4_projects/ directories not defined in SSoT (Excel)"
 
 install:
 	uv sync
@@ -81,6 +82,9 @@ delivery:
 
 test-mode:
 	uv run python terraform/scripts/toggle_test_mode.py
+
+prune:
+	uv run terraform/scripts/prune_orphans.py
 
 clean:
 	find terraform -type d -name ".terraform" -exec rm -rf {} +
