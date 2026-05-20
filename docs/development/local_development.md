@@ -141,7 +141,7 @@ make test
 GCPの仕様（プロジェクト名の30日間ロックや、課金枠の枯渇エラー）に悩まされることなく、スムーズにインフラの検証を回すための「テストモード」が用意されています。
 
 ```bash
-python3 terraform/scripts/toggle_test_mode.py
+make test-mode
 ```
 
 これを実行して【ON】にすると、以下の機能が有効になります。
@@ -149,7 +149,7 @@ python3 terraform/scripts/toggle_test_mode.py
 1. **名前重複の回避**: プロジェクトIDの接頭辞にランダムな2文字が追加され、手動削除後の 409 Already Exists エラーを防ぎます。
 1. **課金枠の節約**: `make deploy` や `make destroy` 実行時、作成に時間と課金枠を大きく消費する管理プロジェクト（`logsink`, `monitoring` 等）が自動的にスキップされます。
 
-検証が終わったら、もう一度コマンドを実行して【OFF】に戻してください。
+検証が終わったら、もう一度 `make test-mode` を実行して【OFF】に戻してください。
 
 ### 孤立プロジェクトディレクトリの削除 (Prune)
 

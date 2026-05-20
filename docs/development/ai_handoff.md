@@ -40,6 +40,7 @@ ______________________________________________________________________
 - **`policies/require_labels.rego`**: OPA によるガードレール。
 - **`.github/workflows/drift-detection.yml`**: 週次の Drift 検知ロジック。
 - **`docs/operations/troubleshooting.md`**: 過去のナレッジと解決策のコンテキスト。
+- **`terraform/scripts/prune_orphans.py` (`make prune`)**: SSoT から削除されたプロジェクトのローカルディレクトリを対話形式で削除するクリーンアップ機能。`make generate` が `terraform.tfvars` を削除してデプロイ対象から外した後、GCP リソース解体済みのディレクトリを安全に掃除する手順として活用する。
 
 **【AIへの行動指針（ガードレール）】**
 

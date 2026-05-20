@@ -61,4 +61,5 @@ ______________________________________________________________________
 | `project_id_prefix` | プロジェクト接頭辞 | String | ドメインから算出された安全な接頭辞。 |
 | `enable_shared_vpc` | Shared VPC グローバル | Boolean | 全体で Shared VPC 機能を使うか。 |
 | `enable_vpc_sc` | VPC-SC グローバル | Boolean | 全体で VPC-SC 機能を使うか。 |
-| `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |\\n| `billing_account_id` | 請求先アカウントID | String | `make setup` 時に自動設定されます。予算アラート等の紐付けに使用。 |
+| `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |
+| `billing_account_id` | 請求先アカウントID | String | `make setup` 時に自動設定されます。予算アラート等の紐付けに使用。 |

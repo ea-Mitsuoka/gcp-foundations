@@ -65,6 +65,7 @@ ______________________________________________________________________
 1. `terraform.tfvars` に `deletion_protection = false` を追記して `apply`。
 1. `terraform apply -destroy -target=module.project` でターゲット指定して削除。
 1. **絶対に `terraform destroy`（全体削除）を実行しない。**
+1. GCP リソースの解体が完了したら、`gcp-foundations.xlsx` の該当行を削除して `make generate` を実行。残った孤立ディレクトリは `make prune` で対話形式に削除できます。
 
 ### 実行権限の獲得 (Impersonation)
 
