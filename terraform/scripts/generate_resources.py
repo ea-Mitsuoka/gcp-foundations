@@ -348,7 +348,11 @@ def generate_resources():
                     os.remove(tfvars_path)
                     print(f"⚠️  WARNING: Project '{entry}' was removed from SSoT (Excel).")
                     print(f"   -> Deleted 'terraform.tfvars' to exclude it from deployment.")
-                    print(f"   -> Your custom code (if any) is preserved. If GCP resources exist, they must be managed/destroyed manually.")
+                    print(f"   -> Orphan directory 'terraform/4_projects/{entry}/' remains.")
+                    print(f"   -> If GCP resources exist, destroy them first. Then run 'make prune' to delete the directory.")
+                else:
+                    print(f"ℹ️  INFO: Orphan directory found: 'terraform/4_projects/{entry}/' (not in SSoT, already excluded from deployment).")
+                    print(f"   -> Run 'make prune' to remove it.")
 
     def is_true(val):
         if val is None: return False
