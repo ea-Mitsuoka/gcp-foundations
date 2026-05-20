@@ -16,8 +16,8 @@ help:
 	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
 	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
 	@echo "  make test-mode - Toggle test mode (random prefix & skip management projects)"
-	@echo "  make clean     - Remove local terraform state and cache files"
 	@echo "  make prune     - Remove orphan 4_projects/ directories not defined in SSoT (Excel)"
+	@echo "  make clean     - Remove local terraform state and cache files"
 
 install:
 	uv sync
