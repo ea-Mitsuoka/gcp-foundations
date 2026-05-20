@@ -87,10 +87,13 @@ graph TD
 | Layer | 名称 | 役割 |
 | :--- | :--- | :--- |
 | **0** | **Bootstrap** | Terraform 実行基盤 (tfstate バケット等) の作成 |
-| **1** | **Core Services** | ログ集約、統合監視、Shared VPC ホスト・サブネット作成 |
+| **1a** | **Core Services (logsink/monitoring)** | ログ集約・統合監視プロジェクトの作成とサービス設定 |
 | **2** | **Organization** | 組織ポリシー、組織 IAM、VPC-SC 境界・アクセスレベル定義 |
 | **3** | **Folders** | 環境分離のためのフォルダ構造構築 |
+| **1b** | **Core Services (vpc-host)** | Shared VPC ホストプロジェクト・サブネット作成 ※ |
 | **4** | **Projects** | アプリケーション用プロジェクトの展開 |
+
+> **※ vpc-host のデプロイ順序について**: `vpc-host` は論理的には Layer 1 (Core Services) に属しますが、実際のデプロイ (`make deploy`) では **Layer 3 (Folders) の後** に適用されます。VPC ホストプロジェクトをフォルダ内に配置するには、フォルダが先に存在している必要があるためです。`deploy_all.sh` の実行順序は `1_core/base/logsink → ... → 2_organization → 3_folders → 1_core/base/vpc-host → 1_core/services/vpc-host → 4_projects/*` となっています。
 
 ______________________________________________________________________
 
