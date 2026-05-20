@@ -57,24 +57,65 @@ ______________________________________________________________________
 
 ### ① Workload Identity Federation (WIF) の構築
 
-GitHub Actions が GCP 環境へ安全に（キーレスで）アクセスできるよう、GCP上に WIF を構築するよう案内します。
-発行された `workload_identity_provider` のIDが必要です。
+GitHub Actions が GCP 環境へ安全に（サービスアカウントキーなしで）アクセスするために、GCP 上に WIF プールとプロバイダを構築します。以下の手順を案内してください。
+
+```bash
+# プロジェクトIDは tfstate バケットが存在するプロジェクト（*-tfstate-xxxx）
+PROJECT_ID="<MGMT_PROJECT_ID>"
+POOL_ID="github-actions-pool"
+PROVIDER_ID="github-provider"
+GITHUB_ORG="<顧客のGitHub組織名またはユーザー名>"
+
+# WIF プールの作成
+gcloud iam workload-identity-pools create "${POOL_ID}" \
+  --project="${PROJECT_ID}" \
+  --location="global" \
+  --display-name="GitHub Actions Pool"
+
+# WIF プロバイダの作成
+gcloud iam workload-identity-pools providers create-oidc "${PROVIDER_ID}" \
+  --project="${PROJECT_ID}" \
+  --location="global" \
+  --workload-identity-pool="${POOL_ID}" \
+  --display-name="GitHub Provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-condition="assertion.repository_owner=='${GITHUB_ORG}'"
+
+# プロバイダの完全なID（後続ステップで必要）
+gcloud iam workload-identity-pools providers describe "${PROVIDER_ID}" \
+  --project="${PROJECT_ID}" \
+  --location="global" \
+  --workload-identity-pool="${POOL_ID}" \
+  --format="value(name)"
+# 出力例: projects/123456789/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
+
+# Terraform 実行用 SA に WIF からのトークン発行を許可
+SA_EMAIL="<TF_SERVICE_ACCOUNT_EMAIL>"  # common.tfvars に記録済み
+POOL_RESOURCE_NAME="projects/$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')/locations/global/workloadIdentityPools/${POOL_ID}"
+
+gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
+  --project="${PROJECT_ID}" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/${POOL_RESOURCE_NAME}/attribute.repository/${GITHUB_ORG}/<リポジトリ名>"
+```
 
 ### ② ワークフローのコメントアウト解除
 
-顧客環境の `.github/workflows/` 配下にある以下の YAML ファイルについて、`Authenticate to Google Cloud` ステップのコメントアウト（`#`）を外し、①で取得した WIF プロバイダIDと、Terraform実行用サービスアカウントのメールアドレスを入力してもらいます。
+顧客環境の `.github/workflows/` 配下にある以下の YAML ファイルについて、`Authenticate to Google Cloud` ステップのコメントアウト（`#`）を外し、①で取得した WIF プロバイダ完全IDと、Terraform 実行用サービスアカウントのメールアドレスを設定します。
 
-- `drift-detection.yml`
+- `drift-detection.yml` — `secrets.GCP_WIF_PROVIDER` と `secrets.TF_SERVICE_ACCOUNT_EMAIL` を参照するよう記載済み
 - `main-apply.yml`
-- `pr-plan.yml`
+- `pr-plan.yml` — ハードコードされたサンプル値が記載されているため、Secrets 参照形式（`${{ secrets.GCP_WIF_PROVIDER }}`）に書き換えること
 
 ### ③ GitHub Secrets の登録
 
 顧客の GitHub リポジトリの `Settings > Secrets and variables > Actions` にて、以下の環境変数を登録するよう案内します。
 （※これらは構築時に使用した `terraform/common.tfvars` に記録されている値に相当します）
 
+- `GCP_WIF_PROVIDER`: ①で取得した WIF プロバイダの完全ID
 - `GCS_BACKEND_BUCKET`: tfstate保存用バケット名
-- `TF_SERVICE_ACCOUNT_EMAIL`: Terraform実行用サービスアカウント
+- `TF_SERVICE_ACCOUNT_EMAIL`: Terraform実行用サービスアカウントのメールアドレス
 - `ORGANIZATION_DOMAIN`: 組織ドメイン（例: example.com）
 - `BILLING_ACCOUNT_ID`: 請求先アカウントID
 - `PROJECT_ID_PREFIX`: プロジェクトIDのプレフィックス
