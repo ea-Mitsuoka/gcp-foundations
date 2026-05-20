@@ -89,8 +89,8 @@ resource "google_billing_budget" "budget" {
     disable_default_iam_recipients = false
 
     # Excelで指定された追加のメールアドレスへの通知チャネルを紐付け
-    monitoring_notification_channels = [
+    monitoring_notification_channels = var.monitoring_project_id != null && length(var.budget_alert_emails) > 0 ? [
       for channel in google_monitoring_notification_channel.budget_emails : channel.name
-    ]
+    ] : null
   }
 }
