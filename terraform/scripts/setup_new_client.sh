@@ -277,7 +277,7 @@ enable_vpc_sc                   = ${ENABLE_VPC_SC}
 enable_org_policies             = ${ENABLE_ORG_POLICIES}
 enable_tags                     = ${ENABLE_TAGS}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
-allow_resource_destruction      = false
+allow_resource_destruction      = true  # 構築・検証フェーズは true を推奨。本番化後は false に変更してください。
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/common.tfbackend"
