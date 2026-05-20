@@ -32,7 +32,7 @@ ______________________________________________________________________
 
 ### ステップ 4: 共通モジュールとライフサイクル
 
-- **`terraform/modules/project-factory/main.tf`**: `ignore_changes = [billing_account]` 設定など、GCP 特有の制約（作成後の手動リンク）を IaC でどう許容しているか。
+- **`terraform/modules/project-factory/main.tf`**: `lifecycle.ignore_changes` の設計を理解せよ。現在 `billing_account` は **コメントアウト中（検証中）** であり、Terraform に課金アカウントのリンクを強制させるために意図的に無効化されている。GCP の仕様上、課金アカウントのリンクはサービスアカウントでは行えないため、この制約をどう扱うかは設計上の重要な判断点となる。
 - **`terraform/1_core/services/logsink/sinks/locals.tf`**: Terraform の `csvdecode` とグループ化演算子を駆使した高度なデータ処理ロジック。
 
 ### ステップ 5: ガバナンスと自動化
