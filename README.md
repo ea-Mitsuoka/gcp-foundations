@@ -59,7 +59,6 @@ make lint
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSoT）に基づく作成・運用・管理
 1. **[トラブルシューティング・ガイド](docs/operations/troubleshooting.md)**: 構築・運用中によくある問題と解決策
-1. **[ネットワークとセキュリティの詳細設定](docs/setup/spreadsheet_format.md)**: Shared VPC, VPC-SC, 組織ポリシーの管理方法
 1. **[環境の一括解体・クリーンアップガイド](docs/operations/environment_destruction.md)**: make destroy の仕様とオプション解説
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
@@ -72,9 +71,11 @@ make lint
 
 1. **[アーキテクチャ設計書](docs/design/architecture.md)**: 全体俯瞰図とSSoT・レイヤー構造の解説
 1. **[ベストプラクティス集](docs/reference/best_practices.md)**: インフラ運用とIAM・権限管理の方針
-1. **[スプレッドシートの仕様書](docs/setup/spreadsheet_format.md)**: `gcp-foundations.xlsx` (SSoT) のカラム定義
+1. **[スプレッドシートの仕様書](docs/setup/spreadsheet_format.md)**: `gcp-foundations.xlsx` (SSoT) のカラム定義（Shared VPC, VPC-SC, 組織ポリシーを含む）
 1. **[データディクショナリ](docs/design/data-dictionary.md)**: Terraform変数の定義や命名規則
 1. **[ガバナンス・エボリューション・ガイド](docs/reference/governance_guideline.md)**: 運用継続のポイントと責務の境界線についての指針
+1. **[自動生成エンジンの設計思想](docs/design/generator_philosophy.md)**: `make generate` の内部設計・拡張方針
+1. **[AI向けリポジトリ理解ガイド](docs/development/ai_handoff.md)**: AIがこのリポジトリを最短で正確に理解するためのマスタープロンプト
 
 ### 🛠️ 便利な Makefile コマンド
 
