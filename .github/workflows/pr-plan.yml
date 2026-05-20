@@ -47,12 +47,13 @@ jobs:
         uses: hashicorp/setup-terraform@v4
 
       # NOTE: GCP Workload Identity Federation is required for passwordless authentication.
-      # Uncomment and configure the following step to enable actual planning against GCP.
+      # Uncomment the following step after registering GCP_WIF_PROVIDER and TF_SERVICE_ACCOUNT_EMAIL in GitHub Secrets.
+      # See docs/operations/handover_procedure.md for setup instructions.
       # - name: Authenticate to Google Cloud
       #   uses: google-github-actions/auth@v2
       #   with:
-      #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo'
-      #     service_account: 'terraform-org-manager@your-tfstate-project.iam.gserviceaccount.com'
+      #     workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}'
+      #     service_account: '${{ secrets.TF_SERVICE_ACCOUNT_EMAIL }}'
 
       - name: Generate Terraform variables and backend config
         run: |
