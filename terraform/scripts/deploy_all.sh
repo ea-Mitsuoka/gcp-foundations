@@ -81,6 +81,7 @@ echo "=========================================================="
 TARGET_DIRS=(
   "terraform/1_core/base/logsink"
   "terraform/1_core/base/monitoring"
+  "terraform/1_core/base/vpc-host"
   "terraform/1_core/services/logsink/google_project_service"
   "terraform/1_core/services/logsink/iam"
   "terraform/1_core/services/logsink/datasets"
@@ -91,10 +92,9 @@ TARGET_DIRS=(
   "terraform/1_core/services/monitoring/scoping"
   "terraform/1_core/services/monitoring/1_notification_channels"
   "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
+  "terraform/1_core/services/vpc-host"
   "terraform/2_organization"
   "terraform/3_folders"
-  "terraform/1_core/base/vpc-host"
-  "terraform/1_core/services/vpc-host"
 )
 
 # 4_projects 配下のプロジェクトディレクトリを動的に検出して追加
