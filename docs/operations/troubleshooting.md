@@ -18,6 +18,27 @@ ______________________________________________________________________
 - **原因**: スクリプトが指示する「手動での請求先アカウント紐づけ」が完了していません。
 - **対策**: 画面に表示された `gcloud billing projects link ...` コマンドを別のターミナルで実行してから、[Enter] を押してください。
 
+#### 症状: バケット作成時に「HTTPError 403: The billing account for the owning project is disabled in state closed.」というエラー
+
+- **原因**: GCPが課金必須のリソース（GCSバケット等）の作成を拒否しています。プロンプトで入力（またはデフォルト選択）した「請求先アカウント」が無効化されているか、課金設定が切れた古い残骸プロジェクトを再利用しようとしたことが原因です。
+- **対策**: 再度 `make setup` を実行し、`Enter Billing Account ID` で**有効な請求先アカウントID**を正しく入力（ペースト）し、プロジェクトの再利用プロンプトでは過去の残骸を選ばず、**`2) Create a NEW project`** を選択して完全に新規作成からやり直してください。
+
+#### 症状: `make setup` の最後に「storage: bucket doesn't exist」というエラーで落ちる
+
+- **原因**: GCPとTerraformの組み合わせで発生する**ADC（Application Default Credentials）のクォータプロジェクト問題**です。以前設定したADCに「削除済みの古いプロジェクト」がクォータ（課金枠）利用プロジェクトとしてキャッシュされています。TerraformがAPIを叩く際にその無効なプロジェクトを使用してアクセス拒否（403）を受け、それを「バケットが存在しない」と誤認して出力しています。
+- **対策**: 以下のコマンドを実行して、ローカルの古い認証情報を完全にクリーンアップしてから `make setup` を再実行してください。
+
+```bash
+# 1. 古いデフォルトプロジェクトの設定を解除する
+gcloud config unset project
+
+# 2. クリーンな状態で ADC を再取得する（ブラウザが開くので再認証）
+gcloud auth application-default login
+
+# 3. ローカルのTerraformキャッシュを掃除する（念のため）
+make clean
+```
+
 ### 1.2 予算アラート・課金アカウント紐付けのエラー
 
 #### 症状: 予算作成時に「Error 404: Requested entity was not found.」というエラー
