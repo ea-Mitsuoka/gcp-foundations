@@ -177,12 +177,19 @@ def generate_resources():
                     break
 
     project_id_prefix = "unknown"
+    enable_shared_vpc = None
+    enable_vpc_host_projects = None
     common_vars_path = os.path.join(os.path.dirname(__file__), '../common.tfvars')
     if os.path.exists(common_vars_path):
         with open(common_vars_path, 'r') as f:
             for line in f:
+                line = line.strip()
                 if line.startswith('project_id_prefix'):
                     project_id_prefix = line.split('=')[1].strip().strip('"').strip()
+                elif line.startswith('enable_shared_vpc'):
+                    enable_shared_vpc = line.split('=')[1].strip().strip('"').lower() == 'true'
+                elif line.startswith('enable_vpc_host_projects'):
+                    enable_vpc_host_projects = line.split('=')[1].strip().strip('"').lower() == 'true'
     mgmt_project_id = f"{project_id_prefix}-monitoring" 
 
     xlsx_path = os.path.join(os.path.dirname(__file__), '../../gcp-foundations.xlsx')
@@ -328,6 +335,12 @@ def generate_resources():
                 err = validator.validate_cidr(cidr, used_cidrs)
                 if err: errors.append(f"[shared_vpc_subnets] Row {idx}: {err}")
                 else: used_cidrs.append(ipaddress.ip_network(cidr, strict=True))
+
+    if enable_shared_vpc is True and enable_vpc_host_projects is False:
+        errors.append(
+            "[common.tfvars] enable_shared_vpc = true には enable_vpc_host_projects = true が必要です。"
+            " ホストプロジェクトが存在しないためサービスプロジェクトの接続がスキップされます。"
+        )
 
     if errors:
         print("\n❌ Configuration errors detected:")
