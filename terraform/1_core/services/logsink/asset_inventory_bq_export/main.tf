@@ -38,9 +38,9 @@ resource "google_bigquery_table" "asset_inventory_iam_policy_table" {
 resource "google_bigquery_table" "asset_inventory_iam_policy_view" {
   project    = data.terraform_remote_state.project.outputs.project_id
   dataset_id = google_bigquery_dataset.asset_inventory_dataset.dataset_id
-  
+
   # テーブル名の頭に view を意味する v_ をつけるのが一般的です
-  table_id   = "v_iam_policy"
+  table_id = "v_iam_policy"
 
   view {
     use_legacy_sql = false
