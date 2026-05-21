@@ -1,6 +1,6 @@
 # テスト実行フローガイド (Setup, Teardown & Transitions)
 
-本ドキュメントでは、`test_specification.md` に定義された各テストケース（TC-000〜TC-051）を実行する際の、テスト間の遷移、環境の準備、およびクリーンアップ手順を詳細に定義します。
+本ドキュメントでは、`test_specification.md` に定義された各テストケース（TC-000〜TC-050）を実行する際の、テスト間の遷移、環境の準備、およびクリーンアップ手順を詳細に定義します。
 
 ## 1. 全体的な指針
 
@@ -17,7 +17,8 @@ ______________________________________________________________________
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
 | (開始) | **TC-000a** | GCP組織管理者権限でログインし、組織ID、課金IDを準備する。 |
-| **TC-000a** | **TC-000b** | `common.tfvars` が生成されていること、および **`billing_account_id` が本物の課金IDになっていること**を確認。権限不足の別アカウントに切り替えて検証。 |
+| **TC-000a** | **TC-000e** | `common.tfvars` と `common.tfbackend` が生成されていることを確認後、`cd terraform/0_bootstrap && terraform output` を実行して `admin_folder_id` と `network_folder_id` が出力されることを確認。 |
+| **TC-000e** | **TC-000b** | `common.tfvars` の `billing_account_id` が本物の課金IDになっていることを確認。権限不足の別アカウントに切り替えて検証。 |
 | **TC-000b** | **TC-000c** | 元の管理者アカウントに戻る。`make install` `make generate` が完了していることを確認。 |
 | **TC-000c** | **TC-000d** | ローカルで意図的なエラーを混入させ、GitHubへPushしてPRを作成する。 |
 
@@ -29,7 +30,8 @@ ______________________________________________________________________
 | **TC-001** | **TC-002** | `resources` シートに TC-002 用の行（フォルダと子プロジェクト）を追記する。 |
 | **TC-002** | **TC-003** | `resources` シートの既存行に `budget_amount` を追記する。 |
 | **TC-003** | **TC-004** | ⚠️ **環境リセットを行わずに** `TC004_to_009_Validation_Err.xlsx` に差し替える（これ以降は `make generate` のみが走り、デプロイは行われないためリソースは影響を受けない）。 |
-| **TC-004** | **TC-005** | 不正な名称を修正し、セル内に全角スペースや改行を混入させる。 |
+| **TC-004** | **TC-004b** | `resource_name` を正常値に戻し、`owner` 列に `user@example.com`（アットマーク含む）を入力。 |
+| **TC-004b** | **TC-005** | `owner` を正常値（例: `infra-team`）に戻し、セル内に全角スペースや改行を混入させる。 |
 | **TC-005** | **TC-006** | `resources` シートに同一のリソース名（プロジェクト）を2つ記述。 |
 | **TC-006** | **TC-007** | 重複を解消し、次はフォルダとプロジェクトで同じ名前を記述。 |
 | **TC-007** | **TC-008** | 名前の重複を解消し、`parent_name` に存在しないフォルダ名を記述。 |
@@ -39,11 +41,12 @@ ______________________________________________________________________
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-009** | **TC-010** | ⚠️ **【環境の完全解体と次期テスト準備】**<br>先ほどの修正により、孤立したL4プロジェクトは自動パージされるため、手動でのディレクトリ削除やロック解除は不要になりました。<br><br>1. **正常なExcelに戻す:**<br> `cp tests/fixtures/TC001_to_003_Basic.xlsx gcp-foundations.xlsx`<br>2. **変数を再生成:**<br> `make generate`<br>3. **解体許可の設定:**<br> `common.tfvars` で `allow_resource_destruction = true` を設定。<br>4. **完全解体の実行:**<br> `make deploy`（保護解除の反映）を実行後、`make destroy ALL` を実行。<br>5. **次期テストの準備:**<br> `TC010_016_019_Network_Success.xlsx` を `gcp-foundations.xlsx` にコピー後、`common.tfvars` で `enable_shared_vpc = true` に設定。 |
+| **TC-009** | **TC-010** | ⚠️ **【環境の完全解体と次期テスト準備】**<br>💡 **TC-045 の確認ポイント**: TC-010 の `make deploy` 完了後に `cat .deploy_state` を実行し、`terraform/1_core/base/vpc-host` が `terraform/3_folders` より前の行に記録されていることを確認すれば TC-045 の検証も同時に完了する。<br>先ほどの修正により、孤立したL4プロジェクトは自動パージされるため、手動でのディレクトリ削除やロック解除は不要になりました。<br><br>1. **正常なExcelに戻す:**<br> `cp tests/fixtures/TC001_to_003_Basic.xlsx gcp-foundations.xlsx`<br>2. **変数を再生成:**<br> `make generate`<br>3. **解体許可の設定:**<br> `common.tfvars` で `allow_resource_destruction = true` を設定。<br>4. **完全解体の実行:**<br> `make deploy`（保護解除の反映）を実行後、`make destroy ALL` を実行。<br>5. **次期テストの準備:**<br> `TC010_016_019_Network_Success.xlsx` を `gcp-foundations.xlsx` にコピー後、`common.tfvars` で `enable_shared_vpc = true` に設定。 |
 | **TC-010** | **TC-011** | ⚠️ デプロイは行わないため、**リソースは残したまま** `TC011_012_014_015_018_Network_Err.xlsx` に差し替え（重複CIDRの確認）。 |
 | **TC-011** | **TC-012** | 重複CIDRを解消し、存在しないサブネット名を `resources` シートに入力。 |
 | **TC-012** | **TC-013** | `common.tfvars` の `enable_shared_vpc` を `false` に変更。 |
-| **TC-013** | **TC-014** | `shared_vpc_subnets` シートに不正なIP形式（300/24等）を入力。 |
+| **TC-013** | **TC-013b** | `common.tfvars` で `enable_shared_vpc=true`、`enable_vpc_host_projects=false` に設定（矛盾フラグの組み合わせ）。 |
+| **TC-013b** | **TC-014** | `common.tfvars` を `enable_vpc_host_projects=true` に修正して矛盾を解消。`shared_vpc_subnets` シートに不正なIP形式（300/24等）を入力。 |
 | **TC-014** | **TC-015** | IP形式を修正し、ホストビットが立ったIP（10.0.1.5/24等）を入力。 |
 | **TC-015** | **TC-016** | ネットワークエラーExcelを破棄し、再び `TC010...Success.xlsx` に戻して `prod` / `dev` 両方のサブネット定義がある状態にする。 |
 | **TC-016** | **TC-017** | `common.tfvars` で `enable_vpc_host_projects = false` に変更。 |
@@ -55,7 +58,8 @@ ______________________________________________________________________
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
 | **TC-019** | **TC-020** | ⚠️ **【重要】** `make destroy` でPhase 2のリソースを完全に更地にする。（事前に `make deploy` を実行してロック解除を反映させること）。<br>その後、`TC020_to_022_026_Governance_Success.xlsx` に差し替え。`common.tfvars` で `enable_vpc_sc = true` に設定。 |
-| **TC-020** | **TC-021** | `org_policies` シートにデータを追記。`common.tfvars` の `enable_org_policies = true` を確認。 |
+| **TC-020** | **TC-020b** | **GCPリソースは残したまま**（デプロイ不要）。`vpc_sc_perimeters` シートの `dry_run` 列を `TRUE` に変更し `make generate` のみ実行。 |
+| **TC-020b** | **TC-021** | `dry_run` 列を空欄に戻して `make generate`。`org_policies` シートにデータを追記。`common.tfvars` の `enable_org_policies = true` を確認。 |
 | **TC-021** | **TC-022** | `tag_definitions` と `resources` の `org_tags` を追記。`common.tfvars` の `enable_tags = true` を確認。 |
 | **TC-022** | **TC-023** | ⚠️ リソースは残したまま、`TC023_024_025_027_028_Governance_Err.xlsx` に差し替え。 |
 | **TC-023** | **TC-024** | タグ値を修正し、`resources` シートの `vpc_sc` 列に未定義の境界名を入力。 |
@@ -80,21 +84,25 @@ ______________________________________________________________________
 | **TC-036** | **TC-037** | `make destroy ALL` を実行（管理プロジェクトの器ごと削除）。 |
 | **TC-037** | **TC-038** | `make deploy` で再構築後、コンソールで手動変更（タグ削除等）を行う。 |
 | **TC-038** | **TC-039** | `make clean` を実行。 |
+| **TC-039** | **TC-039b** | SSoTに存在しないプロジェクト名のディレクトリ（例: `terraform/4_projects/orphan-proj/`）を手動で作成し、中に `terraform.tfvars` は置かない。別途 `terraform.tfvars` ありのディレクトリも作成しておくと警告表示もまとめて確認できる。 |
 
 ### Phase 5: ログ・監視
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-039** | **TC-040** | ⚠️ **【重要】** `make destroy ALL` でPhase 4のリソースを完全に更地にする。（事前に `make deploy` を実行すること）。<br>その後、`TC040_to_041_Logging_Success.xlsx` に差し替え。 |
-| **TC-040** | **TC-041** | `allow_resource_destruction = true` を確認。`make destroy` 実行時のデータ削除挙動を確認。 |
+| **TC-039b** | **TC-040** | ⚠️ **【重要】** Phase 4 のリソースが残っていれば `make deploy` → `make destroy ALL` で更地にする。<br>`TC040_to_041_Logging_Success.xlsx` を `gcp-foundations.xlsx` にコピー後、**`log_sinks` シートの `destination_parent` をハイフン入り（例: `audit-logs`）に書き換えた「エラー版」にする**。この状態で `make generate` を実行してバリデーションエラーを確認。 |
+| **TC-040** | **TC-041** | **`destination_parent` のハイフンをアンダースコアに修正**（例: `audit_logs`）し、`make generate` → `make deploy` でログ集約環境を構築。ある程度ログが蓄積するまで待ってから TC-041 を実施。 |
 | **TC-041** | **TC-042** | `TC042_to_043_Logging_Err.xlsx` に差し替え（アラート定義重複）。 |
-| **TC-042** | **TC-043** | `alert_documentation` 列の値を削除して空にする。 |
+| **TC-042** | **TC-043** | `alert_definitions` シートの `alert_documentation` 列の値を削除して**空にする**。`make generate` を実行してエラーが出ることを確認（以前のような「自動補完」はされない）。 |
+| **TC-043** | **TC-046** | `alert_documentation` 列を正常な値に戻し、`make generate` → `make deploy` で環境を構築。BigQuery の `asset_inventory` データセットに `v_iam_policy` ビューが作成されていることを確認。 |
 
-### Phase 6: 納品
+### Phase 6: ツールと納品
 
 | 現在のテスト | 次のテスト | 遷移作業・準備 |
 | :--- | :--- | :--- |
-| **TC-043** | **TC-051** | 全ての構築・検証が完了した状態で、`make delivery` を実行。 |
+| **TC-046** | **TC-047** | GCP リソースはそのまま維持（TC-047 は `gcp-foundations.xlsx` の生成確認のみ）。テスト実行のため `gcp-foundations.xlsx` を退避（`mv gcp-foundations.xlsx gcp-foundations.xlsx.bak`）する。 |
+| **TC-047** | **TC-048** | 退避したファイルを戻す（`mv gcp-foundations.xlsx.bak gcp-foundations.xlsx`）。TC-048 は GCP リソース不要。`common.tfvars` の `project_id_prefix` が本番用の値（サフィックスなし）になっていることを事前に確認する。 |
+| **TC-048** | **TC-050** | `make test-mode` が OFF になっていることを確認（`.test_mode_env` が存在しないこと）。全ての構築・検証が完了した最終状態で `make delivery` を実行。 |
 
 ______________________________________________________________________
 
