@@ -22,3 +22,20 @@ resource "terraform_data" "variable_validation" {
     var.billing_account_id
   ]
 }
+
+# --------------------------------------------------------------------------------
+# 管理基盤フォルダの作成
+# 管理系プロジェクト（logsink, monitoring, tfstate）と
+# ネットワーク基盤プロジェクト（vpc-host）を整理するための専用フォルダ。
+# 後続レイヤーは data.terraform_remote_state.bootstrap でこのIDを参照する。
+# --------------------------------------------------------------------------------
+
+resource "google_folder" "admin" {
+  display_name = "admin"
+  parent       = "organizations/${data.google_organization.org.org_id}"
+}
+
+resource "google_folder" "network" {
+  display_name = "network"
+  parent       = "organizations/${data.google_organization.org.org_id}"
+}

@@ -54,28 +54,39 @@ flowchart LR
 ```mermaid
 graph TD
     ORG[GCP Organization]
-    
-    subgraph L1_Core [Layer 1: Core Services]
-        CP[Common Projects<br/>logsink, monitoring, vpc-host]
+
+    subgraph L0_Bootstrap [Layer 0: Bootstrap]
+        P_TFSTATE[tfstate Project<br/>※組織直下に維持]
+        F_ADMIN[admin Folder]
+        F_NETWORK[network Folder]
     end
-    
-    subgraph L3_Folders [Layer 3: Folders]
+
+    subgraph L1_Core [Layer 1: Core Services]
+        CP_ADMIN[Management Projects<br/>logsink, monitoring]
+        CP_NET[Network Projects<br/>vpc-prod, vpc-dev]
+    end
+
+    subgraph L3_Folders [Layer 3: Business Folders]
         F_SH[Shared Folder]
         F_PRD[Production Folder]
         F_STG[Staging Folder]
         F_DEV[Development Folder]
     end
-    
+
     subgraph L4_Projects [Layer 4: Projects]
         P_APP[Application Projects]
     end
 
+    ORG --> P_TFSTATE
+    ORG --> F_ADMIN
+    ORG --> F_NETWORK
     ORG --> F_SH
     ORG --> F_PRD
     ORG --> F_STG
     ORG --> F_DEV
-    
-    F_SH --> CP
+
+    F_ADMIN --> CP_ADMIN
+    F_NETWORK --> CP_NET
     F_PRD --> P_APP
     F_STG --> P_APP
     F_DEV --> P_APP
@@ -83,17 +94,19 @@ graph TD
 
 ### レイヤー構造 (Deployment Layers)
 
-...
 | Layer | 名称 | 役割 |
 | :--- | :--- | :--- |
-| **0** | **Bootstrap** | Terraform 実行基盤 (tfstate バケット等) の作成 |
-| **1a** | **Core Services (logsink/monitoring)** | ログ集約・統合監視プロジェクトの作成とサービス設定 |
+| **0** | **Bootstrap** | Terraform 実行基盤 (tfstate バケット、SA、管理基盤フォルダ `admin`/`network`) の作成 |
+| **1** | **Core Services** | 管理プロジェクト（logsink, monitoring）とネットワーク基盤プロジェクト（vpc-host）の作成・サービス設定 |
 | **2** | **Organization** | 組織ポリシー、組織 IAM、VPC-SC 境界・アクセスレベル定義 |
-| **3** | **Folders** | 環境分離のためのフォルダ構造構築 |
-| **1b** | **Core Services (vpc-host)** | Shared VPC ホストプロジェクト・サブネット作成 ※ |
+| **3** | **Folders** | 環境分離のためのビジネスフォルダ構造構築 |
 | **4** | **Projects** | アプリケーション用プロジェクトの展開 |
 
-> **※ vpc-host のデプロイ順序について**: `vpc-host` は論理的には Layer 1 (Core Services) に属しますが、実際のデプロイ (`make deploy`) では **Layer 3 (Folders) の後** に適用されます。VPC ホストプロジェクトをフォルダ内に配置するには、フォルダが先に存在している必要があるためです。`deploy_all.sh` の実行順序は `1_core/base/logsink → ... → 2_organization → 3_folders → 1_core/base/vpc-host → 1_core/services/vpc-host → 4_projects/*` となっています。
+> **管理基盤フォルダの役割**: Layer 0 で `admin` と `network` という管理基盤フォルダを先行作成することで、Layer 1 の各プロジェクト（logsink, monitoring, vpc-host）を組織直下にフラットに配置せず、用途別フォルダに整理して配置します。これにより、ビジネス用フォルダ（Layer 3 で Excel から動的生成）とは独立した管理体系が実現できます。
+>
+> **tfstate プロジェクトを組織直下に残す理由**: `*-tfstate-xxxx` は Terraform の状態を保持する Tier 0 メタリソースのため、`admin` フォルダには含めず**組織直下に維持**します。Terraform SA は自身が住むプロジェクトを移動・削除する権限を持たない設計であり、組織直下に置くことで誤削除耐性と緊急時の独立性（全レイヤーが壊れても tfstate だけは残る）を確保しています。詳細は [todo.md](todo.md) を参照。
+>
+> **レイヤー間のID受け渡し**: Layer 0 のフォルダIDは `data.terraform_remote_state.bootstrap` 経由で後続レイヤーから参照されます。動的なリソースIDを `common.tfvars` 等の静的変数に書き戻すことは行いません（SSoT + State 分離の原則）。
 
 ______________________________________________________________________
 
