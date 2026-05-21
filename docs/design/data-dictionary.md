@@ -63,3 +63,29 @@ ______________________________________________________________________
 | `enable_vpc_sc` | VPC-SC グローバル | Boolean | 全体で VPC-SC 機能を使うか。 |
 | `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |
 | `billing_account_id` | 請求先アカウントID | String | `make setup` 時に自動設定されます。予算アラート等の紐付けに使用。 |
+
+______________________________________________________________________
+
+## 5. GCP プロジェクトラベル (Labels)
+
+`make generate` によって生成される各プロジェクトには、以下の3つのラベル（**キーと値の両方**）が自動付与されます。これらは CI 上で OPA（Open Policy Agent）によって強制されており、欠如している場合はデプロイがブロックされます。
+
+| ラベルキー | 値の内容 | 値の生成元 |
+| :--- | :--- | :--- |
+| `env` | `prod` / `stag` / `dev` のいずれか | `resource_name` のプレフィックスから自動推定。`prd-` → `prod`、`stg-` → `stag`、それ以外 → `dev` |
+| `owner` | 所有者を示す識別子 | Excel `resources` シートの `owner` 列（`^[a-z0-9_-]{1,63}$` 形式） |
+| `app` | アプリ名 | Excel `resources` シートの `resource_name` 列 |
+
+### OPA による強制の仕組み
+
+ポリシーファイルは `policies/require_labels.rego` に定義されています。CI の PR チェック時に以下の流れで実行されます。
+
+```
+1. terraform plan -out=tfplan
+2. terraform show -json tfplan > plan.json
+3. opa eval -d policies/ -i plan.json "data.terraform.validation.deny"
+   → deny セットが空   → デプロイ続行
+   → deny セットに値あり → CI 失敗・マージブロック
+```
+
+OPA は `google_project` リソースの作成・更新時に3つのキーが存在するかを検査します。削除アクションはチェック対象外です。値の内容（例: `prod` が正しいかどうか）は現時点では検査しません。
