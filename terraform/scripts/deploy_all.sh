@@ -58,7 +58,7 @@ uv run "${ROOT_DIR}/terraform/scripts/generate_resources.py"
 # ------------------------------------------------------------------------------
 # ★追加: 安全装置 (Safety Check for Destructive Changes)
 # ------------------------------------------------------------------------------
-ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
+ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' "')
 
 if [[ "$ALLOW_DESTROY" == "true" && "$PLAN_ONLY" == "false" && "$TF_IN_AUTOMATION" != "true" ]]; then
   echo "⚠️ WARNING: allow_resource_destruction is set to TRUE."
