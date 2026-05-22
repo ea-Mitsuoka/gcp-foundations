@@ -64,7 +64,14 @@ ______________________________________________________________________
   - `gcp-developers@<domain>`: 開発者（アプリケーションの設計、コーディング、テスト担当）
   - `gcp-devops@<domain>`: DevOps 従事者（CI/CD パイプライン、システム プロビジョニング管理）
 
-- [ ] **権限付与**: 構築者に対して、一時的に組織レベルの **「組織管理者」** および「請求先アカウント管理者」権限が付与されていること。
+- [ ] **権限付与**: 構築者のアカウントに対して、一時的に組織レベルで以下の 4 つのロールが付与されていること。
+
+  | 表示名 | ロール ID |
+  | :--- | :--- |
+  | 組織管理者 | `roles/resourcemanager.organizationAdmin` |
+  | フォルダ管理者 | `roles/resourcemanager.folderAdmin` |
+  | プロジェクト作成者 | `roles/resourcemanager.projectCreator` |
+  | 請求先アカウント管理者 | `roles/billing.admin` |
 
 ### 2.3 環境・認証
 

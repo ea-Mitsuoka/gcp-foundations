@@ -70,7 +70,14 @@ ______________________________________________________________________
 
 ## 2. GCP 認証情報のセットアップ
 
-開発を開始する前に、対象となるGCP組織に対する適切な権限（組織管理者など）を持つアカウントで認証を行う必要があります。
+開発を開始する前に、対象となる GCP 組織に対して適切な権限を持つアカウントで認証を行う必要があります。`make setup` を実行する場合は、組織レベルで以下の 4 つのロールが必要です。
+
+| 表示名 | ロール ID |
+| :--- | :--- |
+| 組織管理者 | `roles/resourcemanager.organizationAdmin` |
+| フォルダ管理者 | `roles/resourcemanager.folderAdmin` |
+| プロジェクト作成者 | `roles/resourcemanager.projectCreator` |
+| 請求先アカウント管理者 | `roles/billing.admin` |
 
 ```bash
 # gcloud CLIのログイン
