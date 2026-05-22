@@ -30,7 +30,6 @@ __pycache__/
 
 # Other files
 memo*
-TODO.md
 .DS_Store
 .catignore
 list-files-for-ai.sh
