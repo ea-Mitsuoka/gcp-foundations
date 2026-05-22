@@ -22,7 +22,7 @@ done
 TEST_MODE_ACTIVE=${SKIP_MANAGEMENT_PROJECTS:-false}
 
 # 破壊許可フラグの確認
-ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | tr -d ' "')
+ALLOW_DESTROY=$(grep "allow_resource_destruction" "${ROOT_DIR}/terraform/common.tfvars" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' "')
 
 if [ "$ALLOW_DESTROY" != "true" ]; then
   echo "❌ ERROR: allow_resource_destruction is NOT set to true in common.tfvars."
