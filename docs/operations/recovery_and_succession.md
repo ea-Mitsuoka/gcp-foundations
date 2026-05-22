@@ -11,6 +11,15 @@ ______________________________________________________________________
 リポジトリ直下および `terraform/` 配下で不足しているファイルを特定し、再作成します。
 
 > **💡 最も簡単な方法**: `make setup` を再実行してください。スクリプトは冪等に設計されており、既存の GCP リソース（tfstate プロジェクト、GCS バケット、サービスアカウント等）を再利用しながら、`domain.env`・`common.tfbackend`・`common.tfvars`・`terraform.tfvars` を自動生成します。
+>
+> **⚠️ 実行前の権限確認**: `make setup` には組織レベルで以下の 4 つのロールが必要です。
+>
+> | 表示名 | ロール ID |
+> | :--- | :--- |
+> | 組織管理者 | `roles/resourcemanager.organizationAdmin` |
+> | フォルダ管理者 | `roles/resourcemanager.folderAdmin` |
+> | プロジェクト作成者 | `roles/resourcemanager.projectCreator` |
+> | 請求先アカウント管理者 | `roles/billing.admin` |
 
 以下は `make setup` が使えない場合（既存インフラの詳細が不明で安全に再実行できないケースなど）の手動復元手順です。
 

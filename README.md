@@ -157,7 +157,16 @@ ______________________________________________________________________
   - `gcp-developers@<顧客ドメイン>`
   - `gcp-devops@<顧客ドメイン>`
 
-- 顧客のGCP組織に対する**組織管理者**などの強い権限を持つアカウントで、`gcloud`にログイン済みであること。
+- `make setup` を実行するアカウントに、組織レベルで以下の 4 つのロールが付与されていること。
+
+  | 表示名 | ロール ID |
+  | :--- | :--- |
+  | 組織管理者 | `roles/resourcemanager.organizationAdmin` |
+  | フォルダ管理者 | `roles/resourcemanager.folderAdmin` |
+  | プロジェクト作成者 | `roles/resourcemanager.projectCreator` |
+  | 請求先アカウント管理者 | `roles/billing.admin` |
+
+  上記のロールを付与したアカウントで `gcloud` にログイン済みであること。
 
   ```bash
   gcloud auth login
