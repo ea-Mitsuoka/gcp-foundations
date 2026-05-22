@@ -295,7 +295,7 @@ def generate_resources():
         for row in ws.iter_rows(min_row=2, values_only=True):
             if any(row): notifications.append(dict(zip(headers, row)))
 
-    if notifications and alert_defs:
+    if alert_defs:
         alert_errs = validator.validate_alerts(notifications, alert_defs)
         if alert_errs: errors.extend(alert_errs)
         
