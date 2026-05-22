@@ -189,7 +189,7 @@ if ! gcloud storage buckets describe "gs://${GCS_BUCKET_TFSTATE}" --project="${M
     gcloud storage buckets create "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --location="${GCP_REGION}" --uniform-bucket-level-access
     
     print_info "Waiting for GCS API to propagate..."
-    MAX_RETRIES=5
+    MAX_RETRIES=12
     RETRY_COUNT=0
     until gcloud storage buckets update "gs://${GCS_BUCKET_TFSTATE}" --project="${MGMT_PROJECT_ID}" --versioning >/dev/null 2>&1; do
         RETRY_COUNT=$((RETRY_COUNT+1))
@@ -214,7 +214,7 @@ fi
 print_info "Syncing IAM permissions..."
 if [ "$NEW_SA_CREATED" = true ]; then
     print_info "Waiting for Service Account propagation to Organization IAM..."
-    MAX_RETRIES=6
+    MAX_RETRIES=12
     RETRY_COUNT=0
     while ! gcloud organizations add-iam-policy-binding "${ORGANIZATION_ID}" --member="serviceAccount:${SA_EMAIL}" --role="roles/resourcemanager.organizationViewer" --quiet >/dev/null 2>&1; do
       RETRY_COUNT=$((RETRY_COUNT+1))
