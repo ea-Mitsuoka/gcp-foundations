@@ -102,9 +102,9 @@ locals {
 }
 
 resource "google_organization_iam_member" "group_bindings" {
-  for_each = {
+  for_each = var.enable_group_iam ? {
     for member in local.org_iam_members : "${member.group}-${member.role}" => member
-  }
+  } : {}
 
   org_id = data.google_organization.org.org_id
   role   = each.value.role

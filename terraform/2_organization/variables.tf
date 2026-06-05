@@ -38,3 +38,9 @@ variable "enable_simplified_admin_groups" {
   default     = false
 }
 
+variable "enable_group_iam" {
+  type        = bool
+  description = "Googleグループへの組織レベルIAM付与を有効にするかどうか。falseの場合、グループへのIAMバインディングをスキップします。"
+  default     = true
+}
+
