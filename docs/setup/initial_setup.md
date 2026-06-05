@@ -120,12 +120,13 @@ ______________________________________________________________________
 | `organization_domain` | 管理対象のドメイン。 | 誤りがあれば修正。 |
 | `billing_account_id` | 請求先アカウント ID。 | `make setup` 時に指定した値が自動設定されます。変更したい場合のみ修正してください。 |
 | `gcp_region` | リソースを作成するGCPのデフォルトリージョン。 | `make setup` 時に指定。地理的な要件に応じて変更。 |
-| `project_id_prefix` | 各プロジェクトIDの接頭辞として使われる文字列。 | `make setup` 時に指定。変更すると全プロジェクトのIDが変わるため、原則として初期設定から変更しない。 |
+| `project_id_prefix` | 各プロジェクトIDの接頭辞として使われる文字列（**2〜14文字、先頭は英字、末尾ハイフン不可**）。 | `make setup` 時に指定。変更すると全プロジェクトのIDが変わるため、原則として初期設定から変更しない。 |
 | `enable_shared_vpc` | 組織全体で Shared VPC を利用するか。 | ネットワーク設計の変更時に調整。 |
 | `enable_vpc_sc` | VPC Service Controlsを有効化し、サービス境界を構成するか。 | セキュリティ要件の変更時に調整。 |
 | `enable_org_policies` | 組織ポリシーを有効化するか。 | **移行作業中は `false`、ガードレール適用時に `true`。** |
 | `enable_tags` | 組織レベルのリソースタグ（Key-Value）を有効化するか。 | ガバナンス要件の変更時に調整。 |
 | `enable_simplified_admin_groups` | IAM管理グループを2つ（組織/請求）に集約するか。 | `make setup` 時に指定。変更は推奨されない。 |
+| `enable_group_iam` | Googleグループへの組織レベルIAM付与を有効にするか。 | Googleグループが未作成の場合は `false` に設定し、グループ作成後に `true` に変更して `make deploy` を再実行する。 |
 | `allow_resource_destruction` | `terraform destroy` を許可するか。 | **構築・検証フェーズは `true` にしておくことを強く推奨**します。構成が完全に固まった引き渡し前に `false` に変更してロックを掛けます。 |
 
 #### 📄 common.tfbackend の役割

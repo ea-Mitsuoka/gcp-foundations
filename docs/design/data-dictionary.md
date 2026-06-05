@@ -58,7 +58,8 @@ ______________________________________________________________________
 | `gcs_backend_bucket` | tfstateバケット | String | 状態ファイルを保存する GCS バケット。 |
 | `organization_domain`| 組織ドメイン | String | 顧客のプライマリドメイン名。 |
 | `gcp_region` | 基準リージョン | String | インフラ全体のデフォルトリージョン。 |
-| `project_id_prefix` | プロジェクト接頭辞 | String | ドメインから算出された安全な接頭辞。 |
+| `project_id_prefix` | プロジェクト接頭辞 | String | ドメインから算出された安全な接頭辞。**2〜14文字、先頭は英字、末尾ハイフン不可**（例: `ea`, `myco`）。 |
+| `enable_group_iam` | グループIAM有効化 | Boolean | Googleグループへの組織レベルIAM付与を行うか。グループ未作成時は `false` に設定し、グループ作成後に `true` へ変更して再デプロイする。 |
 | `enable_shared_vpc` | Shared VPC グローバル | Boolean | 全体で Shared VPC 機能を使うか。 |
 | `enable_vpc_sc` | VPC-SC グローバル | Boolean | 全体で VPC-SC 機能を使うか。 |
 | `enable_org_policies`| 組織ポリシー グローバル| Boolean | 全体で組織ポリシーを適用するか。 |

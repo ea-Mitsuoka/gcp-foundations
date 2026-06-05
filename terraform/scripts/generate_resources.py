@@ -626,7 +626,7 @@ labels = {{
         "terraform_service_account_email", "gcs_backend_bucket", "organization_domain",
         "gcp_region", "project_id_prefix", "enable_vpc_host_projects",
         "enable_shared_vpc", "enable_vpc_sc", "enable_org_policies", "enable_simplified_admin_groups",
-        "allow_resource_destruction", "enable_tags", "billing_account_id"
+        "enable_group_iam", "allow_resource_destruction", "enable_tags", "billing_account_id"
     ]
     for root, dirs, files in os.walk(os.path.join(os.path.dirname(__file__), '../')):
         if any(f.endswith('.tf') for f in files) and '.terraform' not in root and 'modules' not in root:

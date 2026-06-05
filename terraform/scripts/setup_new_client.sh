@@ -100,10 +100,10 @@ fi
 while true; do
     read -r -p "Enter Project ID Prefix for new resources (logsink, etc.) [Default: $SUGGESTED_PREFIX]: " PROJECT_ID_PREFIX
     PROJECT_ID_PREFIX=${PROJECT_ID_PREFIX:-$SUGGESTED_PREFIX}
-    if [[ "$PROJECT_ID_PREFIX" =~ ^[a-z][a-z0-9-]{2,13}$ ]] && [[ ! "$PROJECT_ID_PREFIX" =~ -$ ]]; then
+    if [[ "$PROJECT_ID_PREFIX" =~ ^[a-z][a-z0-9-]{1,13}$ ]] && [[ ! "$PROJECT_ID_PREFIX" =~ -$ ]]; then
         break
     else
-        print_error "Invalid prefix (3-14 chars, no trailing hyphen)."
+        print_error "Invalid prefix (2-14 chars, no trailing hyphen)."
     fi
 done
 
@@ -143,6 +143,7 @@ ENABLE_VPC_SC=$(get_bool_input "Enable VPC Service Controls?" "false")
 ENABLE_ORG_POLICIES=$(get_bool_input "Enable Org Policies?" "false")
 ENABLE_TAGS=$(get_bool_input "Enable Org Tags?" "false")
 ENABLE_SIMPLIFIED_GROUPS=$(get_bool_input "Enable Simplified Admin Groups?" "false")
+ENABLE_GROUP_IAM=$(get_bool_input "Enable Group IAM bindings? (false if Google Groups not yet created)" "true")
 
 # --- Step 6: Confirmation & Execution ---
 echo -e "\n--------------------------------------------------"
@@ -277,6 +278,7 @@ enable_vpc_sc                   = ${ENABLE_VPC_SC}
 enable_org_policies             = ${ENABLE_ORG_POLICIES}
 enable_tags                     = ${ENABLE_TAGS}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
+enable_group_iam                = ${ENABLE_GROUP_IAM}
 allow_resource_destruction      = true  # 構築・検証フェーズは true を推奨。本番化後は false に変更してください。
 EOF
 
