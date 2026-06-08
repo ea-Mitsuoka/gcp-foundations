@@ -58,6 +58,7 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSoT）に基づく作成・運用・管理
+1. **[組織なしプロジェクトの組織移管 リスク確認 & Terraform 取り込み](docs/operations/project_migration_risk_check.md)**: 既存スタンドアロンプロジェクトを組織配下へ移管する際のリスク分析と Terraform import 手順
 1. **[トラブルシューティング・ガイド](docs/operations/troubleshooting.md)**: 構築・運用中によくある問題と解決策
 1. **[環境の一括解体・クリーンアップガイド](docs/operations/environment_destruction.md)**: make destroy の仕様とオプション解説
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理
@@ -83,7 +84,8 @@ make lint
 
 ```bash
 make help       # 利用可能な全コマンドの表示
-make setup      # 初期構築（管理用プロジェクト・tfstateバケットの作成）
+make setup      # 初期構築（管理用プロジェクト・tfstateバケットの作成・Layer 0 適用）
+make check      # GCP権限・課金・API有効化のプリフライト確認
 make generate   # Excel(SSoT)からTerraform変数や構成を自動生成
 make lint       # Terraform, ShellscriptのLint・フォーマット実行
 make opa        # Regoポリシーの構文チェック
@@ -189,17 +191,9 @@ ______________________________________________________________________
    make setup    # シードリソース（管理プロジェクト・バケット）の作成
    ```
 
-   `make setup` スクリプトが対話形式で必要な情報を質問し、tfstate管理基盤の構築を自動で行います。
+   `make setup` スクリプトが対話形式で必要な情報を質問し、tfstate管理基盤の構築（管理プロジェクト・バケット・サービスアカウント・IAM）に加え、**Layer 0 (`0_bootstrap`) の `terraform apply` までを自動で実行**します。手動での `0_bootstrap` の適用は不要です。
 
-1. **`0_bootstrap` を適用し、Terraform管理を開始します。**
-
-   ```bash
-   cd terraform/0_bootstrap
-   terraform init -backend-config="../common.tfbackend"
-   terraform apply -var-file="../common.tfvars"
-   ```
-
-これ以降の各レイヤーの展開については、**[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)** を参照してください。
+これ以降の各レイヤー（L1〜L4）の展開については、**[環境構築の全体手順 (セッション用)](docs/setup/initial_setup.md)** を参照してください。
 
 ## 🤝 コントリビューションとセキュリティ
 
