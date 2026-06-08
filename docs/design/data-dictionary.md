@@ -33,6 +33,8 @@ ______________________________________________________________________
 | `central_monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
 | `central_logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
 
+> **💡 `shared_vpc_env`（システム自動生成）**: `shared_vpc` を指定したプロジェクトには、接続先の Shared VPC ホストを示す `shared_vpc_env` が `terraform.tfvars` に自動生成されます。判定ロジックは「`resource_name` が `dev-` で始まる → `dev`（開発用ホストVPC）／それ以外で `shared_vpc` 指定あり → `prod`（本番用ホストVPC）／`shared_vpc` 未指定 → `none`」です。Shared VPC ホストプロジェクトは **`prod` / `dev` の2つのみ**作成されるため、`stg-`（staging）のプロジェクトは `prod` 側のホストVPCに接続されます（`env` ラベルが `stag` でも接続先ホストVPCは `prod` になる点に注意）。
+
 ### その他の詳細設定シート
 
 - **`shared_vpc_subnets`**: サブネット名、IP範囲、リージョンの定義。
