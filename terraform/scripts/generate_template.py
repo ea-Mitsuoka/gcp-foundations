@@ -51,7 +51,7 @@ def create_template():
             "headers": ["access_level_name", "ip_subnetworks", "members"]
         },
         "org_policies": {
-            "headers": ["target_name", "policy_id", "enforce", "allow_list"],
+            "headers": ["target_name", "policy_id", "enforce", "allow_list", "apply_mode"],
             "validations": [
                 {
                     "cols": "B",
@@ -64,7 +64,8 @@ def create_template():
                         'sql.managed.restrictPublicIp"'
                     )
                 },
-                {"cols": "C", "formula": '"TRUE,FALSE"'}
+                {"cols": "C", "formula": '"TRUE,FALSE"'},
+                {"cols": "E", "formula": '"live,dryrun,both"'}
             ]
         },
         "alert_definitions": {

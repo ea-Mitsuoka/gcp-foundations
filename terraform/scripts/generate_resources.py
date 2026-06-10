@@ -130,10 +130,15 @@ class ResourceValidator:
     def validate_org_policies(org_policies, folders, projects):
         errors = []
         valid_targets = {'organization_id'} | folders | projects
+        valid_modes = {'live', 'dryrun', 'both'}
         for idx, p in enumerate(org_policies, start=2):
             target = str(p.get('target_name') or '').strip()
             if target and target not in valid_targets:
                 errors.append(f"[org_policies] Row {idx}: Target '{target}' is not defined as a folder or project.")
+            # apply_mode: live(spec のみ) / dryrun(dry_run_spec のみ) / both(両方)。空欄は live 扱い（後方互換）。
+            mode = str(p.get('apply_mode') or '').strip().lower()
+            if mode and mode not in valid_modes:
+                errors.append(f"[org_policies] Row {idx}: apply_mode '{mode}' は不正です。'live' / 'dryrun' / 'both' のいずれか、または空欄（=live）を指定してください。")
         return errors
 
     @staticmethod
@@ -209,7 +214,7 @@ def generate_resources():
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services", "dry_run"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
         "shared_vpc_subnets": ["host_project_env", "subnet_name", "region", "ip_cidr_range"],
-        "org_policies": ["target_name", "policy_id", "enforce", "allow_list"],
+        "org_policies": ["target_name", "policy_id", "enforce", "allow_list", "apply_mode"],
         "notifications": ["alert_name", "user_email", "receive_alerts"],
         "alert_definitions": ["alert_name", "alert_display_name", "metric_filter", "alert_documentation"],
         "log_sinks": ["log_type", "filter", "destination_type", "destination_parent", "retention_days"]
@@ -550,20 +555,32 @@ def generate_resources():
 
             policy_id = str(p.get('policy_id') or '').strip()
             res_name = to_snake_case(f"{target_name}_{policy_id}")
-            
+
+            # ルール内容（ブール型 enforce / リスト型 allow_list）を組み立て、spec と dry_run_spec で共用する
+            if is_true(p.get('enforce')):
+                rules_block = '    rules {\n      enforce = "TRUE"\n    }\n'
+            elif str(p.get('enforce')).strip().lower() == 'false':
+                rules_block = '    rules {\n      enforce = "FALSE"\n    }\n'
+            else:
+                values = [v.strip() for v in str(p.get('allow_list') or '').split(',') if v.strip()]
+                rules_block = f'    rules {{\n      values {{\n        allowed_values = {json.dumps(values)}\n      }}\n    }}\n'
+
+            # apply_mode: live(本番=spec のみ) / dryrun(試行=dry_run_spec のみ) / both(両方を併記)。
+            # 空欄・不正値は live にフォールバック（後方互換）。google_org_policy_policy は
+            # 1リソース内に spec と dry_run_spec を同居できるため、リソースは1つにする（name 衝突を避ける）。
+            apply_mode = str(p.get('apply_mode') or 'live').strip().lower()
+            if apply_mode not in ('live', 'dryrun', 'both'):
+                apply_mode = 'live'
+
             tf_block = f'resource "google_org_policy_policy" "{res_name}" {{\n'
             tf_block += f'  count  = var.enable_org_policies ? 1 : 0\n'
             tf_block += f'  name   = "{parent_resource}/policies/{policy_id}"\n'
             tf_block += f'  parent = "{parent_resource}"\n'
-            tf_block += f'  spec {{\n'
-            if is_true(p.get('enforce')):
-                tf_block += f'    rules {{\n      enforce = "TRUE"\n    }}\n'
-            elif str(p.get('enforce')).strip().lower() == 'false':
-                 tf_block += f'    rules {{\n      enforce = "FALSE"\n    }}\n'
-            else:
-                values = [v.strip() for v in str(p.get('allow_list') or '').split(',') if v.strip()]
-                tf_block += f'    rules {{\n      values {{\n        allowed_values = {json.dumps(values)}\n      }}\n    }}\n'
-            tf_block += f'  }}\n}}\n'
+            if apply_mode in ('live', 'both'):
+                tf_block += f'  spec {{\n{rules_block}  }}\n'
+            if apply_mode in ('dryrun', 'both'):
+                tf_block += f'  dry_run_spec {{\n{rules_block}  }}\n'
+            tf_block += f'}}\n'
             org_policy_files[tf_file_path].append(tf_block)
 
         for path, blocks in org_policy_files.items():
