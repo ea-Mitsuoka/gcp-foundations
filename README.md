@@ -58,7 +58,7 @@ make lint
 日々のリソース作成や更新、引き渡しを行う際のマニュアルです。
 
 1. **[プロジェクトのライフサイクル管理](docs/operations/project_lifecycle.md)**: スプレッドシート（SSoT）に基づく作成・運用・管理
-1. **[組織なしプロジェクトの組織移管 リスク確認 & Terraform 取り込み](docs/operations/project_migration_risk_check.md)**: 既存スタンドアロンプロジェクトを組織配下へ移管する際のリスク分析と Terraform import 手順
+1. **[組織なしプロジェクトの組織移管 リスク確認 & Terraform 取り込み](docs/migration/project_migration_risk_check.md)**: 既存スタンドアロンプロジェクトを組織配下へ移管する際のリスク分析と Terraform import 手順
 1. **[トラブルシューティング・ガイド](docs/operations/troubleshooting.md)**: 構築・運用中によくある問題と解決策
 1. **[環境の一括解体・クリーンアップガイド](docs/operations/environment_destruction.md)**: make destroy の仕様とオプション解説
 1. **[フォルダの作成手順](docs/operations/folder_creation.md)**: Terraformによるフォルダ階層の管理

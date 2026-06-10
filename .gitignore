@@ -47,3 +47,9 @@ gcp_log_sink_config.csv
 
 # Test mode environment variable file
 .test_mode_env
+
+new_gcp_organization_decision_guide.*
+migration/
+
+# Excel temporary lock files
+~$*.xlsx

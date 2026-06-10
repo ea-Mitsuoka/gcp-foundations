@@ -40,7 +40,7 @@ ______________________________________________________________________
 - **`shared_vpc_subnets`**: サブネット名、IP範囲、リージョンの定義。
 - **`vpc_sc_perimeters`**: サービス境界名、保護対象サービスの定義。
 - **`vpc_sc_access_levels`**: ホワイトリスト（IP/SA）の定義。
-- **`org_policies`**: 適用先、ポリシーID、強制/許可リストの定義。
+- **`org_policies`**: 適用先（`target_name`）、ポリシーID、強制（`enforce`）/許可リスト（`allow_list`）、適用モード（`apply_mode`: `live` / `dryrun` / `both`、空欄は `live`）の定義。`apply_mode` で本番強制（`spec`）と DryRun（`dry_run_spec`）をターゲット別に出し分けられる。
 
 ______________________________________________________________________
 
