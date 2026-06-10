@@ -113,6 +113,23 @@ def test_validate_org_policies(validator):
     assert len(errors) == 1
     assert "invalid-target" in errors[0]
 
+def test_validate_org_policies_apply_mode_valid(validator):
+    folders = {"shared"}
+    projects = {"prd-app-01"}
+    # live/dryrun/both は有効。空欄・未指定は live 扱いで有効（後方互換）。
+    for mode in ["live", "dryrun", "both", "BOTH", "", None]:
+        policies = [{"target_name": "organization_id", "apply_mode": mode}]
+        errors = validator.validate_org_policies(policies, folders, projects)
+        assert errors == [], f"apply_mode={mode!r} should be valid but got {errors}"
+
+def test_validate_org_policies_apply_mode_invalid(validator):
+    folders = {"shared"}
+    projects = {"prd-app-01"}
+    policies = [{"target_name": "organization_id", "apply_mode": "audit"}]
+    errors = validator.validate_org_policies(policies, folders, projects)
+    assert len(errors) == 1
+    assert "apply_mode" in errors[0]
+
 # --- Tag Validation Tests ---
 
 def test_validate_tags_valid(validator):

@@ -83,11 +83,15 @@ VPC Service Controls のサービス境界を定義します。
 | **policy_id** | ポリシーの名前（ID） | `compute.vmExternalIpAccess` 等。 |
 | **enforce** | 強制フラグ（ブール型用） | **ブール型（ON/OFFのみ）の場合**: `TRUE` または `FALSE` を入力。<br>**リスト型（許可リスト指定）の場合**: 必ず**空欄**にしてください。 |
 | **allow_list** | 許可リスト（リスト型用） | `enforce` 列が空欄の場合のみ有効。カンマ区切りで値を入力（例: `INTERNAL`）。 |
+| **apply_mode** | 適用モード（DryRun / 本番の制御） | `live`（本番: `spec` のみ生成・実際に強制）／`dryrun`（試行: `dry_run_spec` のみ生成・**強制せず違反のみ記録**）／`both`（`spec` と `dry_run_spec` の両方を併記）から選択。**空欄は `live`（後方互換）**。 |
 
 > **💡 入力のヒント**:
 >
 > - **ブール型制約** (例: 外部IP禁止): `enforce` に `TRUE` を入力し、`allow_list` は空欄にする 。
 > - **リスト型制約** (例: ロケーション制限、LBタイプ制限): `enforce` は**空欄**にし、`allow_list` に許可する値を記述する 。
+> - **DryRun（段階適用）**: 新しいポリシーをいきなり強制すると既存リソースが締め出される恐れがあるため、まず `apply_mode = dryrun` で違反をプレビューし、影響が無いことを確認してから `live`（または `both`）へ切り替えると安全です。`apply_mode` は **(target_name × policy_id) ごとに**指定でき、同一ポリシーでも「組織は dryrun・特定フォルダは live」のようにターゲット別にモードを変えられます。
+>
+> **補足**: `apply_mode` は `enforce`/`allow_list` で定義した**同じルール内容**を、`spec`（本番）に入れるか `dry_run_spec`（試行）に入れるか、あるいは両方に入れるかを制御するものです。`dryrun`/`both` で生成されるリソースも `enable_org_policies = true` が前提です（DryRun も組織ポリシーリソースのため）。
 
 ### 7. `notifications` シート
 
