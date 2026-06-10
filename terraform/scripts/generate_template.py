@@ -58,7 +58,7 @@ def create_template():
                     "formula": (
                         '"iam.managed.disableServiceAccountKeyCreation,'
                         'iam.automaticIamGrantsForDefaultServiceAccounts,'
-                        'iam.allowedPolicyMemberDomains,compute.vmExternalIpAccess,'
+                        'iam.allowedPolicyMemberDomains,compute.managed.vmExternalIpAccess,'
                         'compute.skipDefaultNetworkCreation,'
                         'compute.managed.requireOsLogin,gcp.resourceLocations,'
                         'sql.managed.restrictPublicIp"'
