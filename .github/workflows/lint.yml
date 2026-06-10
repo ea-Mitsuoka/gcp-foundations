@@ -199,11 +199,11 @@ jobs:
           sudo install -m 0755 /tmp/terraform-docs /usr/local/bin/terraform-docs
           terraform-docs --version
 
+      # 出力形式・テンプレートは .terraform-docs.yml に集約（マークダウン整形ツールと
+      # 衝突しない escape:false / マーカー周りの空行を定義）。--output-check で鮮度を検証。
       - name: Check module README
         run: |
-          terraform-docs markdown table \
-            --output-file README.md \
-            --output-mode inject \
+          terraform-docs --config "${{ github.workspace }}/.terraform-docs.yml" \
             --output-check \
             "${{ matrix.working-directory }}"
 

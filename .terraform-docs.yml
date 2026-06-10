@@ -1,0 +1,18 @@
+formatter: "markdown table"
+
+# マークダウン整形ツール（Prettier 等）が terraform-docs 出力を再整形して
+# CI の --output-check と衝突するのを防ぐための設定。
+#  - escape: false        … アンカーの "\_" エスケープを行わない（整形ツールが外すため）
+#  - template の空行       … BEGIN/END マーカー直後・直前に空行を入れる（整形ツールが入れるため）
+settings:
+  escape: false
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+
+    {{ .Content }}
+
+    <!-- END_TF_DOCS -->
