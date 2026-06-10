@@ -188,13 +188,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      # quay.io 上の Docker イメージ pull が不安定なため、terraform-docs/gh-actions（コンテナ
+      # アクション）は使わず、GitHub Releases (github.com) からバイナリを取得して直接実行する。
+      - name: Install terraform-docs
+        run: |
+          TFDOCS_VERSION="v0.20.0"
+          curl -sSLf -o /tmp/terraform-docs.tar.gz \
+            "https://github.com/terraform-docs/terraform-docs/releases/download/${TFDOCS_VERSION}/terraform-docs-${TFDOCS_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/terraform-docs.tar.gz -C /tmp terraform-docs
+          sudo install -m 0755 /tmp/terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
+
       - name: Check module README
-        uses: terraform-docs/gh-actions@v1
-        with:
-          working-dir: ${{ matrix.working-directory }}
-          output-file: README.md
-          output-check: "true"
-          git-push: "false"
+        run: |
+          terraform-docs markdown table \
+            --output-file README.md \
+            --output-mode inject \
+            --output-check \
+            "${{ matrix.working-directory }}"
 
   ####################################################
   # Job 6: Run terraform test for modules
