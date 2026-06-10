@@ -80,7 +80,7 @@ VPC Service Controls のサービス境界を定義します。
 | 列名 | 説明 | 入力ルール |
 | :--- | :--- | :--- |
 | **target_name** | 適用先リソース名 | `organization_id` または `resources` シートの名称。 |
-| **policy_id** | ポリシーの名前（ID） | `compute.vmExternalIpAccess` 等。 |
+| **policy_id** | ポリシーの名前（ID） | `compute.managed.vmExternalIpAccess` 等。 |
 | **enforce** | 強制フラグ（ブール型用） | **ブール型（ON/OFFのみ）の場合**: `TRUE` または `FALSE` を入力。<br>**リスト型（許可リスト指定）の場合**: 必ず**空欄**にしてください。 |
 | **allow_list** | 許可リスト（リスト型用） | `enforce` 列が空欄の場合のみ有効。カンマ区切りで値を入力（例: `INTERNAL`）。 |
 | **apply_mode** | 適用モード（DryRun / 本番の制御） | `live`（本番: `spec` のみ生成・実際に強制）／`dryrun`（試行: `dry_run_spec` のみ生成・**強制せず違反のみ記録**）／`both`（`spec` と `dry_run_spec` の両方を併記）から選択。**空欄は `live`（後方互換）**。 |
