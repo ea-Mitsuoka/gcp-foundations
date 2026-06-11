@@ -93,6 +93,7 @@ ______________________________________________________________________
 | `make security`（Checkov 統合） | 高 | 低 | ⭐⭐⭐ |
 | アーキテクチャ図自動生成 | 高 | 中 | ⭐⭐ |
 | SCC（Security Command Center）連携 | 中 | 中 | ⭐⭐ |
+| 既存プロジェクト採用(adopt)モード | 高 | 中〜高 | ⭐⭐ |
 | ファイアウォールルール管理 | 中 | 高 | ⭐ |
 | Slack/Teams デプロイ通知 | 中 | 低 | ⭐⭐ |
 | `deploy_all.sh` デッドコード修正 | 低 | 低 | ⭐⭐⭐ |
@@ -142,6 +143,37 @@ Security Command Center の Findings を BigQuery に自動エクスポートし
 #### 6. ファイアウォールルール管理
 
 Shared VPC のサブネットは SSoT で管理されているが、ファイアウォールルールは対象外。`shared_vpc_subnets` シートに隣接する `firewall_rules` シートを追加することで、ネットワーク管理を一元化できる。実装コストが高いため、他の提案が落ち着いてから着手する。
+
+#### 9. 既存プロジェクト採用(adopt)モード — 非準拠IDの既存プロジェクトを標準管理下に
+
+**背景・課題**: 組織へ移管してきた既存プロジェクトのうち、project_id が基盤命名規則 `<project_id_prefix>-<app_name>` に一致しないものは、resources シート（SSoT）に載せても「別IDで新規作成」を計画してしまい、標準フローで取り込めない（[migration/project_migration_risk_check.md](../migration/project_migration_risk_check.md) の 6-0 ケースB）。現状の回避策は **B-②（専用ディレクトリで `google_project` を直書き import し、管理リソースを手書きで足す＝アプローチA）** だが、`make generate`/`make deploy` の対象外で**ドリフトしやすく・都度配線が必要**。
+
+**目的**: 既存プロジェクトを **`app-project-baseline` と同一ロジックで管理**（中央監視・ログ・Shared VPC・VPC-SC・タグ・予算）できるようにし、最終的に **SSoT(Excel) 駆動**まで到達する。
+
+**設計案（段階導入）**:
+
+1. **モジュール側に「採用モード」を追加**
+   - `modules/project-factory`: `create_project`（bool, default true）と `project_id_override`（string, default ""）を追加。
+     - `create_project=false` の場合、`google_project` を新規作成扱いにせず、`project_id = coalesce(project_id_override, "<prefix>-<app_name>")` で**既存IDを採用**（実体は `terraform import` で state に取り込む）。
+   - `modules/app-project-baseline`: 上記フラグを透過。下流の監視/VPC/VPC-SC/タグ各リソースは元々 `project_id`/`project_number` を入力に取るため、**採用したIDをそのまま渡せば変更不要**。
+   - 既存属性（`deletion_policy`/`billing_account`/`labels`）は import 後に差分が出ないよう、採用モードでは `lifecycle.ignore_changes` を選択可能にする（移行期間の課金切替などに対応）。
+
+2. **SSoT(Excel) 拡張（任意・最終形）**
+   - `resources` シートに `existing_project_id` 列を追加。値があれば `generate_resources.py` が「採用モード」のディレクトリ（`create_project=false` + `project_id_override`）を生成。
+   - 生成後は人間が一度だけ `terraform import` を実行（ID変更不可のため import は不可避）。以降は標準フロー（`make generate`/`make deploy`）で管理。
+   - バリデーション追加: `existing_project_id` の形式チェック、通常生成IDとの二重定義禁止。
+
+3. **移行手順（既存プロジェクト1件あたり）**
+   - SA に対象プロジェクトの `roles/owner` 付与 → `make generate` → `terraform import module.baseline.module.project.google_project.this <ID>` → `plan`（destroy/replace が無いこと）→ `apply`。
+
+**手間（見積もり）**: project-factory/baseline のフラグ実装＋tftest＝中。Excel列＋generate対応＝中。合計**中〜高**。
+
+**リスク**:
+- **共有モジュール改修は全プロジェクトに波及**。`create_project` 分岐の既定値を誤ると新規作成フローを壊す → tftest で「従来どおり新規作成される」回帰テストを必須化。
+- import 時の属性差分（billing/labels/deletion_policy）の吸収設計を誤ると、初回 apply で意図しない変更。
+- Shared VPC/VPC-SC を採用プロジェクトに適用するのは「IaC配線」ではなく**実環境の移行**であり、本機能とは別のリスク（接続断・締め出し）。adopt モードは「管理下に置く」までを担い、ネットワーク/境界投入は段階適用で別途判断する。
+
+**現状の位置づけ**: 当面は **アプローチA（B-②手書き）** で個別対応（[migration/project_migration_risk_check.md](../migration/project_migration_risk_check.md) 6-0b・6-0c）。本 adopt モードは「非準拠IDの取り込みが今後も継続する」と判断した段階で着手する。
 
 ______________________________________________________________________
 
