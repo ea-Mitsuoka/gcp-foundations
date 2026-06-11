@@ -92,6 +92,19 @@ VPC Service Controls のサービス境界を定義します。
 > - **DryRun（段階適用）**: 新しいポリシーをいきなり強制すると既存リソースが締め出される恐れがあるため、まず `apply_mode = dryrun` で違反をプレビューし、影響が無いことを確認してから `live`（または `both`）へ切り替えると安全です。`apply_mode` は **(target_name × policy_id) ごとに**指定でき、同一ポリシーでも「組織は dryrun・特定フォルダは live」のようにターゲット別にモードを変えられます。
 >
 > **補足**: `apply_mode` は `enforce`/`allow_list` で定義した**同じルール内容**を、`spec`（本番）に入れるか `dry_run_spec`（試行）に入れるか、あるいは両方に入れるかを制御するものです。`dryrun`/`both` で生成されるリソースも `enable_org_policies = true` が前提です（DryRun も組織ポリシーリソースのため）。
+>
+> ⚠️ **DryRun が使えない制約に注意（重要）**: **すべての組織ポリシー制約が DryRun に対応しているわけではありません。** 非対応の制約に `dryrun`/`both` を指定すると、`make deploy`（apply）時に次のエラーで失敗します:
+>
+> ```
+> Error 400: DryRun feature is not available for the resource.
+> ```
+>
+> - **対応している傾向**: マネージド制約（`*.managed.*`、例: `iam.managed.disableServiceAccountKeyCreation` / `sql.managed.restrictPublicIp` / `compute.managed.vmExternalIpAccess`）。
+> - **非対応が確認された例**: `gcp.resourceLocations`、`iam.automaticIamGrantsForDefaultServiceAccounts`（いずれも旧来型の制約）。
+> - **対処**: 非対応の制約は `apply_mode = live`（本番強制）で適用するか、シートから外す。DryRun で事前確認ができないため、`live` 適用＝即本番強制になる点に留意（特に `gcp.resourceLocations` は他ロケーションでの新規作成をブロックするので影響を見極めること）。
+> - 事前確認の目安: `gcloud org-policies describe <constraint> --organization=<ORG_ID>` で `supportsDryRun` 相当の挙動が不明な場合は、まず1件だけ `apply` して 400 が出ないか試すのが確実。
+>
+> 💡 **適用時の 409（The operation was aborted）について**: 組織ポリシーを複数同時に作成すると、組織ポリシーの read-modify-write 競合で `Error 409` が出ることがあります。**一時的なエラーなので再実行**で解消します。回避したい場合は `terraform apply -parallelism=1` で直列適用してください。
 
 ### 7. `notifications` シート
 
