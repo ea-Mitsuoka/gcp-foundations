@@ -67,6 +67,10 @@ jobs:
 
       - name: Init TFLint
         run: tflint --init
+        env:
+          # 未認証だと plugin(ruleset) 取得が GitHub API レート制限(403)に当たるため、
+          # GITHUB_TOKEN を渡して認証付きリクエストにする（レート上限が大幅に上がる）。
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run TFLint
         run: tflint --recursive --config ${{ github.workspace }}/.tflint.hcl --chdir terraform
