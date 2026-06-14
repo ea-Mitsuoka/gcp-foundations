@@ -28,17 +28,17 @@ ______________________________________________________________________
 | `resource_type` | リソース種別 | String | `project` | `folder` または `project` を指定。 |
 | `parent_name` | 親リソース名 | String | `shared` | 親フォルダ名、または組織直下なら `organization_id`。 |
 | `resource_name` | リソース名 | String | `prd-app-01` | フォルダ表示名、またはアプリ名。 |
-| `environment` | 環境 | String | `prod` | `prod`/`stag`/`dev` のいずれか。**プロジェクトは必須・明示**（空欄はエラー）。 |
+| `environment` | 環境 | String | `prod` | `prod`/`stag`/`dev` のいずれか、または**空欄（任意）**。指定時のみ `env` ラベルが付与される。名前からの推定はしない。`shared_vpc` 利用時のみ必須。 |
 | `shared_vpc` | 使用サブネット名 | String | `prd-subnet-01` | `shared_vpc_subnets` シートで定義した名前。 |
 | `vpc_sc` | 所属境界名 | String | `default_perimeter` | `vpc_sc_perimeters` シートで定義した名前。 |
 | `central_monitoring` | 監視対象フラグ | Boolean | `TRUE` | Cloud Monitoring による監視を行うか。 |
 | `central_logging` | ログ集約フラグ | Boolean | `TRUE` | 組織ログシンクによる収集を行うか。 |
 
-> **💡 `environment` の決定ロジック**（`make generate`）:
-> 1. **プロジェクトは `environment` 必須・明示**（許可値 `prod`/`stag`/`dev`）。**空欄はエラー**、許可外もエラー（暗黙のデフォルトや接頭辞からの補完はしない）。
-> 2. 命名接頭辞（`prd-`/`stg-`/`dev-`）は**値の供給源にはせず、明示値との矛盾検出にのみ使用**。例: `prd-app` に `environment=dev` はエラー。
->
-> この `environment` が `env` ラベル・表示名サフィックス・`shared_vpc_env` の元になります。`resource_name` から「勝手に」決まる旧挙動を、明示必須＋検証に置き換えています。
+> **💡 `environment` の扱い**（`make generate`）:
+> - **任意**。指定する場合は `prod`/`stag`/`dev` のみ（許可外はエラー）。**名前(`resource_name`)からの推定は一切しない**（名前と環境を分離）。
+> - **空欄なら `env` ラベルを付与しない**（ラベルなしを許容。OPA も `env` を必須にしない）。
+> - **`shared_vpc` を使う行のみ `environment` が必須**（接続先ホスト prod/dev の判定に必要）。
+> - 表示名(`name`)は `app_name` をそのまま使い、**環境サフィックスは付与しない**（旧 `app-dev` のような自動付与を廃止）。
 
 > **💡 `shared_vpc_env`（システム自動生成）**: `shared_vpc` 指定時、接続先 Shared VPC ホストを示す `shared_vpc_env` が `terraform.tfvars` に出力されます。**決定済みの `environment` から導出**（`dev`→`dev` ホスト／`prod`・`stag`→`prod` ホスト）、`shared_vpc` 未指定なら `none`。ホストプロジェクトは **`prod` / `dev` の2つのみ**のため、`stag` は `prod` 側ホストに相乗りします（`env` ラベルが `stag` でも接続先ホストは `prod`）。命名接頭辞ではなく `environment` に依存する点が以前との違いです。
 
@@ -78,13 +78,13 @@ ______________________________________________________________________
 
 ## 5. GCP プロジェクトラベル (Labels)
 
-`make generate` によって生成される各プロジェクトには、以下の3つのラベル（**キーと値の両方**）が自動付与されます。これらは CI 上で OPA（Open Policy Agent）によって強制されており、欠如している場合はデプロイがブロックされます。
+`make generate` によって生成される各プロジェクトには、以下のラベルが付与されます。**`owner` と `app` は必須**（CI の OPA で強制）。**`env` は任意**（`environment` 空欄なら付与されない）。
 
-| ラベルキー | 値の内容 | 値の生成元 |
-| :--- | :--- | :--- |
-| `env` | `prod` / `stag` / `dev` のいずれか | `resources` シートの `environment` 列（必須・明示。section 2 参照） |
-| `owner` | 所有者を示す識別子 | Excel `resources` シートの `owner` 列（`^[a-z0-9_-]{1,63}$` 形式） |
-| `app` | アプリ名 | Excel `resources` シートの `resource_name` 列 |
+| ラベルキー | 必須 | 値の内容 | 値の生成元 |
+| :--- | :---: | :--- | :--- |
+| `env` | 任意 | `prod` / `stag` / `dev` | `resources` シートの `environment` 列（空欄ならラベルなし。section 2 参照） |
+| `owner` | 必須 | 所有者を示す識別子 | Excel `resources` シートの `owner` 列（`^[a-z0-9_-]{1,63}$` 形式） |
+| `app` | 必須 | アプリ名 | Excel `resources` シートの `resource_name` 列 |
 
 ### OPA による強制の仕組み
 
@@ -98,4 +98,4 @@ ______________________________________________________________________
    → deny セットに値あり → CI 失敗・マージブロック
 ```
 
-OPA は `google_project` リソースの作成・更新時に3つのキーが存在するかを検査します。削除アクションはチェック対象外です。値の内容（例: `prod` が正しいかどうか）は現時点では検査しません。
+OPA は `google_project` リソースの作成・更新時に **`owner` / `app` ラベルが存在するか**を検査します（`env` は任意のため対象外）。削除アクションはチェック対象外です。値の内容（例: `prod` が正しいかどうか）は現時点では検査しません。
