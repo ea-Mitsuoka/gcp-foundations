@@ -129,3 +129,9 @@ variable "mgmt_project_id" {
   default     = null
   description = "The management project ID."
 }
+
+variable "existing_project_id" {
+  type        = string
+  default     = ""
+  description = "既存プロジェクト採用(adopt)モード。空でなければ create_project=false でこの既存IDを採用する（命名規則 <prefix>-<app_name> に非準拠なプロジェクトを管理下に置くため）。実体は terraform import で取り込む。"
+}

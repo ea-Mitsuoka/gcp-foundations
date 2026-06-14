@@ -146,6 +146,14 @@ Shared VPC のサブネットは SSoT で管理されているが、ファイア
 
 #### 9. 既存プロジェクト採用(adopt)モード — 非準拠IDの既存プロジェクトを標準管理下に
 
+> **✅ 実装済み（2026-06-08 / Phase 1 + Phase 2）**:
+> - `modules/project-factory`: `create_project`(bool, 既定 true) / `project_id_override`(string) を追加。`effective_project_id = create_project ? project_id : (project_id_override != "" ? project_id_override : project_id)`。**既定では従来どおり** var.project_id を使用＝後方互換（回帰テスト `adopt.tftest.hcl` で検証、`make test` 緑）。
+> - `modules/app-project-baseline`: `existing_project_id` を追加し、空でなければ `create_project=false` + `project_id_override` を project-factory へ透過。
+> - `4_projects/template`: `existing_project_id` 変数と baseline への透過を追加（生成プロジェクトに引き継がれる）。
+> - `generate_resources.py`: `resources` シートに `existing_project_id` 列を追加（ヘッダーは実ファイルから読むため既存 xlsx 非破壊）。`terraform.tfvars` に出力。採用行は **ID形式チェック＋ existing_project_id の重複禁止** をバリデーション。
+> - **未対応（Terraform 仕様上の制約）**: `lifecycle.ignore_changes` は変数で動的化できないため固定のまま。採用 import 直後の属性差分（name/labels/deletion_policy）は **import → plan レビュー → apply** で吸収する運用（[migration/project_migration_risk_check.md](../migration/project_migration_risk_check.md) 6-3〜6-4）。
+> - **使い方**: `resources` シートに `existing_project_id` を記入 → `make generate` → 一度だけ `terraform import module.baseline.module.project.google_project.this <ID>` → `plan`（destroy/replace が無いこと）→ `apply`。以降は標準フローで管理。
+
 **背景・課題**: 組織へ移管してきた既存プロジェクトのうち、project_id が基盤命名規則 `<project_id_prefix>-<app_name>` に一致しないものは、resources シート（SSoT）に載せても「別IDで新規作成」を計画してしまい、標準フローで取り込めない（[migration/project_migration_risk_check.md](../migration/project_migration_risk_check.md) の 6-0 ケースB）。現状の回避策は **B-②（専用ディレクトリで `google_project` を直書き import し、管理リソースを手書きで足す＝アプローチA）** だが、`make generate`/`make deploy` の対象外で**ドリフトしやすく・都度配線が必要**。
 
 **目的**: 既存プロジェクトを **`app-project-baseline` と同一ロジックで管理**（中央監視・ログ・Shared VPC・VPC-SC・タグ・予算）できるようにし、最終的に **SSoT(Excel) 駆動**まで到達する。
