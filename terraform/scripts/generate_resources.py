@@ -30,35 +30,20 @@ def to_snake_case(name):
     return name
 
 # 環境(environment)の決定ロジック。
-# 方針: `environment` 列は必須・明示。空欄はエラー（暗黙のデフォルトや接頭辞推定での補完はしない）。
-#       命名接頭辞は値の供給源にはせず、明示値との「矛盾検出」にのみ使う。
+# 方針: `environment` 列は任意。名前からの推定は一切しない（名前と環境を分離）。
+#       指定時は prod/stag/dev に限定。空欄は ''（=env ラベルを付けない）。
 ENV_ALLOWED = ("prod", "stag", "dev")
 
-def infer_env_from_name(app_name):
-    """命名接頭辞から環境を推定する。該当しなければ None を返す。"""
-    a = str(app_name or "")
-    if a.startswith("prd-"):
-        return "prod"
-    if a.startswith("stg-"):
-        return "stag"
-    if a.startswith("dev-"):
-        return "dev"
-    return None
-
-def resolve_environment(app_name, explicit_env):
+def resolve_environment(explicit_env):
     """環境を決定する。返り値 (env, error)。
-    environment は必須・明示。空欄はエラー（暗黙デフォルトや接頭辞推定での補完はしない）。
-    命名接頭辞は値の供給源にはせず、明示値との「矛盾検出」にのみ使う。
-    error が None でなければ呼び出し側で errors に積むこと。
+    任意項目。空欄は '' を返し env ラベルを付与しない（暗黙の推定・デフォルトはしない）。
+    指定時は prod/stag/dev に限定し、許可外はエラー。
     """
     explicit = str(explicit_env or "").strip().lower()
     if not explicit:
-        return (None, "environment が未指定です（prod/stag/dev のいずれかを必須で指定してください）")
+        return ("", None)
     if explicit not in ENV_ALLOWED:
-        return (None, f"environment '{explicit}' は許可外です（{', '.join(ENV_ALLOWED)} のいずれか）")
-    inferred = infer_env_from_name(app_name)
-    if inferred is not None and inferred != explicit:
-        return (None, f"environment='{explicit}' が命名接頭辞から推定される '{inferred}' と矛盾します（接頭辞か environment を揃えてください）")
+        return (None, f"environment '{explicit}' は許可外です（{', '.join(ENV_ALLOWED)} のいずれか、または空欄）")
     return (explicit, None)
 
 def resolve_shared_vpc_env(env, shared_vpc):
@@ -373,8 +358,17 @@ def generate_resources():
                 if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
             # environment 列の検証（プロジェクトのみ）: 明示値の許可外・命名接頭辞との矛盾をエラーにする
             if str(r.get('resource_type') or '').strip().lower() == 'project':
-                _, env_err = resolve_environment(r.get('resource_name'), r.get('environment'))
-                if env_err: errors.append(f"[resources] Row {idx}: {env_err}")
+                # 表示名(name)は resource_name をそのまま使う（環境サフィックスなし）ため、
+                # GCP プロジェクト表示名の制約 4〜30 文字を満たすこと。
+                rn_disp = str(r.get('resource_name') or '').strip()
+                if not (4 <= len(rn_disp) <= 30):
+                    errors.append(f"[resources] Row {idx}: resource_name '{rn_disp}' は4〜30文字にしてください（プロジェクト表示名として使用されるため）。")
+                env_resolved, env_err = resolve_environment(r.get('environment'))
+                if env_err:
+                    errors.append(f"[resources] Row {idx}: {env_err}")
+                # shared_vpc を使う場合は接続先ホスト(prod/dev)判定のため environment が必須
+                elif str(r.get('shared_vpc') or '').strip() and not env_resolved:
+                    errors.append(f"[resources] Row {idx}: shared_vpc を使う場合は environment（接続先ホスト判定用）の指定が必須です。")
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
@@ -670,8 +664,8 @@ def generate_resources():
         folder_id_val = "null" if parent_folder == 'organization_id' else f'"{sanitize_id(parent_folder)}"'
         # 既存プロジェクト採用(adopt)モード: existing_project_id があれば既存IDを採用（空なら新規作成）
         existing_pid = str(proj.get('existing_project_id') or '').strip()
-        # environment は必須・明示（空欄や許可外・接頭辞矛盾は検証フェーズでエラー済み）。
-        env, _ = resolve_environment(app_name, proj.get('environment'))
+        # environment は任意（空欄なら env ラベルを付けない）。検証は済み。
+        env, _ = resolve_environment(proj.get('environment'))
         shared_vpc_env = resolve_shared_vpc_env(env, proj.get('shared_vpc'))
 
         # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
