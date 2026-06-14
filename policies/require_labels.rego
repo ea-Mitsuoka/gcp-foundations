@@ -2,9 +2,11 @@ package terraform.validation
 
 import rego.v1
 
-# 必須ラベルの定義（所有者、アプリ名）。
-# env は任意（environment 列は任意・空欄ならラベルなしを許容するため必須から除外）。
-required_labels := {"owner", "app"}
+# 必須ラベルの定義。
+# 方針: プロジェクトの識別は project_id で行うため、ラベルは必須にしない（撤廃）。
+#       env / owner / app はいずれも任意（生成はされるが欠如してもブロックしない）。
+#       将来ラベル必須化が必要になれば、この集合に追加すれば deny が有効化される。
+required_labels := set()
 
 # プロジェクト作成・更新時に必須ラベルが欠如している場合、デプロイをブロックする
 deny contains msg if {
