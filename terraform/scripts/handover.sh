@@ -17,7 +17,8 @@ echo ">>> Configuring .gitignore for customer environment..."
 # 顧客の運用では自動生成されたコードもレビュー対象とするため、除外設定を解除
 if [ -f ".gitignore" ]; then
   # macOS/Linux環境の違いを吸収するため、一時ファイルを経由して置換
-  sed '/\*\*\/auto_\*\.tf/d; /\*\*\/terraform\.tfvars/d' .gitignore > .gitignore.tmp
+  # auto_*.tf / terraform.tfvars に加え、納品物(delivery/)も追跡対象に含める
+  sed '/\*\*\/auto_\*\.tf/d; /\*\*\/terraform\.tfvars/d; /^delivery\/$/d' .gitignore > .gitignore.tmp
   mv .gitignore.tmp .gitignore
 fi
 

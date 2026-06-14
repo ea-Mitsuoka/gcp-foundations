@@ -1,6 +1,6 @@
 # GCP Foundations Makefile
 
-.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery clean template prune
+.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery delivery-doc clean template prune
 
 help:
 	@echo "Available commands:"
@@ -14,7 +14,8 @@ help:
 	@echo "  make test      - Run all tests (TF and Python)"
 	@echo "  make deploy    - Run the global deployment script"
 	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
-	@echo "  make delivery  - Prepare repository for handover (reset Git history)"
+	@echo "  make delivery  - Generate the delivery document, then prepare repository for handover (reset Git history)"
+	@echo "  make delivery-doc - Generate only the delivery document (構築設定明細書) under delivery/"
 	@echo "  make test-mode - Toggle test mode (random prefix & skip management projects)"
 	@echo "  make prune     - Remove orphan 4_projects/ directories not defined in SSoT (Excel)"
 	@echo "  make clean     - Remove local terraform state and cache files"
@@ -77,8 +78,11 @@ destroy:
 %:
 	@:
 
-delivery:
+delivery: delivery-doc
 	bash terraform/scripts/handover.sh
+
+delivery-doc:
+	uv run terraform/scripts/generate_delivery.py
 
 test-mode:
 	uv run python terraform/scripts/toggle_test_mode.py
