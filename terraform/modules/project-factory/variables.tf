@@ -60,3 +60,16 @@ variable "budget_alert_emails" {
   description = "List of additional email addresses to receive budget alerts."
   default     = []
 }
+
+# --- 既存プロジェクト採用(adopt)モード ---
+variable "create_project" {
+  type        = bool
+  description = "true(既定)は新規作成フロー。false の場合は既存プロジェクトの採用(adopt)モードとなり、project_id_override の既存IDを採用する（実体は terraform import で state に取り込む）。"
+  default     = true
+}
+
+variable "project_id_override" {
+  type        = string
+  description = "採用(adopt)モードで使用する既存プロジェクトID。create_project=false かつ空文字でない場合に var.project_id の代わりに使用する。"
+  default     = ""
+}
