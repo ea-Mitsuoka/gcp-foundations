@@ -1,6 +1,9 @@
 # project-factory: 既存プロジェクト採用(adopt)モードの回帰テスト
 # `make test`（terraform test）で実行される。plan ベースで project_id の決定ロジックのみ検証する。
 
+# CI には GCP 認証(ADC)が無いため、既存テスト(project-factory.tftest.hcl)と同様に provider をモックする。
+mock_provider "google" {}
+
 # 後方互換: create_project=true(既定) では var.project_id をそのまま使う（新規作成フローを壊さない）
 run "default_uses_project_id" {
   command = plan
