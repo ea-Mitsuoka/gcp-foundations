@@ -28,6 +28,7 @@ module "baseline" {
   budget_alert_emails             = var.budget_alert_emails
   billing_account_id              = var.billing_account_id
   mgmt_project_id                 = var.mgmt_project_id
+  existing_project_id             = var.existing_project_id
 }
 
 # --------------------------------------------------------------------------------

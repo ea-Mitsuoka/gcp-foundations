@@ -203,13 +203,13 @@ def generate_resources():
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"]
+        headers = ["resource_type", "parent_name", "resource_name", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"]
         ws.append(headers)
         wb.save(xlsx_path)
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
+        "resources": ["resource_type", "parent_name", "resource_name", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
         "tag_definitions": ["tag_key", "allowed_values", "description"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services", "dry_run"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
@@ -315,9 +315,23 @@ def generate_resources():
         ref_errs = validator.validate_project_refs(resources_data, subnets_data, perimeters)
         if ref_errs: errors.extend(ref_errs)
 
+        adopt_ids = {}
         for idx, r in enumerate(resources_data, start=2):
-            name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'), prefix=project_id_prefix)
-            if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
+            existing_pid = str(r.get('existing_project_id') or '').strip()
+            if existing_pid and str(r.get('resource_type') or '').strip().lower() == 'project':
+                # 採用(adopt)モード: 実IDは existing_project_id。合成ID長の検証はスキップし、ID形式と重複のみ検証。
+                if not re.match(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$', existing_pid):
+                    errors.append(f"[resources] Row {idx}: existing_project_id '{existing_pid}' はGCPプロジェクトID形式（6-30文字・先頭英字・末尾英数字・小文字/数字/ハイフン）として不正です。")
+                if existing_pid in adopt_ids:
+                    errors.append(f"[resources] Row {idx}: existing_project_id '{existing_pid}' が Row {adopt_ids[existing_pid]} と重複しています（二重定義禁止）。")
+                else:
+                    adopt_ids[existing_pid] = idx
+                rn = str(r.get('resource_name') or '').strip()
+                if not re.match(r'^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$', rn):
+                    errors.append(f"[resources] Row {idx}: resource_name '{rn}' は小文字英数字とハイフンのみにしてください（採用モードでも表示名/ラベル/ディレクトリ名に使用）。")
+            else:
+                name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'), prefix=project_id_prefix)
+                if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
@@ -611,12 +625,15 @@ def generate_resources():
         parent_folder = str(proj.get('parent_name') or '').strip()
         # organization_id の場合は HCLの予約語 null を出力し、それ以外はダブルクォーテーションで囲む
         folder_id_val = "null" if parent_folder == 'organization_id' else f'"{sanitize_id(parent_folder)}"'
+        # 既存プロジェクト採用(adopt)モード: existing_project_id があれば既存IDを採用（空なら新規作成）
+        existing_pid = str(proj.get('existing_project_id') or '').strip()
         
         # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
 app_name            = "{app_name}"
+existing_project_id = "{existing_pid}"
 environment         = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
 folder_id           = {folder_id_val}
 shared_vpc_env      = "{'dev' if app_name.startswith('dev-') and proj.get('shared_vpc') else 'prod' if proj.get('shared_vpc') else 'none'}"

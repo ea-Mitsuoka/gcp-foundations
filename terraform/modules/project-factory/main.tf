@@ -1,6 +1,13 @@
 # GCPプロジェクトの作成
+locals {
+  # 採用(adopt)モード: create_project=false かつ project_id_override 指定時は既存プロジェクトIDを採用する
+  # （実体は terraform import で state に取り込む）。create_project=true（既定）では従来どおり
+  # var.project_id を使うため、既存プロジェクトの挙動は一切変わらない（後方互換）。
+  effective_project_id = var.create_project ? var.project_id : (var.project_id_override != "" ? var.project_id_override : var.project_id)
+}
+
 resource "google_project" "this" {
-  project_id = var.project_id
+  project_id = local.effective_project_id
   name       = var.name
   # "organizations/" や "folders/" が含まれていたら自動で取り除く防弾仕様
   org_id    = (var.folder_id == null || var.folder_id == "") ? replace(var.organization_id, "organizations/", "") : null
@@ -12,6 +19,9 @@ resource "google_project" "this" {
   deletion_policy     = var.deletion_protection ? "PREVENT" : "DELETE"
 
   # 差分を無視するための設定を追加
+  # 注: 採用(adopt)モードの import 直後は name/labels/deletion_policy 等で in-place 差分が出るが、
+  #     lifecycle.ignore_changes は変数で動的化できない（Terraform 仕様）ため固定にしている。
+  #     採用時の属性差分は import → plan レビュー → apply で吸収する運用（migration ガイド参照）。
   lifecycle {
     ignore_changes = [
       # billing_account属性への変更をTerraformの管理対象外にする

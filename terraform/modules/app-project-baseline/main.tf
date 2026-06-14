@@ -57,10 +57,15 @@ resource "terraform_data" "variable_validation" {
 module "project" {
   source = "../project-factory"
 
-  project_id      = "${var.project_id_prefix}-${var.app_name}"
-  name            = local.project_display_name
-  organization_id = data.google_organization.org.id
-  folder_id       = local.resolved_folder_id
+  project_id = "${var.project_id_prefix}-${var.app_name}"
+  name       = local.project_display_name
+
+  # 採用(adopt)モード: existing_project_id が指定されていれば既存IDを採用（create_project=false）。
+  # 空（既定）なら新規作成フロー（後方互換）。
+  create_project      = var.existing_project_id == "" ? true : false
+  project_id_override = var.existing_project_id
+  organization_id     = data.google_organization.org.id
+  folder_id           = local.resolved_folder_id
   labels = merge(var.labels, {
     monitoring = tostring(var.central_monitoring)
     logging    = tostring(var.central_logging)
