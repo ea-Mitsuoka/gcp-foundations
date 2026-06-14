@@ -129,3 +129,9 @@ variable "enable_tags" {
   type        = bool
   default     = false
 }
+
+variable "existing_project_id" {
+  description = "既存プロジェクト採用(adopt)モード。空でなければ既存IDを採用する（terraform import 前提）。通常の新規作成では空。"
+  type        = string
+  default     = ""
+}
