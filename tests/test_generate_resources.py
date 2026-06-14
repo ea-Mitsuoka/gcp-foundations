@@ -8,7 +8,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../terraform/scripts'))
 from generate_resources import (
     ResourceValidator,
     resolve_environment,
-    infer_env_from_name,
     resolve_shared_vpc_env,
 )
 
@@ -186,40 +185,25 @@ def test_validate_log_sinks_bigquery_no_hyphen(validator):
 
 # --- Environment Resolution Tests ---
 
-def test_infer_env_from_name():
-    assert infer_env_from_name("prd-app") == "prod"
-    assert infer_env_from_name("stg-app") == "stag"
-    assert infer_env_from_name("dev-app") == "dev"
-    assert infer_env_from_name("app-foo") is None
-    assert infer_env_from_name("") is None
+def test_resolve_environment_explicit_valid():
+    # 指定された許可値はそのまま採用（名前は一切見ない）
+    assert resolve_environment("prod") == ("prod", None)
+    assert resolve_environment("stag") == ("stag", None)
+    assert resolve_environment("dev") == ("dev", None)
 
-def test_resolve_environment_explicit_wins():
-    # 明示値（許可値）はそのまま採用
-    assert resolve_environment("app-foo", "prod") == ("prod", None)
-
-def test_resolve_environment_explicit_normalized():
-    # 大文字/空白は正規化される
-    env, err = resolve_environment("app-foo", "  PROD ")
+def test_resolve_environment_normalized():
+    # 大文字/空白は正規化
+    env, err = resolve_environment("  PROD ")
     assert env == "prod" and err is None
 
-def test_resolve_environment_invalid_explicit():
-    env, err = resolve_environment("app-foo", "production")
+def test_resolve_environment_blank_is_optional():
+    # 空欄は許容（'' を返し env ラベルなし。エラーにも推定にもしない）
+    assert resolve_environment("") == ("", None)
+    assert resolve_environment(None) == ("", None)
+
+def test_resolve_environment_invalid():
+    env, err = resolve_environment("production")
     assert env is None and err is not None and "許可外" in err
-
-def test_resolve_environment_conflict():
-    # 接頭辞 prd-（prod推定）と明示 dev が矛盾 → エラー
-    env, err = resolve_environment("prd-app", "dev")
-    assert env is None and err is not None and "矛盾" in err
-
-def test_resolve_environment_explicit_matches_prefix():
-    assert resolve_environment("prd-app", "prod") == ("prod", None)
-
-def test_resolve_environment_blank_is_error():
-    # 空欄は必須エラー（接頭辞があっても補完しない＝暗黙挙動を排除）
-    env, err = resolve_environment("stg-app", "")
-    assert env is None and err is not None and "未指定" in err
-    env2, err2 = resolve_environment("app-foo", None)
-    assert env2 is None and err2 is not None and "未指定" in err2
 
 def test_resolve_shared_vpc_env():
     # shared_vpc 未指定 → none

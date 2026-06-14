@@ -37,12 +37,6 @@ locals {
   resolved_folder_id = var.folder_id != "" ? try(data.terraform_remote_state.folders.outputs[format("%s_folder_id", var.folder_id)], var.folder_id) : null
   perimeter_id       = length(data.terraform_remote_state.organization) > 0 && var.vpc_sc != "" ? try(data.terraform_remote_state.organization[0].outputs.service_perimeter_ids[var.vpc_sc], null) : null
   subnet_id          = var.shared_vpc_subnet != "" ? try(data.terraform_remote_state.vpc_host[0].outputs.shared_vpc_subnet_ids[var.shared_vpc_subnet], null) : null
-
-  # app_name が環境プレフィックス(prd-/stg-/dev-)で始まる場合、表示名(name)に environment を二重付与しない。
-  # 例: app_name="prd-main-app" → name="prd-main-app"（"prd-main-app-prod" にしない）。project_id は元から environment を付けないため対象外。
-  project_display_name = (
-    startswith(var.app_name, "prd-") || startswith(var.app_name, "stg-") || startswith(var.app_name, "dev-")
-  ) ? var.app_name : "${var.app_name}-${var.environment}"
 }
 
 
@@ -58,7 +52,8 @@ module "project" {
   source = "../project-factory"
 
   project_id = "${var.project_id_prefix}-${var.app_name}"
-  name       = local.project_display_name
+  # 表示名は app_name をそのまま使う（environment サフィックスは付与しない＝名前と環境を分離）。
+  name = var.app_name
 
   # 採用(adopt)モード: existing_project_id が指定されていれば既存IDを採用（create_project=false）。
   # 空（既定）なら新規作成フロー（後方互換）。
