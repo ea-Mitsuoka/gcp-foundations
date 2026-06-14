@@ -50,6 +50,11 @@ gcp_log_sink_config.csv
 
 new_gcp_organization_decision_guide.*
 migration/
+# docs/migration 配下は原則無視（顧客固有の assessment/plan 等の作業成果物）。
+# ただし汎用の取り込み手順（再利用可能なドキュメント）だけは追跡する。
+!docs/migration/
+docs/migration/*
+!docs/migration/project_migration_risk_check.md
 
 # Excel temporary lock files
 ~$*.xlsx
