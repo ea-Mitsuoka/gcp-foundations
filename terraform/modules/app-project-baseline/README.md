@@ -12,7 +12,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_google"></a> [google](#provider_google) | ~> 6.48.0 |
+| <a name="provider_google"></a> [google](#provider_google) | 6.48.0 |
 | <a name="provider_terraform"></a> [terraform](#provider_terraform) | n/a |
 
 ## Modules
@@ -54,6 +54,7 @@
 | <a name="input_enable_tags"></a> [enable_tags](#input_enable_tags) | Global switch to enable Organization Tags. | `bool` | `false` | no |
 | <a name="input_enable_vpc_sc"></a> [enable_vpc_sc](#input_enable_vpc_sc) | Global switch to enable VPC Service Controls. | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input_environment) | The environment name (prod, stag, dev). | `string` | n/a | yes |
+| <a name="input_existing_project_id"></a> [existing_project_id](#input_existing_project_id) | 既存プロジェクト採用(adopt)モード。空でなければ create_project=false でこの既存IDを採用する（命名規則 <prefix>-<app_name> に非準拠なプロジェクトを管理下に置くため）。実体は terraform import で取り込む。 | `string` | `""` | no |
 | <a name="input_folder_id"></a> [folder_id](#input_folder_id) | The folder ID to place the project in. | `string` | `""` | no |
 | <a name="input_gcs_backend_bucket"></a> [gcs_backend_bucket](#input_gcs_backend_bucket) | The GCS bucket name for Terraform state. | `string` | n/a | yes |
 | <a name="input_labels"></a> [labels](#input_labels) | The labels to apply to the project. | `map(string)` | `{}` | no |
