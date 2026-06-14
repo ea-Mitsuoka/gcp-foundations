@@ -29,6 +29,45 @@ def to_snake_case(name):
     name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name).lower()
     return name
 
+# 環境(environment)の決定ロジック。
+# 方針: `environment` 列は必須・明示。空欄はエラー（暗黙のデフォルトや接頭辞推定での補完はしない）。
+#       命名接頭辞は値の供給源にはせず、明示値との「矛盾検出」にのみ使う。
+ENV_ALLOWED = ("prod", "stag", "dev")
+
+def infer_env_from_name(app_name):
+    """命名接頭辞から環境を推定する。該当しなければ None を返す。"""
+    a = str(app_name or "")
+    if a.startswith("prd-"):
+        return "prod"
+    if a.startswith("stg-"):
+        return "stag"
+    if a.startswith("dev-"):
+        return "dev"
+    return None
+
+def resolve_environment(app_name, explicit_env):
+    """環境を決定する。返り値 (env, error)。
+    environment は必須・明示。空欄はエラー（暗黙デフォルトや接頭辞推定での補完はしない）。
+    命名接頭辞は値の供給源にはせず、明示値との「矛盾検出」にのみ使う。
+    error が None でなければ呼び出し側で errors に積むこと。
+    """
+    explicit = str(explicit_env or "").strip().lower()
+    if not explicit:
+        return (None, "environment が未指定です（prod/stag/dev のいずれかを必須で指定してください）")
+    if explicit not in ENV_ALLOWED:
+        return (None, f"environment '{explicit}' は許可外です（{', '.join(ENV_ALLOWED)} のいずれか）")
+    inferred = infer_env_from_name(app_name)
+    if inferred is not None and inferred != explicit:
+        return (None, f"environment='{explicit}' が命名接頭辞から推定される '{inferred}' と矛盾します（接頭辞か environment を揃えてください）")
+    return (explicit, None)
+
+def resolve_shared_vpc_env(env, shared_vpc):
+    """接続先 Shared VPC ホストの環境を決定する。ホストは prod/dev の2つのみ（stag は prod ホストに相乗り）。
+    shared_vpc 未指定なら 'none'。environment から導出し、命名接頭辞には依存しない。"""
+    if not str(shared_vpc or "").strip():
+        return "none"
+    return "dev" if env == "dev" else "prod"
+
 class ResourceValidator:
     @staticmethod
     def validate_gcp_resource_name(name, resource_type, prefix=""):
@@ -203,13 +242,13 @@ def generate_resources():
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"]
+        headers = ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"]
         ws.append(headers)
         wb.save(xlsx_path)
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
+        "resources": ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
         "tag_definitions": ["tag_key", "allowed_values", "description"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services", "dry_run"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
@@ -332,6 +371,10 @@ def generate_resources():
             else:
                 name_err = validator.validate_gcp_resource_name(r.get('resource_name'), r.get('resource_type'), prefix=project_id_prefix)
                 if name_err: errors.append(f"[resources] Row {idx}: {name_err}")
+            # environment 列の検証（プロジェクトのみ）: 明示値の許可外・命名接頭辞との矛盾をエラーにする
+            if str(r.get('resource_type') or '').strip().lower() == 'project':
+                _, env_err = resolve_environment(r.get('resource_name'), r.get('environment'))
+                if env_err: errors.append(f"[resources] Row {idx}: {env_err}")
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
@@ -627,16 +670,19 @@ def generate_resources():
         folder_id_val = "null" if parent_folder == 'organization_id' else f'"{sanitize_id(parent_folder)}"'
         # 既存プロジェクト採用(adopt)モード: existing_project_id があれば既存IDを採用（空なら新規作成）
         existing_pid = str(proj.get('existing_project_id') or '').strip()
-        
+        # environment は必須・明示（空欄や許可外・接頭辞矛盾は検証フェーズでエラー済み）。
+        env, _ = resolve_environment(app_name, proj.get('environment'))
+        shared_vpc_env = resolve_shared_vpc_env(env, proj.get('shared_vpc'))
+
         # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
 app_name            = "{app_name}"
 existing_project_id = "{existing_pid}"
-environment         = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
+environment         = "{env}"
 folder_id           = {folder_id_val}
-shared_vpc_env      = "{'dev' if app_name.startswith('dev-') and proj.get('shared_vpc') else 'prod' if proj.get('shared_vpc') else 'none'}"
+shared_vpc_env      = "{shared_vpc_env}"
 shared_vpc_subnet   = "{str(proj.get('shared_vpc') or '').strip()}"
 vpc_sc              = "{str(proj.get('vpc_sc') or '').strip()}"
 central_monitoring  = {str(is_true(proj.get('central_monitoring'))).lower()}
@@ -647,7 +693,7 @@ org_tags            = {json.dumps([t.strip() for t in str(proj.get('org_tags') o
 deletion_protection = true
 
 labels = {{
-  env   = "{'prod' if app_name.startswith('prd-') else 'stag' if app_name.startswith('stg-') else 'dev'}"
+  env   = "{env}"
   owner = "{str(proj.get('owner') or 'unknown').strip()}"
   app   = "{app_name}"
 }}
