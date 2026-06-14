@@ -372,10 +372,10 @@ def generate_resources():
             tag_err = validator.validate_tags(str(r.get('org_tags') or ''), tag_definitions)
             if tag_err: errors.append(f"[resources] Row {idx}: {tag_err}")
             
-            # --- ▼ 追加: owner の GCPラベル形式バリデーション ---
-            owner = str(r.get('owner') or 'unknown').strip()
-            if owner != 'unknown' and not re.match(r'^[a-z0-9_-]{1,63}$', owner):
-                errors.append(f"[resources] Row {idx}: Owner '{owner}' はGCPラベルとして不正な形式です。1-63文字の小文字、数字、ハイフン(-)、アンダースコア(_)のみを使用してください（@や.は不可）。")
+            # --- owner の GCPラベル形式バリデーション（任意。空欄=owner ラベルなし） ---
+            owner = str(r.get('owner') or '').strip()
+            if owner and not re.match(r'^[a-z0-9_-]{1,63}$', owner):
+                errors.append(f"[resources] Row {idx}: Owner '{owner}' はGCPラベルとして不正な形式です。1-63文字の小文字、数字、ハイフン(-)、アンダースコア(_)のみを使用してください（@や.は不可）。空欄も可（その場合 owner ラベルは付与されません）。")
 
     if org_policies_data:
         folder_names = set(folders_map.keys())
@@ -688,7 +688,7 @@ deletion_protection = true
 
 labels = {{
   env   = "{env}"
-  owner = "{str(proj.get('owner') or 'unknown').strip()}"
+  owner = "{str(proj.get('owner') or '').strip()}"
   app   = "{app_name}"
 }}
 """
