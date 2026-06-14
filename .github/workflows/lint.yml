@@ -207,9 +207,12 @@ jobs:
       # 衝突しない escape:false / マーカー周りの空行を定義）。--output-check で鮮度を検証。
       - name: Check module README
         run: |
+          terraform-docs --version
+          # 一時デバッグ: --output-check は差分を表示しないため、再生成して git diff で差分を可視化する。
           terraform-docs --config "${{ github.workspace }}/.terraform-docs.yml" \
-            --output-check \
             "${{ matrix.working-directory }}"
+          git diff --exit-code -- "${{ matrix.working-directory }}/README.md" \
+            || { echo "::error::README is out of date (上の diff を参照)"; exit 1; }
 
   ####################################################
   # Job 6: Run terraform test for modules
