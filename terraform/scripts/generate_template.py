@@ -23,13 +23,15 @@ def create_template():
     sheets_config = {
         "resources": {
             "headers": [
-                "resource_type", "parent_name", "resource_name", "owner",
+                "resource_type", "parent_name", "resource_name", "environment",
+                "existing_project_id", "owner",
                 "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc",
                 "central_monitoring", "central_logging", "org_tags"
             ],
             "validations": [
-                {"cols": "A", "formula": '"folder,project"'},
-                {"cols": "I:J", "formula": '"TRUE,FALSE"'}
+                {"cols": "A", "formula": '"folder,project"'},          # resource_type
+                {"cols": "D", "formula": '"prod,stag,dev"'},           # environment（プロジェクトは必須）
+                {"cols": "K:L", "formula": '"TRUE,FALSE"'}             # central_monitoring / central_logging
             ]
         },
         "shared_vpc_subnets": {

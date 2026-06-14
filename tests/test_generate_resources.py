@@ -5,7 +5,12 @@ import ipaddress
 
 # Add the script directory to the path so we can import ResourceValidator
 sys.path.append(os.path.join(os.path.dirname(__file__), '../terraform/scripts'))
-from generate_resources import ResourceValidator
+from generate_resources import (
+    ResourceValidator,
+    resolve_environment,
+    infer_env_from_name,
+    resolve_shared_vpc_env,
+)
 
 @pytest.fixture
 def validator():
@@ -178,3 +183,49 @@ def test_validate_log_sinks_bigquery_no_hyphen(validator):
     log_sinks = [{"log_type": "エラーログ", "destination_type": "BigQuery", "destination_parent": "error_logs"}]
     errors = validator.validate_log_sinks(log_sinks)
     assert not any("ハイフン" in e for e in errors)
+
+# --- Environment Resolution Tests ---
+
+def test_infer_env_from_name():
+    assert infer_env_from_name("prd-app") == "prod"
+    assert infer_env_from_name("stg-app") == "stag"
+    assert infer_env_from_name("dev-app") == "dev"
+    assert infer_env_from_name("app-foo") is None
+    assert infer_env_from_name("") is None
+
+def test_resolve_environment_explicit_wins():
+    # 明示値（許可値）はそのまま採用
+    assert resolve_environment("app-foo", "prod") == ("prod", None)
+
+def test_resolve_environment_explicit_normalized():
+    # 大文字/空白は正規化される
+    env, err = resolve_environment("app-foo", "  PROD ")
+    assert env == "prod" and err is None
+
+def test_resolve_environment_invalid_explicit():
+    env, err = resolve_environment("app-foo", "production")
+    assert env is None and err is not None and "許可外" in err
+
+def test_resolve_environment_conflict():
+    # 接頭辞 prd-（prod推定）と明示 dev が矛盾 → エラー
+    env, err = resolve_environment("prd-app", "dev")
+    assert env is None and err is not None and "矛盾" in err
+
+def test_resolve_environment_explicit_matches_prefix():
+    assert resolve_environment("prd-app", "prod") == ("prod", None)
+
+def test_resolve_environment_blank_is_error():
+    # 空欄は必須エラー（接頭辞があっても補完しない＝暗黙挙動を排除）
+    env, err = resolve_environment("stg-app", "")
+    assert env is None and err is not None and "未指定" in err
+    env2, err2 = resolve_environment("app-foo", None)
+    assert env2 is None and err2 is not None and "未指定" in err2
+
+def test_resolve_shared_vpc_env():
+    # shared_vpc 未指定 → none
+    assert resolve_shared_vpc_env("prod", "") == "none"
+    assert resolve_shared_vpc_env("dev", None) == "none"
+    # 指定あり → dev は dev ホスト、prod/stag は prod ホスト（ホストは2種のみ）
+    assert resolve_shared_vpc_env("dev", "subnet-a") == "dev"
+    assert resolve_shared_vpc_env("prod", "subnet-a") == "prod"
+    assert resolve_shared_vpc_env("stag", "subnet-a") == "prod"
