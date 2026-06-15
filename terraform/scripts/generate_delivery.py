@@ -206,6 +206,9 @@ def build_cover(wb, meta):
     t = ws.cell(row=5, column=2, value="基盤構築 設定明細書")
     t.font = F_TITLE
     ws.merge_cells("B5:E6")
+    # 22pt のタイトルが上側で見切れないよう、結合した5・6行目の高さを確保する
+    ws.row_dimensions[5].height = 19
+    ws.row_dimensions[6].height = 19
     ws.cell(row=8, column=2, value="GCP Foundations 納品ドキュメント").font = F_SUBTITLE
 
     pairs = [
