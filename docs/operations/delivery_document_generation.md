@@ -32,6 +32,8 @@ ______________________________________________________________________
 
 > 各プロジェクトの `terraform/4_projects/<name>/terraform.tfvars` は **読み込みません**。tfvars 自体が SSoT から `make generate` で生成される派生物のため、上流の SSoT を直接参照しています。
 
+> 管理用 Google グループとその組織レベル IAM ロール（シート10）は SSoT には存在せず、`terraform/2_organization/main.tf` の `locals.raw_roles` を `generate_delivery.py` 内に転記して反映しています。集約／フルモードの切替（`enable_simplified_admin_groups`）と適用有無（`enable_group_iam`）は `common.tfvars` の値で判定します。terraform 側のロール定義を変更した場合は、スクリプト側の `GROUP_ROLES` も更新してください。
+
 ______________________________________________________________________
 
 ## 3. 出力（シート構成）
@@ -49,7 +51,8 @@ ______________________________________________________________________
 | 7. 監視・予算 | 7-1 アラート定義／7-2 通知先／7-3 予算アラート |
 | 8. ネットワーク | 8-1 Shared VPC サブネット／8-2 VPC-SC 境界 |
 | 9. タグ・ラベル | 9-1 組織タグ定義（`tag_definitions`）／9-2 プロジェクト別 ラベル(`app`/`env`/`owner`)・適用タグ(`org_tags`) |
-| 10. 費用注意事項 | コストが増加しやすい設定（Data Access 監査ログ集約・VPC フローログ・シンク先 BigQuery/GCS・Monitoring 取り込み等）の注意事項と抑制策 |
+| 10. Google グループ・IAM | 管理用 Google グループと付与される組織レベル IAM ロール（集約／フルモード・`enable_group_iam` の適用状態を反映） |
+| 11. 費用注意事項 | コストが増加しやすい設定（Data Access 監査ログ集約・VPC フローログ・シンク先 BigQuery/GCS・Monitoring 取り込み等）の注意事項と抑制策 |
 
 ### 判定ロジックの要点
 

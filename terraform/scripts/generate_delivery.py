@@ -303,6 +303,8 @@ def build_summary(wb, meta, ctx):
          "完了" if (ctx["subnets"] or ctx["perimeters"]) else "—"),
         ("タグ・ラベル付与", "組織タグの定義と、プロジェクトへのラベル(app/env/owner)付与",
          "完了" if (ctx["projects"] or ctx["tag_definitions"]) else "—"),
+        ("Google グループ・IAM", "管理用 Google グループへの組織レベル IAM ロール付与",
+         "完了" if str(ctx["tfvars"].get("enable_group_iam", "true")).lower() == "true" else "—"),
     ]
     records = [{"No": i, "構築項目": n, "概要": d, "実施状況": s}
                for i, (n, d, s) in enumerate(items, start=1)]
@@ -515,11 +517,122 @@ def build_tags_labels(wb, ctx):
     c.font = F_NOTE
 
 
+# 管理用 Google グループと組織レベル IAM ロール（terraform/2_organization/main.tf の
+# locals.raw_roles を転記）。SSoT(Excel) には存在しないため、ここで定義を反映する。
+GROUP_ROLES = {
+    "gcp-organization-admins": (
+        "組織管理者", [
+            "roles/cloudkms.admin", "roles/cloudsupport.admin", "roles/iam.organizationRoleAdmin",
+            "roles/orgpolicy.policyAdmin", "roles/pubsub.admin", "roles/resourcemanager.folderAdmin",
+            "roles/resourcemanager.organizationAdmin", "roles/resourcemanager.projectCreator",
+            "roles/securitycenter.admin",
+        ]),
+    "gcp-billing-admins": (
+        "請求管理者", [
+            "roles/billing.creator", "roles/resourcemanager.organizationViewer",
+        ]),
+    "gcp-vpc-network-admins": (
+        "VPC ネットワーク管理者", [
+            "roles/compute.networkAdmin", "roles/compute.securityAdmin", "roles/compute.xpnAdmin",
+            "roles/resourcemanager.folderViewer",
+        ]),
+    "gcp-hybrid-connectivity-admins": (
+        "ハイブリッド接続管理者", [
+            "roles/compute.networkAdmin", "roles/resourcemanager.folderViewer",
+        ]),
+    "gcp-logging-monitoring-admins": (
+        "ログ・監視 管理者", [
+            "roles/logging.admin", "roles/monitoring.admin", "roles/pubsub.admin",
+        ]),
+    "gcp-logging-monitoring-viewers": (
+        "ログ・監視 閲覧者", [
+            "roles/logging.viewer", "roles/monitoring.viewer",
+        ]),
+    "gcp-security-admins": (
+        "セキュリティ管理者", [
+            "roles/cloudkms.admin", "roles/compute.viewer", "roles/container.viewer",
+            "roles/iam.organizationRoleViewer", "roles/iam.securityAdmin", "roles/iam.securityReviewer",
+            "roles/iam.serviceAccountCreator", "roles/logging.admin", "roles/logging.configWriter",
+            "roles/logging.privateLogViewer", "roles/monitoring.admin", "roles/orgpolicy.policyAdmin",
+            "roles/resourcemanager.folderIamAdmin", "roles/securitycenter.admin",
+        ]),
+    "gcp-developers": (
+        "開発者", [
+            "roles/browser", "roles/viewer", "roles/resourcemanager.organizationViewer",
+        ]),
+    "gcp-devops": (
+        "DevOps", [
+            "roles/resourcemanager.folderViewer",
+        ]),
+}
+
+
+def resolve_group_roles(simplified):
+    """terraform の group_roles と同じ選択ロジック。
+    集約モード(simplified=True): 請求以外の全ロールを組織管理者へ統合し、2グループに集約。
+    フルモード: 9グループをそのまま使用。返り値 [(group, desc, [roles]), ...]。
+    """
+    if not simplified:
+        return [(g, d, r) for g, (d, r) in GROUP_ROLES.items()]
+    merged, seen = [], set()
+    for g, (d, roles) in GROUP_ROLES.items():
+        if g == "gcp-billing-admins":
+            continue
+        for r in roles:
+            if r not in seen:
+                seen.add(r)
+                merged.append(r)
+    billing = GROUP_ROLES["gcp-billing-admins"]
+    return [
+        ("gcp-organization-admins", "組織管理者（集約モード：請求以外の全ロールを統合）", merged),
+        ("gcp-billing-admins", billing[0], list(billing[1])),
+    ]
+
+
+def build_groups_iam(wb, ctx):
+    ws = wb.create_sheet("10.Googleグループ・IAM")
+    ws.sheet_view.showGridLines = False
+    _set_widths(ws, [34, 26, 12, 52])
+    tv = ctx["tfvars"]
+    domain = ctx["org_domain"]
+    simplified = str(tv.get("enable_simplified_admin_groups", "false")).lower() == "true"
+    group_iam_on = str(tv.get("enable_group_iam", "true")).lower() == "true"
+
+    row = section_title(ws, 2, "10. 管理用 Google グループと IAM ロール", 4)
+    pairs = [
+        ("グループ構成モード", "集約モード（2グループ）" if simplified else "フルモード（9グループ）"),
+        ("組織レベル IAM 付与", "有効（適用済み）" if group_iam_on else "無効（IAM バインディング未適用）"),
+        ("グループ メール形式", f"<グループ名>@{domain}"),
+        ("付与レベル", "組織レベル（Organization IAM）"),
+    ]
+    row = kv_table(ws, row, pairs, label_w=2)
+
+    row = section_title(ws, row, "グループ別 付与ロール一覧", 4)
+    records = []
+    for g, desc, roles in resolve_group_roles(simplified):
+        records.append({
+            "グループ（メール）": f"{g}@{domain}",
+            "役割": desc,
+            "付与レベル": "組織",
+            "IAM ロール": "\n".join(roles),
+        })
+    row = table(ws, row, ["グループ（メール）", "役割", "付与レベル", "IAM ロール"], records,
+                col_keys=["グループ（メール）", "役割", "付与レベル", "IAM ロール"])
+
+    note = ("※ Google グループ自体は Cloud Identity / 管理コンソール（Cloud セットアップ）で事前作成します"
+            "（Terraform はグループを作成せず、組織レベルの IAM ロール付与のみを管理）。")
+    if not group_iam_on:
+        note += " 現在は enable_group_iam=false のため、上記ロールの自動付与は未適用です（手動付与または将来適用）。"
+    c = ws.cell(row=row, column=1, value=note)
+    c.font = F_NOTE
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+
+
 def build_cost_notes(wb, ctx):
-    ws = wb.create_sheet("10.費用注意事項")
+    ws = wb.create_sheet("11.費用注意事項")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [22, 40, 26, 40])
-    row = section_title(ws, 2, "10. 費用に関する注意事項", 4)
+    row = section_title(ws, 2, "11. 費用に関する注意事項", 4)
 
     intro = ws.cell(row=row, column=1,
                     value="本基盤の構成は、設定内容や対象範囲によってGoogle Cloudの利用料金が増加する場合があります。"
@@ -642,6 +755,7 @@ def main():
         "subnets": subnets,
         "perimeters": perimeters,
         "tag_definitions": tag_definitions,
+        "org_domain": meta["org_domain"],
         "mgmt_projects": derive_mgmt_projects(tfvars.get("project_id_prefix"), tfvars),
     }
 
@@ -658,6 +772,7 @@ def main():
     build_monitoring(wb, ctx)
     build_network(wb, ctx)
     build_tags_labels(wb, ctx)
+    build_groups_iam(wb, ctx)
     build_cost_notes(wb, ctx)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
