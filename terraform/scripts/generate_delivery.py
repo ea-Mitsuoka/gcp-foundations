@@ -515,6 +515,64 @@ def build_tags_labels(wb, ctx):
     c.font = F_NOTE
 
 
+def build_cost_notes(wb, ctx):
+    ws = wb.create_sheet("10.費用注意事項")
+    ws.sheet_view.showGridLines = False
+    _set_widths(ws, [22, 40, 26, 40])
+    row = section_title(ws, 2, "10. 費用に関する注意事項", 4)
+
+    intro = ws.cell(row=row, column=1,
+                    value="本基盤の構成は、設定内容や対象範囲によってGoogle Cloudの利用料金が増加する場合があります。"
+                          "特にログ・監視まわりはデータ量に比例して課金されるため、以下を運用開始前にご確認ください。"
+                          "（金額は利用量に依存します。詳細は Google Cloud の料金表・料金計算ツールをご参照ください。）")
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    intro.font = F_BODY
+    intro.alignment = AL_TOP
+    ws.row_dimensions[row].height = 46
+    row += 2
+
+    notes = [
+        ("データアクセス監査ログの集約",
+         "Data Access 監査ログは出力量が非常に多く、ログ集約シンク経由で BigQuery / Cloud Storage に取り込むと保管・取り込み課金が大きく増加します。",
+         "BigQuery 取り込み・保管 / Cloud Storage 保管",
+         "既定では管理アクティビティ監査ログのみ集約。Data Access は必要なサービス・プロジェクトに限定して有効化する。"),
+        ("VPC フローログ",
+         "サンプリング率・集約間隔の設定によりログ生成量が大きく変動し、生成およびエクスポート（シンク先）の課金が増加します。",
+         "フローログ生成 / シンク先の取り込み・保管",
+         "必要なサブネットのみ有効化。サンプリング率を下げ、集約間隔を広げる。保持期間を短く設定する。"),
+        ("ログ集約シンク先（BigQuery）",
+         "シンクで取り込んだログはデータセットに蓄積され、ストレージ課金とクエリ課金が継続的に発生します。",
+         "BigQuery ストレージ / クエリ",
+         "log_sinks の retention_days（テーブル有効期限）を設定し、不要ログをフィルタで除外する。"),
+        ("ログ集約シンク先（Cloud Storage）",
+         "バケットへ蓄積されるログ量とストレージクラス・保持期間に応じて課金が継続します。",
+         "Cloud Storage 保管 / オペレーション",
+         "ライフサイクルルールで古いログを安価なクラスへ移行・自動削除する。retention_days を設定する。"),
+        ("Cloud Monitoring（指標取り込み）",
+         "監視対象の追加や、ログベース指標・カスタム指標の利用量に応じて取り込み課金が発生します。",
+         "Monitoring 指標取り込み",
+         "不要なログベース指標・カスタム指標を作りすぎない。監視対象スコープを必要範囲に保つ。"),
+        ("ログの長期保持（_Default 等）",
+         "ログバケットの保持日数を既定より延長すると、保持量に応じた課金が発生します。",
+         "Cloud Logging 保管",
+         "要件に応じた保持日数に設定する。長期保管は安価な BigQuery / GCS への集約側で行う。"),
+        ("ネットワーク下り（外部への通信）",
+         "外部への下りトラフィックや Cloud NAT 等のネットワーク機能は従量課金の対象です。",
+         "下りトラフィック / Cloud NAT",
+         "不要な外部通信を抑制し、リージョン構成・経路を最適化する。"),
+    ]
+    records = [{
+        "区分": n[0], "コスト発生の要因": n[1], "主な課金対象": n[2], "コスト抑制の推奨": n[3],
+    } for n in notes]
+    row = table(ws, row, ["区分", "コスト発生の要因", "主な課金対象", "コスト抑制の推奨"], records,
+                col_keys=["区分", "コスト発生の要因", "主な課金対象", "コスト抑制の推奨"])
+    c = ws.cell(row=row, column=1,
+                value="※ 上記は一般的な注意事項です。予算アラート（7-3）の設定とあわせて、定期的なコストレビューを推奨します。"
+                      "VPC-SC・組織ポリシー・予算アラート自体に追加課金は発生しません。")
+    c.font = F_NOTE
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+
+
 # ------------------------------------------------------------------------------
 # メイン
 # ------------------------------------------------------------------------------
@@ -600,6 +658,7 @@ def main():
     build_monitoring(wb, ctx)
     build_network(wb, ctx)
     build_tags_labels(wb, ctx)
+    build_cost_notes(wb, ctx)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     out_path = os.path.join(OUTPUT_DIR, f"GCP基盤構築_設定明細書_{stamp}.xlsx")
