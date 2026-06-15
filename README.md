@@ -65,6 +65,7 @@ make lint
 1. **[共通モジュールのメンテナンス](docs/operations/module_maintenance.md)**: モジュール改修時のデプロイ戦略
 1. **[後任者・リカバリガイド](docs/operations/recovery_and_succession.md)**: 設定ファイルの復元と安全な引き継ぎ
 1. **[顧客引き渡し手順](docs/operations/handover_procedure.md)**: 納品時に実行するGit履歴のクリアと権限移譲の手順
+1. **[納品物（構築設定明細書）自動生成 機能説明](docs/operations/delivery_document_generation.md)**: `make delivery` が SSoT から日本のベンダー様式の設定明細書 Excel を自動生成する仕組み
 
 ### 📖 リファレンス・設計資料 (Reference & Architecture)
 
@@ -92,7 +93,8 @@ make opa        # Regoポリシーの構文チェック
 make test       # モジュールの単体テスト実行
 make deploy     # 基盤全体の一括デプロイ実行
 make prune      # SSoTから削除されたプロジェクトの残骸ディレクトリを対話形式で削除
-make delivery   # 納品用リポジトリの作成 (Git履歴リセット)
+make delivery   # 納品物(構築設定明細書)生成 → 納品用リポジトリの作成 (Git履歴リセット)
+make delivery-doc # 納品物(構築設定明細書)のみを delivery/ に生成
 ```
 
 ## 📖 設計思想

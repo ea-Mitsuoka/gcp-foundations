@@ -58,3 +58,8 @@ docs/migration/*
 
 # Excel temporary lock files
 ~$*.xlsx
+
+# 納品物（make delivery / make delivery-doc が自動生成する構築設定明細書）。
+# テンプレートリポジトリでは追跡しない（顧客固有データを含むため）。
+# handover.sh が除外を解除し、顧客への納品リポジトリには同梱される。
+delivery/

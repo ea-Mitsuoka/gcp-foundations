@@ -14,10 +14,11 @@ ______________________________________________________________________
 make delivery
 ```
 
-このコマンドは内部的に `terraform/scripts/handover.sh` を実行し、以下の処理を行います：
+このコマンドは内部的に、まず `terraform/scripts/generate_delivery.py`（納品物の生成）を実行し、続いて `terraform/scripts/handover.sh` を実行して以下の処理を行います：
 
+1. 納品物（構築設定明細書）を `delivery/` 配下に生成します（後述の「6. 納品物（構築設定明細書）の自動生成」を参照）。
 1. `.git` フォルダを削除し、全ての履歴を消去します。
-1. `git init` を行い、現在の最新状態で `Initial commit` を作成し直します。
+1. `git init` を行い、現在の最新状態で `Initial commit` を作成し直します（生成した納品物も同梱されます）。
 
 実行完了後、新しく作成されたリポジトリを顧客指定の Git ホスティングサービス（GitHub, GitLab など）へ Push してください。
 
@@ -131,3 +132,15 @@ ______________________________________________________________________
 - **[後任者・リカバリガイド (Recovery & Succession)](./recovery_and_succession.md)**
 
 このガイドには、不足している `tfvars` や `backend` 設定の復元方法、権限の借用手順などが記載されています。
+
+______________________________________________________________________
+
+## 6. 納品物（構築設定明細書）の自動生成
+
+`make delivery` 実行時（または単体で `make delivery-doc`）、SSoT である `gcp-foundations.xlsx` と `terraform/common.tfvars` / `domain.env` を読み取り、日本のシステム開発における一般的な「設計・設定明細書」様式の Excel を `delivery/GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx` として自動生成します（生成スクリプト: `terraform/scripts/generate_delivery.py`）。
+
+シート構成・判定ロジック・表紙メタ情報の上書き方法など、機能の詳細は以下を参照してください。
+
+- **[納品物（構築設定明細書）自動生成 機能説明](./delivery_document_generation.md)**
+
+> `delivery/` はテンプレートリポジトリでは `.gitignore` 対象（顧客固有データを含むため）ですが、`handover.sh` が除外を解除するため、顧客への納品リポジトリ（`make delivery` 後の `Initial commit`）には同梱されます。
