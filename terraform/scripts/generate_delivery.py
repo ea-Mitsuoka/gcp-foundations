@@ -298,6 +298,8 @@ def build_summary(wb, meta, ctx):
          "完了" if ctx["budget_projects"] else "—"),
         ("ネットワーク構成", "Shared VPC / VPC Service Controls の構成",
          "完了" if (ctx["subnets"] or ctx["perimeters"]) else "—"),
+        ("タグ・ラベル付与", "組織タグの定義と、プロジェクトへのラベル(app/env/owner)付与",
+         "完了" if (ctx["projects"] or ctx["tag_definitions"]) else "—"),
     ]
     records = [{"No": i, "構築項目": n, "概要": d, "実施状況": s}
                for i, (n, d, s) in enumerate(items, start=1)]
@@ -323,6 +325,7 @@ def build_overview(wb, meta, ctx):
         ("Shared VPC", yn(tv.get("enable_shared_vpc", "false"))),
         ("VPC ホストプロジェクト", yn(tv.get("enable_vpc_host_projects", "false"))),
         ("組織ポリシー適用", yn(tv.get("enable_org_policies", "true"))),
+        ("組織タグ", yn(tv.get("enable_tags", "false"))),
         ("リソース削除許可", yn(tv.get("allow_resource_destruction", "false"))),
     ]
     row = kv_table(ws, row, pairs, label_w=2)
@@ -465,6 +468,50 @@ def build_network(wb, ctx):
           col_keys=["境界名", "タイトル", "制限サービス", "モード"])
 
 
+def build_tags_labels(wb, ctx):
+    ws = wb.create_sheet("9.タグ・ラベル")
+    ws.sheet_view.showGridLines = False
+    _set_widths(ws, [24, 30, 40])
+
+    row = section_title(ws, 2, "9-1. 組織タグ定義一覧", 3)
+    records = [{
+        "タグキー": str(t.get("tag_key") or ""),
+        "許可値": str(t.get("allowed_values") or ""),
+        "説明": str(t.get("description") or ""),
+    } for t in ctx["tag_definitions"]]
+    row = table(ws, row, ["タグキー", "許可値", "説明"], records,
+                col_keys=["タグキー", "許可値", "説明"])
+    c = ws.cell(row=row, column=1,
+                value="※ 組織レベルのタグ。common.tfvars の enable_tags 有効時に組織へ作成され、"
+                      "各プロジェクトの org_tags 指定に基づいて紐付けられます。")
+    c.font = F_NOTE
+    row += 2
+
+    row = section_title(ws, row, "9-2. プロジェクト別 ラベル／適用タグ", 3)
+    records = []
+    for p in ctx["projects"]:
+        app = str(p.get("resource_name") or "")
+        env = str(p.get("environment") or "").strip().lower()
+        owner = str(p.get("owner") or "").strip()
+        tags = str(p.get("org_tags") or "").strip()
+        labels = f"app={app}"
+        if env:
+            labels += f", env={env}"
+        if owner:
+            labels += f", owner={owner}"
+        records.append({
+            "プロジェクト": app,
+            "ラベル (labels)": labels,
+            "組織タグ (org_tags)": tags or "（なし）",
+        })
+    row = table(ws, row, ["プロジェクト", "ラベル (labels)", "組織タグ (org_tags)"], records,
+                col_keys=["プロジェクト", "ラベル (labels)", "組織タグ (org_tags)"])
+    c = ws.cell(row=row, column=1,
+                value="※ ラベルは GCP プロジェクトの labels。app は必ず付与され、env／owner は SSoT で"
+                      "値がある場合のみ付与されます（空欄は付与なし）。")
+    c.font = F_NOTE
+
+
 # ------------------------------------------------------------------------------
 # メイン
 # ------------------------------------------------------------------------------
@@ -511,6 +558,7 @@ def main():
     _, notifications = read_sheet(wb_src, "notifications")
     _, subnets = read_sheet(wb_src, "shared_vpc_subnets")
     _, perimeters = read_sheet(wb_src, "vpc_sc_perimeters")
+    _, tag_definitions = read_sheet(wb_src, "tag_definitions")
 
     folders = [r for r in resources if str(r.get("resource_type")).strip().lower() == "folder"]
     projects = [r for r in resources if str(r.get("resource_type")).strip().lower() == "project"]
@@ -532,6 +580,7 @@ def main():
         "notifications": notifications,
         "subnets": subnets,
         "perimeters": perimeters,
+        "tag_definitions": tag_definitions,
         "mgmt_projects": derive_mgmt_projects(tfvars.get("project_id_prefix"), tfvars),
     }
 
@@ -547,6 +596,7 @@ def main():
     build_log_sinks(wb, ctx)
     build_monitoring(wb, ctx)
     build_network(wb, ctx)
+    build_tags_labels(wb, ctx)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     out_path = os.path.join(OUTPUT_DIR, f"GCP基盤構築_設定明細書_{stamp}.xlsx")
