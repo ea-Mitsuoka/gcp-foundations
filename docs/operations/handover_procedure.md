@@ -137,42 +137,10 @@ ______________________________________________________________________
 
 ## 6. 納品物（構築設定明細書）の自動生成
 
-`make delivery` 実行時（または単体で `make delivery-doc`）、SSoT である `gcp-foundations.xlsx` と `terraform/common.tfvars` / `domain.env` を読み取り、日本のシステム開発における一般的な「設計・設定明細書」様式の Excel を `delivery/GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx` として自動生成します。
+`make delivery` 実行時（または単体で `make delivery-doc`）、SSoT である `gcp-foundations.xlsx` と `terraform/common.tfvars` / `domain.env` を読み取り、日本のシステム開発における一般的な「設計・設定明細書」様式の Excel を `delivery/GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx` として自動生成します（生成スクリプト: `terraform/scripts/generate_delivery.py`）。
 
-生成スクリプト: `terraform/scripts/generate_delivery.py`
+シート構成・判定ロジック・表紙メタ情報の上書き方法など、機能の詳細は以下を参照してください。
 
-### 出力内容（シート構成）
-
-| シート | 内容 |
-| --- | --- |
-| 表紙 | 顧客名・対象組織ドメイン・組織ID・文書番号・版数・作成日・作成者・承認欄 |
-| 改訂履歴 | 版数／改訂日／改訂内容（初版を自動記載） |
-| 1. 構築項目一覧 | 組織取り込み・組織ポリシー・ログ集約・モニタリング・予算アラート・課金リンク等の実施総括 |
-| 2. 構築概要 | 環境情報（接頭辞・課金・リージョン・各種フラグ）と管理プロジェクト一覧 |
-| 3. フォルダ構成 | フォルダ階層 |
-| 4. プロジェクト一覧 | 表示名・配置先・環境・取り込み元ID・集中監視/ログ・予算 |
-| 5. 組織ポリシー | 適用対象・ポリシーID・強制・許可リスト・適用モード |
-| 6. ログ集約シンク | ログ種別・フィルタ・宛先・保持日数 |
-| 7. 監視・予算 | アラート定義／通知先／予算アラート |
-| 8. ネットワーク | Shared VPC サブネット／VPC-SC 境界 |
-| 9. タグ・ラベル | 組織タグ定義／プロジェクト別ラベル(app/env/owner)・適用タグ |
-
-> 「1. 構築項目一覧」の実施状況は SSoT の定義有無から判定し、定義がない項目は「—」と表示されます（虚偽の「完了」を出さない）。
-
-### 表紙メタ情報の上書き
-
-表紙の顧客名・作成者・版数・文書番号は環境変数で上書きできます（未指定時はプレースホルダ）。
-
-```bash
-DELIVERY_CUSTOMER="〇〇株式会社" DELIVERY_AUTHOR="氏名" DELIVERY_VERSION="1.0" make delivery-doc
-```
-
-| 環境変数 | 既定値 |
-| --- | --- |
-| `DELIVERY_CUSTOMER` | （顧客名を記入） |
-| `DELIVERY_VENDOR` | 株式会社イー・エージェンシー |
-| `DELIVERY_AUTHOR` | （作成者を記入） |
-| `DELIVERY_VERSION` | 1.0 |
-| `DELIVERY_DOCNO` | `GCP-FND-<YYYYMMDD>` |
+- **[納品物（構築設定明細書）自動生成 機能説明](./delivery_document_generation.md)**
 
 > `delivery/` はテンプレートリポジトリでは `.gitignore` 対象（顧客固有データを含むため）ですが、`handover.sh` が除外を解除するため、顧客への納品リポジトリ（`make delivery` 後の `Initial commit`）には同梱されます。
