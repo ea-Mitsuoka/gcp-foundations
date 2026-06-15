@@ -275,6 +275,28 @@ def build_revision(wb, meta):
     table(ws, row, ["版数", "改訂日", "改訂内容", "作成者", "承認"], records)
 
 
+def build_toc(wb):
+    ws = wb.create_sheet("目次")
+    ws.sheet_view.showGridLines = False
+    _set_widths(ws, [8, 52])
+    row = section_title(ws, 2, "目次", 2)
+    entries = [
+        ("1", "構築項目一覧"),
+        ("2", "構築概要（環境情報）"),
+        ("3", "フォルダ構成"),
+        ("4", "プロジェクト一覧"),
+        ("5", "組織ポリシー設定一覧"),
+        ("6", "ログ集約シンク設定"),
+        ("7", "監視・予算（アラート／通知／予算）"),
+        ("8", "ネットワーク（Shared VPC／VPC-SC）"),
+        ("9", "タグ・ラベル"),
+        ("10", "Google グループ・IAM"),
+        ("11", "費用に関する注意事項"),
+    ]
+    records = [{"章": no, "項目": title} for no, title in entries]
+    table(ws, row, ["章", "項目"], records, col_keys=["章", "項目"])
+
+
 def build_summary(wb, meta, ctx):
     """構築項目一覧（実施サマリ）— 顧客が一目で「何を実施したか」を確認できる総括表。"""
     ws = wb.create_sheet("1.構築項目一覧")
@@ -763,6 +785,7 @@ def main():
     wb.remove(wb.active)
     build_cover(wb, meta)
     build_revision(wb, meta)
+    build_toc(wb)
     build_summary(wb, meta, ctx)
     build_overview(wb, meta, ctx)
     build_folders(wb, ctx)
