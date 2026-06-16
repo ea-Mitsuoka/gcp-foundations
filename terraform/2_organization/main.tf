@@ -78,12 +78,39 @@ locals {
     ]
   }
 
-  # 集約モード (enable_simplified_admin_groups = true) の場合のグループ構成
-  # 組織管理者に請求以外の全てのロールを統合します
+  # 簡略モードで gcp-organization-admins から除外する「冗長ロール」。
+  # 付与しても権限は増えず（同サービスの admin か基本ロール roles/viewer に包含される）、
+  # 監査ノイズと保守コストになるだけのもの。包含関係:
+  #   - logging.admin                     ⊇ logging.viewer / logging.configWriter / logging.privateLogViewer
+  #   - monitoring.admin                  ⊇ monitoring.viewer
+  #   - resourcemanager.folderAdmin       ⊇ folderViewer / folderIamAdmin
+  #   - resourcemanager.organizationAdmin ⊇ organizationViewer
+  #   - iam.organizationRoleAdmin         ⊇ organizationRoleViewer
+  #   - 基本ロール roles/viewer            ⊇ browser / compute.viewer / container.viewer
+  # 注: iam.securityReviewer は横断的な getIamPolicy を持ち securityAdmin にも roles/viewer にも
+  #     包含されないため、ここには含めず残す。
+  simplified_redundant_roles = [
+    "roles/logging.viewer",
+    "roles/logging.configWriter",
+    "roles/logging.privateLogViewer",
+    "roles/monitoring.viewer",
+    "roles/resourcemanager.folderViewer",
+    "roles/resourcemanager.folderIamAdmin",
+    "roles/resourcemanager.organizationViewer",
+    "roles/iam.organizationRoleViewer",
+    "roles/browser",
+    "roles/compute.viewer",
+    "roles/container.viewer",
+  ]
+
+  # 集約モード (enable_simplified_admin_groups = true) の場合のグループ構成。
+  # 組織管理者に請求(gcp-billing-admins)以外の全ロールを統合しつつ、上記の冗長ロールを除外する。
   simplified_group_roles = {
-    "gcp-organization-admins" = distinct(flatten([
-      for name, roles in local.raw_roles : roles if name != "gcp-billing-admins"
-    ]))
+    "gcp-organization-admins" = [
+      for r in distinct(flatten([
+        for name, roles in local.raw_roles : roles if name != "gcp-billing-admins"
+      ])) : r if !contains(local.simplified_redundant_roles, r)
+    ]
     "gcp-billing-admins" = local.raw_roles["gcp-billing-admins"]
   }
 
