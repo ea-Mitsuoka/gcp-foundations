@@ -148,6 +148,7 @@ Shared VPC のサブネットは SSoT で管理されているが、ファイア
 #### 9. 既存プロジェクト採用(adopt)モード — 非準拠IDの既存プロジェクトを標準管理下に
 
 > **✅ 実装済み（2026-06-08 / Phase 1 + Phase 2）**:
+>
 > - `modules/project-factory`: `create_project`(bool, 既定 true) / `project_id_override`(string) を追加。`effective_project_id = create_project ? project_id : (project_id_override != "" ? project_id_override : project_id)`。**既定では従来どおり** var.project_id を使用＝後方互換（回帰テスト `adopt.tftest.hcl` で検証、`make test` 緑）。
 > - `modules/app-project-baseline`: `existing_project_id` を追加し、空でなければ `create_project=false` + `project_id_override` を project-factory へ透過。
 > - `4_projects/template`: `existing_project_id` 変数と baseline への透過を追加（生成プロジェクトに引き継がれる）。
@@ -162,22 +163,26 @@ Shared VPC のサブネットは SSoT で管理されているが、ファイア
 **設計案（段階導入）**:
 
 1. **モジュール側に「採用モード」を追加**
+
    - `modules/project-factory`: `create_project`（bool, default true）と `project_id_override`（string, default ""）を追加。
      - `create_project=false` の場合、`google_project` を新規作成扱いにせず、`project_id = coalesce(project_id_override, "<prefix>-<app_name>")` で**既存IDを採用**（実体は `terraform import` で state に取り込む）。
    - `modules/app-project-baseline`: 上記フラグを透過。下流の監視/VPC/VPC-SC/タグ各リソースは元々 `project_id`/`project_number` を入力に取るため、**採用したIDをそのまま渡せば変更不要**。
    - 既存属性（`deletion_policy`/`billing_account`/`labels`）は import 後に差分が出ないよう、採用モードでは `lifecycle.ignore_changes` を選択可能にする（移行期間の課金切替などに対応）。
 
-2. **SSoT(Excel) 拡張（任意・最終形）**
+1. **SSoT(Excel) 拡張（任意・最終形）**
+
    - `resources` シートに `existing_project_id` 列を追加。値があれば `generate_resources.py` が「採用モード」のディレクトリ（`create_project=false` + `project_id_override`）を生成。
    - 生成後は人間が一度だけ `terraform import` を実行（ID変更不可のため import は不可避）。以降は標準フロー（`make generate`/`make deploy`）で管理。
    - バリデーション追加: `existing_project_id` の形式チェック、通常生成IDとの二重定義禁止。
 
-3. **移行手順（既存プロジェクト1件あたり）**
+1. **移行手順（既存プロジェクト1件あたり）**
+
    - SA に対象プロジェクトの `roles/owner` 付与 → `make generate` → `terraform import module.baseline.module.project.google_project.this <ID>` → `plan`（destroy/replace が無いこと）→ `apply`。
 
 **手間（見積もり）**: project-factory/baseline のフラグ実装＋tftest＝中。Excel列＋generate対応＝中。合計**中〜高**。
 
 **リスク**:
+
 - **共有モジュール改修は全プロジェクトに波及**。`create_project` 分岐の既定値を誤ると新規作成フローを壊す → tftest で「従来どおり新規作成される」回帰テストを必須化。
 - import 時の属性差分（billing/labels/deletion_policy）の吸収設計を誤ると、初回 apply で意図しない変更。
 - Shared VPC/VPC-SC を採用プロジェクトに適用するのは「IaC配線」ではなく**実環境の移行**であり、本機能とは別のリスク（接続断・締め出し）。adopt モードは「管理下に置く」までを担い、ネットワーク/境界投入は段階適用で別途判断する。
@@ -191,8 +196,8 @@ ______________________________________________________________________
 **背景・課題**: 現状の予算通知は **`budget_alert_emails` 列のメールアドレスから email 型の通知チャネルを自動生成して割り当てる**方式のみ（[`modules/project-factory/main.tf`](../../terraform/modules/project-factory/main.tf) の `google_monitoring_notification_channel.budget_emails` ＋ `google_billing_budget.budget.all_updates_rule`）。以下が現状できない：
 
 1. **既存の通知チャネルID を割り当てる**：`resources` シートに `budget_notification_channels`（チャネルID/名前のカンマ区切り）列を追加し、`all_updates_rule.monitoring_notification_channels` に既存チャネルをそのまま渡せるようにする。手動/別管理のチャネルを再利用したいケース向け。
-2. **email 以外（Slack / Pub/Sub / SMS 等）への対応**：email 決め打ちをやめ、チャネル種別を選べるようにする（少なくとも既存チャネルID指定で間接対応可能）。
-3. **予算と監視アラートで通知チャネルを共通化／再利用**：現状、予算通知（project-factory 内で email チャネルを独自生成）と監視アラート通知（`notifications` シート → `1_core/services/monitoring/1_notification_channels`）が**別系統**。共通のチャネル定義を参照して重複生成を避ける設計に寄せる。
+1. **email 以外（Slack / Pub/Sub / SMS 等）への対応**：email 決め打ちをやめ、チャネル種別を選べるようにする（少なくとも既存チャネルID指定で間接対応可能）。
+1. **予算と監視アラートで通知チャネルを共通化／再利用**：現状、予算通知（project-factory 内で email チャネルを独自生成）と監視アラート通知（`notifications` シート → `1_core/services/monitoring/1_notification_channels`）が**別系統**。共通のチャネル定義を参照して重複生成を避ける設計に寄せる。
 
 **補足（現状の課題）**: チャネルは**プロジェクトごとに mgmt プロジェクト内へ生成**されるため、同一メールを複数プロジェクトで使うと**同名チャネルが重複**する。上記①③で共通チャネル参照にすれば解消できる。
 
