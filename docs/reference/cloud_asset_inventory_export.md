@@ -1,6 +1,15 @@
-# Cloud Asset Inventory (CAI) BigQuery エクスポート仕様書
+# 監査基盤 BigQuery 活用ガイド（asset_inventory / audit_logs）
 
-本ドキュメントでは、本基盤において自動構築される Cloud Asset Inventory (CAI) の BigQuery 連携アーキテクチャ、テーブル仕様、および監査・フォレンジックに活用するための実践的な SQL クエリについて解説します。
+本ドキュメントでは、本基盤において自動構築される 2 つの監査用 BigQuery データセットの仕様と、監査・フォレンジック・棚卸しに活用するための実践的な SQL クエリ集をまとめます。
+
+| データセット | 何が入るか | 答えられる問い |
+| :--- | :--- | :--- |
+| `asset_inventory`（Cloud Asset Inventory） | 組織／フォルダ／プロジェクトの **IAM ポリシーの現況と変更履歴** | **誰が・どのリソースに・何の権限を持っているか** |
+| `audit_logs`（Cloud Audit Logs 集約） | 組織横断の **管理アクティビティ監査ログ**（誰が何の操作をしたか） | **誰が・いつ・何の操作を行使したか** |
+
+> 両者は補完関係です。`asset_inventory` で「不審な権限がある」と気づき、`audit_logs` で「それを付けた人物・操作」を特定する、という流れで使います（第 4 章・第 5 章）。
+
+> **`[YOUR_PROJECT_ID]`** は集約先プロジェクト（`<prefix>-logsink`、本番では `me-ai-logsink` 等）に読み替えてください。
 
 ______________________________________________________________________
 
@@ -50,7 +59,7 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 3. 実践的な SQL クエリ集
+## 3. asset_inventory（IAM 台帳）クエリ集
 
 データが「追記型（Append-Only）」であるため、現在の最新状態を取得するには `QUALIFY ROW_NUMBER() OVER (...) = 1` を使用して、リソースごとの最新行のみを抽出するのがベストプラクティスです。
 
@@ -143,3 +152,156 @@ WHERE
 ORDER BY
   audit.timestamp DESC;
 ```
+
+### 3.5 【履歴】特定リソースの IAM 変更タイムライン
+
+「いつ権限構成が変わったか」を時系列で確認します（タイムトラベル）。
+
+```sql
+SELECT
+  event_time,
+  asset_type,
+  is_deleted,
+  binding.role,
+  member
+FROM
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy`,
+  UNNEST(policy_bindings) AS binding,
+  UNNEST(binding.members) AS member
+WHERE
+  resource_name LIKE '%projects/[TARGET_PROJECT_ID]'   -- 対象リソースで絞る
+ORDER BY
+  event_time DESC;
+```
+
+______________________________________________________________________
+
+## 4. audit_logs（Cloud Audit Logs）クエリ集
+
+**「誰が・いつ・何の操作をしたか（Who / When / What）」** を調べるデータセットです。
+
+> **テーブルについて**
+> - 物理テーブルは **日付パーティション表** `cloudaudit_googleapis_com_activity`（単一テーブル）です。`_TABLE_SUFFIX` を使う**ワイルドカード（`..._*`）ではありません**。絞り込みは **パーティション列 `timestamp`** で行ってください（スキャン量の削減にもなります）。
+> - 本基盤の組織集約シンクは **管理アクティビティ監査ログ**（書き込み系操作）のみを集約しています（Data Access 監査ログは費用面から既定で対象外）。
+
+### 4.1 直近の操作（誰が・いつ・何を）
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.authenticationInfo.principalEmail AS actor,
+  protopayload_auditlog.methodName                        AS method,
+  protopayload_auditlog.serviceName                       AS service,
+  protopayload_auditlog.resourceName                      AS resource,
+  protopayload_auditlog.requestMetadata.callerIp          AS caller_ip
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+ORDER BY
+  timestamp DESC
+LIMIT 200;
+```
+
+### 4.2 特定ユーザーの操作履歴を追う
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.methodName  AS method,
+  protopayload_auditlog.resourceName AS resource
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  protopayload_auditlog.authenticationInfo.principalEmail = 'user@example.com'  -- 調査対象
+  AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+ORDER BY
+  timestamp DESC;
+```
+
+### 4.3 【権限変更】SetIamPolicy（誰が IAM を変更したか）
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.authenticationInfo.principalEmail AS actor,
+  protopayload_auditlog.resourceName                      AS resource,
+  protopayload_auditlog.methodName                        AS method
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  protopayload_auditlog.methodName LIKE '%SetIamPolicy%'
+  AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+ORDER BY
+  timestamp DESC;
+```
+
+### 4.4 【組織ポリシー】DryRun 違反ログの確認
+
+DryRun 中の制約に「違反したはず」の操作を抽出します（操作自体は成功＝本適用なら拒否されていた予告）。**0 行＝違反なし**です。
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.authenticationInfo.principalEmail AS actor,
+  protopayload_auditlog.methodName                        AS method,
+  protopayload_auditlog.policyViolationInfo.orgPolicyViolationInfo AS violation
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  protopayload_auditlog.policyViolationInfo IS NOT NULL
+  AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+ORDER BY
+  timestamp DESC;
+```
+
+### 4.5 【失敗・拒否】エラーになった操作のみ抽出
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.authenticationInfo.principalEmail AS actor,
+  protopayload_auditlog.methodName                        AS method,
+  protopayload_auditlog.status.code                       AS status_code,
+  protopayload_auditlog.status.message                    AS status_message
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  protopayload_auditlog.status.code IS NOT NULL
+  AND protopayload_auditlog.status.code != 0              -- 0 以外＝失敗/拒否
+  AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+ORDER BY
+  timestamp DESC;
+```
+
+### 4.6 【特定操作】サービスアカウント鍵の作成試行
+
+```sql
+SELECT
+  timestamp,
+  protopayload_auditlog.authenticationInfo.principalEmail AS actor,
+  protopayload_auditlog.resourceName                      AS resource
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity`
+WHERE
+  protopayload_auditlog.methodName LIKE '%CreateServiceAccountKey%'
+  AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)
+ORDER BY
+  timestamp DESC;
+```
+
+______________________________________________________________________
+
+## 5. 2 つのデータの使い分け
+
+| 問い | 使うデータ | 代表クエリ |
+| :--- | :--- | :--- |
+| 今、誰が何の権限を持っているか（棚卸し） | `asset_inventory` | 3.1 / 3.2 |
+| 自社ドメイン外への付与はないか | `asset_inventory` | 3.3 |
+| いつ権限構成が変わったか（履歴） | `asset_inventory` | 3.5 |
+| 誰が・いつ・何を操作したか | `audit_logs` | 4.1 / 4.2 |
+| 誰が IAM を変更したか（犯人特定） | `audit_logs`（必要に応じ `asset_inventory` と結合） | 4.3 / 3.4 |
+| 組織ポリシー DryRun 違反の有無 | `audit_logs` | 4.4 |
+| 失敗・拒否された操作 | `audit_logs` | 4.5 |
+
+> **まとめ**: `asset_inventory` ＝「**誰が権限を持っているか**（状態と履歴）」、`audit_logs` ＝「**誰が権限を行使したか**（操作の記録）」。ISMS のアクセス制御証跡は、この 2 つで「保有」と「行使」の両面を担保できます。
