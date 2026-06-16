@@ -34,3 +34,40 @@ Cloud セットアップは最後まで進める必要はありません。**「
 - **本番モードで作成した場合**: `Simplified Groups = false` (9グループ構成)
 
 これにより、Cloud セットアップで作成された「箱（グループ）」に対して、本リポジトリが定義する「中身（権限）」を自動で流し込むことができます。
+
+## 4. 付与されるロール（権限の「中身」）
+
+ロール定義は `terraform/2_organization/main.tf` の `locals.raw_roles` にあります。組織レベル（`google_organization_iam_member`）への付与は **`enable_group_iam = true` のときのみ**行われます（`false` の場合はグループへのバインドを一切作成しません）。
+
+### 本番モード（`enable_simplified_admin_groups = false`）
+
+9 グループそれぞれに `raw_roles` の定義どおり付与します（職務分掌：組織管理 / 請求 / ネットワーク / ハイブリッド接続 / ログ・監視（管理・閲覧）/ セキュリティ / 開発者 / DevOps）。
+
+### 簡略モード（`enable_simplified_admin_groups = true`）
+
+2 グループに集約します。`gcp-billing-admins` は請求系 2 ロール、`gcp-organization-admins` は「**請求以外の全ロールの和集合**」です。
+
+#### 直近の変更：冗長ロールの掃除（29 → 18 ロール）
+
+和集合を素朴に集約すると、**上位の admin ロールや基本ロール `roles/viewer` に包含される冗長ロール**を含んでしまっていました（付与しても権限は増えず監査ノイズになるだけ）。`local.simplified_redundant_roles`（denylist）で次の **11 ロールを除外**し、`gcp-organization-admins` を **29 → 18 ロール**に整理しました。`raw_roles`（本番モード）は不変です。
+
+| 除外した冗長ロール | 包含元（保持されるロール） |
+|---|---|
+| `logging.viewer` / `logging.configWriter` / `logging.privateLogViewer` | `logging.admin` |
+| `monitoring.viewer` | `monitoring.admin` |
+| `resourcemanager.folderViewer` / `resourcemanager.folderIamAdmin` | `resourcemanager.folderAdmin` |
+| `resourcemanager.organizationViewer` | `resourcemanager.organizationAdmin` |
+| `iam.organizationRoleViewer` | `iam.organizationRoleAdmin` |
+| `browser` / `compute.viewer` / `container.viewer` | 基本ロール `roles/viewer` |
+
+> ⚠️ **`iam.securityReviewer` は意図的に残置**しています。横断的な `getIamPolicy`（多サービスの IAM ポリシー読み取り）を持ち、`iam.securityAdmin` にも基本 `roles/viewer` にも包含されないため除外すると権限が欠けます（“包含されているように見えて実は包含されない”罠）。
+
+#### バインド件数（回帰テストで固定）
+
+組織レベル IAM のバインド件数は `terraform/2_organization/group_roles.tftest.hcl`（`mock_provider` による offline テスト）で固定しています。冗長ロールの追加・削除時はこの件数差分でレビューしてください。
+
+| モード | バインド数 |
+|---|---|
+| 簡略（`enable_simplified_admin_groups=true`, `enable_group_iam=true`） | **20**（org-admins 18 + billing 2）|
+| 本番（`enable_simplified_admin_groups=false`, `enable_group_iam=true`） | 40 |
+| `enable_group_iam=false` | 0 |
