@@ -27,7 +27,7 @@ variables {
   enable_tags                     = false
 }
 
-# 簡略モード: org-admins = 請求以外の全ロールを重複排除(29) + billing(2) = 31 バインド
+# 簡略モード: org-admins = 請求以外の全ロールの重複排除(29) から冗長ロール(11)を除外(18) + billing(2) = 20 バインド
 run "simplified_true_counts" {
   command = plan
 
@@ -37,14 +37,32 @@ run "simplified_true_counts" {
   }
 
   assert {
-    condition     = length(google_organization_iam_member.group_bindings) == 31
-    error_message = "簡略モードのバインド数は 31（org-admins 29 + billing 2）であるべき"
+    condition     = length(google_organization_iam_member.group_bindings) == 20
+    error_message = "簡略モードのバインド数は 20（org-admins 18 + billing 2）であるべき（冗長ロール11を除外済み）"
   }
 
   # セキュリティ系ロールが org-admins に集約されている（請求以外の統合）
   assert {
     condition     = contains(keys(google_organization_iam_member.group_bindings), "gcp-organization-admins-roles/securitycenter.admin")
     error_message = "簡略モードでは securitycenter.admin が org-admins に集約されるべき"
+  }
+
+  # 冗長ロールは除外されている（同サービス admin / 基本 viewer に包含されるため）
+  assert {
+    condition     = !contains(keys(google_organization_iam_member.group_bindings), "gcp-organization-admins-roles/logging.viewer")
+    error_message = "logging.viewer は logging.admin に包含されるため org-admins から除外すべき"
+  }
+
+  # 包含元の admin は残っている
+  assert {
+    condition     = contains(keys(google_organization_iam_member.group_bindings), "gcp-organization-admins-roles/logging.admin")
+    error_message = "logging.admin は org-admins に残すべき"
+  }
+
+  # 罠: securityReviewer は securityAdmin/viewer に包含されないため残す
+  assert {
+    condition     = contains(keys(google_organization_iam_member.group_bindings), "gcp-organization-admins-roles/iam.securityReviewer")
+    error_message = "iam.securityReviewer は横断 getIamPolicy を持つため除外せず残すべき"
   }
 
   # 請求ロールは org-admins に集約しない（billing グループのみ）
