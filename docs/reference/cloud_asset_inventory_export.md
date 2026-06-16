@@ -169,7 +169,7 @@ FROM
   UNNEST(policy_bindings) AS binding,
   UNNEST(binding.members) AS member
 WHERE
-  resource_name LIKE '%projects/[TARGET_PROJECT_ID]'   -- 対象リソースで絞る
+  resource_name LIKE '%projects/[TARGET_PROJECT_NUMBER]'   -- 対象リソースで絞る
 ORDER BY
   event_time DESC;
 ```
