@@ -62,6 +62,40 @@ Cloud セットアップは最後まで進める必要はありません。**「
 
 > ⚠️ **`iam.securityReviewer` は意図的に残置**しています。横断的な `getIamPolicy`（多サービスの IAM ポリシー読み取り）を持ち、`iam.securityAdmin` にも基本 `roles/viewer` にも包含されないため除外すると権限が欠けます（“包含されているように見えて実は包含されない”罠）。
 
+#### 最終的に付与されるロール一覧（簡略モード）
+
+掃除後に実際に付与されるロールは以下のとおり。
+
+**`gcp-organization-admins`（18 ロール）**
+
+| # | ロール | 区分 |
+|---|---|---|
+| 1 | `roles/resourcemanager.organizationAdmin` | 組織管理 |
+| 2 | `roles/resourcemanager.folderAdmin` | フォルダ管理 |
+| 3 | `roles/resourcemanager.projectCreator` | プロジェクト作成 |
+| 4 | `roles/orgpolicy.policyAdmin` | 組織ポリシー |
+| 5 | `roles/iam.organizationRoleAdmin` | カスタムロール管理 |
+| 6 | `roles/iam.securityAdmin` | IAM 管理 |
+| 7 | `roles/iam.securityReviewer` | IAM 横断 read（残置）|
+| 8 | `roles/iam.serviceAccountCreator` | SA 作成 |
+| 9 | `roles/securitycenter.admin` | SCC 管理 |
+| 10 | `roles/cloudkms.admin` | KMS 管理 |
+| 11 | `roles/cloudsupport.admin` | サポート |
+| 12 | `roles/compute.networkAdmin` | ネットワーク管理 |
+| 13 | `roles/compute.securityAdmin` | FW/SSL 管理 |
+| 14 | `roles/compute.xpnAdmin` | Shared VPC 管理 |
+| 15 | `roles/logging.admin` | ログ管理 |
+| 16 | `roles/monitoring.admin` | 監視管理 |
+| 17 | `roles/pubsub.admin` | Pub/Sub 管理 |
+| 18 | `roles/viewer` | 基本・全体 read |
+
+**`gcp-billing-admins`（2 ロール）**
+
+- `roles/billing.creator`
+- `roles/resourcemanager.organizationViewer`
+
+> ⚠️ **この18ロールは「全権の org 管理グループ1つ」に集約したもの**です。グループを使わず個人へ付与する小規模運用（`enable_group_iam=false`、→ [IAM 管理スコープと運用境界](../design/iam_management_scope.md)）では、**全員にこの18を配るのは過剰**です。役割に応じて配分し、管理者級は1〜2名＋break-glass に限定し、残りは `roles/viewer` ＋プロジェクト単位の実務ロールに留めるなど、最小権限で割り当ててください。使う予定のない機能のロール（`compute.xpnAdmin` 等）は付与しないこと。
+
 #### バインド件数（回帰テストで固定）
 
 組織レベル IAM のバインド件数は `terraform/2_organization/group_roles.tftest.hcl`（`mock_provider` による offline テスト）で固定しています。冗長ロールの追加・削除時はこの件数差分でレビューしてください。
