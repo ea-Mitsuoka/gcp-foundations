@@ -287,11 +287,12 @@ def build_toc(wb):
         ("4", "プロジェクト一覧"),
         ("5", "組織ポリシー設定一覧"),
         ("6", "ログ集約シンク設定"),
-        ("7", "監視・予算（アラート／通知／予算）"),
-        ("8", "ネットワーク（Shared VPC／VPC-SC）"),
-        ("9", "タグ・ラベル"),
-        ("10", "Google グループ・IAM"),
-        ("11", "費用に関する注意事項"),
+        ("7", "BigQuery リソース"),
+        ("8", "監視・予算（アラート／通知／予算）"),
+        ("9", "ネットワーク（Shared VPC／VPC-SC）"),
+        ("10", "タグ・ラベル"),
+        ("11", "Google グループ・IAM"),
+        ("12", "費用に関する注意事項"),
     ]
     records = [{"章": no, "項目": title} for no, title in entries]
     table(ws, row, ["章", "項目"], records, col_keys=["章", "項目"])
@@ -434,12 +435,61 @@ def build_log_sinks(wb, ctx):
           col_keys=["ログ種別", "フィルタ", "宛先種別", "宛先", "保持日数"])
 
 
+def build_bigquery(wb, ctx):
+    ws = wb.create_sheet("7.BigQuery リソース")
+    ws.sheet_view.showGridLines = False
+    _set_widths(ws, [28, 16, 16, 12, 40])
+    tv = ctx["tfvars"]
+    prefix = tv.get("project_id_prefix", "") or "<prefix>"
+    logsink_project = f"{prefix}-logsink"
+    region = tv.get("default_region", tv.get("gcp_region", tv.get("region", "")))
+
+    # 7-1. ログシンクの BigQuery 宛先データセット（SSoT の log_sinks 由来）
+    row = section_title(ws, 2, "7-1. ログシンク宛先データセット", 5)
+    records = []
+    for s in ctx["log_sinks"]:
+        if str(s.get("destination_type") or "").strip().lower() != "bigquery":
+            continue
+        records.append({
+            "データセット": str(s.get("destination_parent") or ""),
+            "プロジェクト": logsink_project,
+            "ロケーション": region,
+            "保持日数": s.get("retention_days") or "",
+            "用途（ログ種別）": str(s.get("log_type") or ""),
+        })
+    row = table(ws, row, ["データセット", "プロジェクト", "ロケーション", "保持日数", "用途（ログ種別）"], records,
+                col_keys=["データセット", "プロジェクト", "ロケーション", "保持日数", "用途（ログ種別）"])
+    c = ws.cell(row=row, column=1,
+                value="※ log_sinks の BigQuery 宛先。パーティション表として作成され、保持日数はテーブル既定の有効期限に対応。"
+                      "シンクの writer identity に roles/bigquery.dataEditor を付与済み。")
+    c.font = F_NOTE
+    row += 2
+
+    # 7-2. アセットインベントリ（IAM 監査）— 基盤標準で構築される BigQuery リソース
+    row = section_title(ws, row, "7-2. アセットインベントリ（IAM 監査・基盤標準）", 5)
+    ai_records = [
+        {"名前": "asset_inventory", "種別": "データセット", "プロジェクト": logsink_project, "形式": "—",
+         "内容": "Cloud Asset Inventory(IAM_POLICY) リアルタイムフィードの宛先データセット"},
+        {"名前": "asset_inventory.iam_policy", "種別": "テーブル", "プロジェクト": logsink_project, "形式": "JSON",
+         "内容": "組織／フォルダ／プロジェクトの IAM ポリシー変更を追記（append-only 履歴）"},
+        {"名前": "asset_inventory.v_iam_policy", "種別": "ビュー", "プロジェクト": logsink_project, "形式": "SQL",
+         "内容": "IAM を resource × role × members に展開した監査用ビュー"},
+    ]
+    row = table(ws, row, ["名前", "種別", "プロジェクト", "形式", "内容"], ai_records,
+                col_keys=["名前", "種別", "プロジェクト", "形式", "内容"])
+    c = ws.cell(row=row, column=1,
+                value="※ 基盤標準構成（asset_inventory_bq_export レイヤー）。CAI→Pub/Sub→BigQuery の準リアルタイム取込で、"
+                      "Terraform 管理外の手動付与を含む IAM 付与状況を監査証跡として保持する。")
+    c.font = F_NOTE
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+
+
 def build_monitoring(wb, ctx):
-    ws = wb.create_sheet("7.監視・予算")
+    ws = wb.create_sheet("8.監視・予算")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [24, 30, 36])
 
-    row = section_title(ws, 2, "7-1. アラート定義", 3)
+    row = section_title(ws, 2, "8-1. アラート定義", 3)
     records = [{
         "アラート名": str(a.get("alert_display_name") or a.get("alert_name") or ""),
         "条件(metric filter)": str(a.get("metric_filter") or ""),
@@ -448,7 +498,7 @@ def build_monitoring(wb, ctx):
     row = table(ws, row, ["アラート名", "条件(metric filter)", "説明"], records,
                 col_keys=["アラート名", "条件(metric filter)", "説明"])
 
-    row = section_title(ws, row, "7-2. 通知先", 3)
+    row = section_title(ws, row, "8-2. 通知先", 3)
     records = [{
         "アラート名": str(n.get("alert_name") or ""),
         "通知先メール": str(n.get("user_email") or ""),
@@ -457,7 +507,7 @@ def build_monitoring(wb, ctx):
     row = table(ws, row, ["アラート名", "通知先メール", "受信可否"], records,
                 col_keys=["アラート名", "通知先メール", "受信"])
 
-    row = section_title(ws, row, "7-3. 予算アラート", 3)
+    row = section_title(ws, row, "8-3. 予算アラート", 3)
     records = []
     for p in ctx["budget_projects"]:
         records.append({
@@ -470,11 +520,11 @@ def build_monitoring(wb, ctx):
 
 
 def build_network(wb, ctx):
-    ws = wb.create_sheet("8.ネットワーク")
+    ws = wb.create_sheet("9.ネットワーク")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [20, 24, 20, 24])
 
-    row = section_title(ws, 2, "8-1. Shared VPC サブネット", 4)
+    row = section_title(ws, 2, "9-1. Shared VPC サブネット", 4)
     records = [{
         "ホスト環境": str(s.get("host_project_env") or ""),
         "サブネット名": str(s.get("subnet_name") or ""),
@@ -484,7 +534,7 @@ def build_network(wb, ctx):
     row = table(ws, row, ["ホスト環境", "サブネット名", "リージョン", "CIDR"], records,
                 col_keys=["ホスト環境", "サブネット名", "リージョン", "CIDR"])
 
-    row = section_title(ws, row, "8-2. VPC Service Controls 境界", 4)
+    row = section_title(ws, row, "9-2. VPC Service Controls 境界", 4)
     records = [{
         "境界名": str(p.get("perimeter_name") or ""),
         "タイトル": str(p.get("title") or ""),
@@ -496,11 +546,11 @@ def build_network(wb, ctx):
 
 
 def build_tags_labels(wb, ctx):
-    ws = wb.create_sheet("9.タグ・ラベル")
+    ws = wb.create_sheet("10.タグ・ラベル")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [24, 30, 40])
 
-    row = section_title(ws, 2, "9-1. 組織タグ定義一覧", 3)
+    row = section_title(ws, 2, "10-1. 組織タグ定義一覧", 3)
     records = [{
         "タグキー": str(t.get("tag_key") or ""),
         "許可値": str(t.get("allowed_values") or ""),
@@ -514,7 +564,7 @@ def build_tags_labels(wb, ctx):
     c.font = F_NOTE
     row += 2
 
-    row = section_title(ws, row, "9-2. プロジェクト別 ラベル／適用タグ", 3)
+    row = section_title(ws, row, "10-2. プロジェクト別 ラベル／適用タグ", 3)
     records = []
     for p in ctx["projects"]:
         app = str(p.get("resource_name") or "")
@@ -612,7 +662,7 @@ def resolve_group_roles(simplified):
 
 
 def build_groups_iam(wb, ctx):
-    ws = wb.create_sheet("10.Googleグループ・IAM")
+    ws = wb.create_sheet("11.Googleグループ・IAM")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [34, 26, 12, 52])
     tv = ctx["tfvars"]
@@ -620,7 +670,7 @@ def build_groups_iam(wb, ctx):
     simplified = str(tv.get("enable_simplified_admin_groups", "false")).lower() == "true"
     group_iam_on = str(tv.get("enable_group_iam", "true")).lower() == "true"
 
-    row = section_title(ws, 2, "10. 管理用 Google グループと IAM ロール", 4)
+    row = section_title(ws, 2, "11. 管理用 Google グループと IAM ロール", 4)
     pairs = [
         ("グループ構成モード", "集約モード（2グループ）" if simplified else "フルモード（9グループ）"),
         ("組織レベル IAM 付与", "有効（適用済み）" if group_iam_on else "無効（IAM バインディング未適用）"),
@@ -651,10 +701,10 @@ def build_groups_iam(wb, ctx):
 
 
 def build_cost_notes(wb, ctx):
-    ws = wb.create_sheet("11.費用注意事項")
+    ws = wb.create_sheet("12.費用注意事項")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [22, 40, 26, 40])
-    row = section_title(ws, 2, "11. 費用に関する注意事項", 4)
+    row = section_title(ws, 2, "12. 費用に関する注意事項", 4)
 
     intro = ws.cell(row=row, column=1,
                     value="本基盤の構成は、設定内容や対象範囲によってGoogle Cloudの利用料金が増加する場合があります。"
@@ -702,7 +752,7 @@ def build_cost_notes(wb, ctx):
     row = table(ws, row, ["区分", "コスト発生の要因", "主な課金対象", "コスト抑制の推奨"], records,
                 col_keys=["区分", "コスト発生の要因", "主な課金対象", "コスト抑制の推奨"])
     c = ws.cell(row=row, column=1,
-                value="※ 上記は一般的な注意事項です。予算アラート（7-3）の設定とあわせて、定期的なコストレビューを推奨します。"
+                value="※ 上記は一般的な注意事項です。予算アラート（8-3）の設定とあわせて、定期的なコストレビューを推奨します。"
                       "VPC-SC・組織ポリシー・予算アラート自体に追加課金は発生しません。")
     c.font = F_NOTE
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
@@ -792,6 +842,7 @@ def main():
     build_projects(wb, ctx)
     build_org_policies(wb, ctx)
     build_log_sinks(wb, ctx)
+    build_bigquery(wb, ctx)
     build_monitoring(wb, ctx)
     build_network(wb, ctx)
     build_tags_labels(wb, ctx)
