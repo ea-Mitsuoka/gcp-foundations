@@ -279,7 +279,7 @@ ______________________________________________________________________
    gcloud projects add-iam-policy-binding <ACTUAL_PROJECT_ID> \
      --member="serviceAccount:${TF_SA}" --role="roles/owner"
    ```
-2. **作業者(operator)自身が SA を借用できること**。本基盤は人間が JSON キーでなく **SA 借用(impersonation)** で操作する設計のため、operator に **`roles/iam.serviceAccountTokenCreator`**（対象 SA、または mgmt プロジェクト）が必要。無いと `iam.serviceAccounts.getAccessToken` 403。SA/mgmt プロジェクト管理者が付与:
+1. **作業者(operator)自身が SA を借用できること**。本基盤は人間が JSON キーでなく **SA 借用(impersonation)** で操作する設計のため、operator に **`roles/iam.serviceAccountTokenCreator`**（対象 SA、または mgmt プロジェクト）が必要。無いと `iam.serviceAccounts.getAccessToken` 403。SA/mgmt プロジェクト管理者が付与:
    ```bash
    gcloud iam service-accounts add-iam-policy-binding "${TF_SA}" \
      --member="user:<operator>@<domain>" \
@@ -314,10 +314,12 @@ terraform init -backend-config="../../common.tfbackend"
 ```
 
 > ⚠️ **バックエンド(GCS state)の認証は provider の impersonation とは別物**。operator が tfstate バケットに直接権限を持たないと `terraform init` が `storage.objects.list` 403 になる。その場合は **バックエンドにも SA 借用を効かせる**:
+>
 > ```bash
 > export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT="${TF_SA}"   # backend と provider の両方に効く
 > terraform init -reconfigure -backend-config="../../common.tfbackend"
 > ```
+>
 > （これでも 403 が出るなら Step1-2 の `serviceAccountTokenCreator` 不足）
 
 #### Step 5. import（apply より先に必須）

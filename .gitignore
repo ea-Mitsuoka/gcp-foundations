@@ -48,7 +48,6 @@ gcp_log_sink_config.csv
 # Test mode environment variable file
 .test_mode_env
 
-new_gcp_organization_decision_guide.*
 migration/
 # docs/migration 配下は原則無視（顧客固有の assessment/plan 等の作業成果物）。
 # ただし汎用の取り込み手順（再利用可能なドキュメント）だけは追跡する。
@@ -63,3 +62,4 @@ docs/migration/*
 # テンプレートリポジトリでは追跡しない（顧客固有データを含むため）。
 # handover.sh が除外を解除し、顧客への納品リポジトリには同梱される。
 delivery/
+ea-design/
