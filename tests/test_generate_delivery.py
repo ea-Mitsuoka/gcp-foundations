@@ -107,10 +107,17 @@ def test_all_expected_sheets_present(generated):
     expected = {
         "表紙", "改訂履歴", "目次",
         "1.構築項目一覧", "2.構築概要", "3.フォルダ構成", "4.プロジェクト一覧",
-        "5.組織ポリシー", "6.ログ集約シンク", "7.監視・予算", "8.ネットワーク",
-        "9.タグ・ラベル", "10.Googleグループ・IAM", "11.費用注意事項",
+        "5.組織ポリシー", "6.ログ集約シンク", "7.BigQuery リソース", "8.監視・予算",
+        "9.ネットワーク", "10.タグ・ラベル", "11.Googleグループ・IAM", "12.費用注意事項",
     }
     assert expected.issubset(set(generated.sheetnames))
+
+
+def test_bigquery_sheet_lists_log_sink_and_asset_inventory(generated):
+    text = _all_text(generated["7.BigQuery リソース"])
+    assert "audit_logs" in text          # log_sinks の BigQuery 宛先データセット
+    assert "asset_inventory" in text     # IAM 監査の基盤標準データセット
+    assert "v_iam_policy" in text
 
 
 # --- 構築項目一覧の実施状況（SSoT 定義有無による 完了/—）-------------------------
@@ -133,7 +140,7 @@ def test_network_marked_not_applicable(generated):
 # --- ラベル（app は常に、env/owner は値がある時のみ）-----------------------------
 
 def test_labels_rendered(generated):
-    text = _all_text(generated["9.タグ・ラベル"])
+    text = _all_text(generated["10.タグ・ラベル"])
     assert "app=my-app" in text
     assert "env=dev" in text
     assert "owner=team-x" in text
@@ -142,7 +149,7 @@ def test_labels_rendered(generated):
 # --- グループ／IAM（集約モード・IAM 未適用が反映される）-------------------------
 
 def test_groups_simplified_and_iam_off(generated):
-    text = _all_text(generated["10.Googleグループ・IAM"])
+    text = _all_text(generated["11.Googleグループ・IAM"])
     assert "集約モード（2グループ）" in text
     assert "未適用" in text
     assert "gcp-organization-admins@example.com" in text
