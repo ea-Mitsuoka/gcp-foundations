@@ -78,6 +78,7 @@ make lint
 1. **[ガバナンス・エボリューション・ガイド](docs/reference/governance_guideline.md)**: 運用継続のポイントと責務の境界線についての指針
 1. **[自動生成エンジンの設計思想](docs/design/generator_philosophy.md)**: `make generate` の内部設計・拡張方針
 1. **[IAM 管理スコープと運用境界](docs/design/iam_management_scope.md)**: Terraform が管理する IAM の境界、非権威的(`_iam_member`)運用の不変条件、小規模・グループ非採用パターンと補償統制
+1. **[監査基盤 BigQuery 活用ガイド](docs/reference/cloud_asset_inventory_export.md)**: `asset_inventory`（IAM 台帳）と `audit_logs`（監査ログ）の仕様と実践 SQL クエリ集（棚卸し・フォレンジック・DryRun 違反確認）
 1. **[AI向けリポジトリ理解ガイド](docs/development/ai_handoff.md)**: AIがこのリポジトリを最短で正確に理解するためのマスタープロンプト
 
 ### 🛠️ 便利な Makefile コマンド
