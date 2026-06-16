@@ -54,6 +54,10 @@ test-tf:
 		echo "Testing $$dir..."; \
 		(cd "$$dir" && terraform init -backend=false > /dev/null && terraform test) || exit 1; \
 	done
+	@for dir in $$(find terraform -name '*.tftest.hcl' -not -path 'terraform/modules/*' | xargs -n1 dirname | sort -u); do \
+		echo "Testing $$dir..."; \
+		(cd "$$dir" && rm -rf .terraform .terraform.lock.hcl && terraform init -backend=false > /dev/null && terraform test) || exit 1; \
+	done
 
 test-py:
 	uv run pytest tests/
