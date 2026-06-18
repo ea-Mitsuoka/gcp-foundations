@@ -1,6 +1,6 @@
 # GCP Foundations Makefile
 
-.PHONY: help install setup check generate lint opa test test-tf test-py deploy destroy delivery delivery-doc clean template prune
+.PHONY: help install setup check generate lint opa test test-tf test-py plan deploy destroy delivery delivery-doc clean template prune
 
 help:
 	@echo "Available commands:"
@@ -12,6 +12,7 @@ help:
 	@echo "  make lint      - Run terraform fmt, tflint, and shellcheck"
 	@echo "  make opa       - Run OPA policy checks"
 	@echo "  make test      - Run all tests (TF and Python)"
+	@echo "  make plan      - Run the global deployment script in plan-only mode"
 	@echo "  make deploy    - Run the global deployment script"
 	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
 	@echo "  make delivery  - Generate the delivery document, then prepare repository for handover (reset Git history)"
@@ -61,6 +62,14 @@ test-tf:
 
 test-py:
 	uv run pytest tests/
+
+plan:
+	@if [ -f .test_mode_env ]; then \
+		echo "🧪 Test Mode Active: Skipping management projects (logsink/monitoring)."; \
+		. ./.test_mode_env && export SKIP_MANAGEMENT_PROJECTS=true && bash terraform/scripts/deploy_all.sh --plan-only; \
+	else \
+		bash terraform/scripts/deploy_all.sh --plan-only; \
+	fi
 
 deploy:
 	@if [ -f .test_mode_env ]; then \
