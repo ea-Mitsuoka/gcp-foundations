@@ -93,6 +93,7 @@ make generate   # Excel(SSoT)からTerraform変数や構成を自動生成
 make lint       # Terraform, ShellscriptのLint・フォーマット実行
 make opa        # Regoポリシーの構文チェック
 make test       # モジュールの単体テスト実行
+make plan       # 基盤全体の変更差分を確認（applyせずにplanのみ実行）
 make deploy     # 基盤全体の一括デプロイ実行
 make prune      # SSoTから削除されたプロジェクトの残骸ディレクトリを対話形式で削除
 make delivery   # 納品物(構築設定明細書)生成 → 納品用リポジトリの作成 (Git履歴リセット)
