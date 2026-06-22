@@ -67,12 +67,32 @@ docs/design/generator_philosophy.md
 docs/operations/module_maintenance.md
 docs/operations/delivery_document_generation.md
 docs/operations/spreadsheet_session_guide.md
+docs/operations/handover_procedure.md
 
 # handover.sh 自身は納品リポジトリに含めない（顧客が引き渡し処理を再実行できないように）。
 # Makefile の `make delivery` は handover-wrap.sh 経由で呼ばれ、handover.sh が無ければ
 # エラーで停止する。
 terraform/scripts/handover.sh
 EOF
+
+echo ">>> Cleaning README references to non-delivered docs / vendor-only commands..."
+# README は納品リポジトリにも含まれるため、納品で除外するドキュメントへのリンクや
+# ベンダー専用コマンド(make delivery)の記述を行ごと削除し、リンク切れ・不要記述を防ぐ。
+if [ -f "README.md" ]; then
+  sed -e '/make delivery/d' \
+      -e '/handover_procedure/d' \
+      -e '/delivery_document_generation/d' \
+      -e '/module_maintenance/d' \
+      -e '/generator_philosophy/d' \
+      -e '/ai_handoff/d' \
+      -e '/spreadsheet_session_guide/d' \
+      -e '/docs\/migration\//d' \
+      -e '/docs\/tests\//d' \
+      -e '/docs\/ea-design\//d' \
+      -e '/docs\/development\//d' \
+      README.md > README.md.tmp
+  mv README.md.tmp README.md
+fi
 
 echo ">>> Creating a fresh Git history and exporting the archive..."
 git init -q
