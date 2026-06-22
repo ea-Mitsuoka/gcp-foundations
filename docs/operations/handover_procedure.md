@@ -39,40 +39,18 @@ make delivery
 - `docs/operations/module_maintenance.md`、`delivery_document_generation.md`、`spreadsheet_session_guide.md`
 - `tfstate`、ローカルキャッシュ（`.terraform/` 等）、`.venv`、構築設定明細書（xlsx は zip とは別に提供）
 
-### 顧客側での受け取り後の確認（運用引き継ぎ）
+### 顧客側での受け取り後のセットアップ
 
-顧客は zip 展開後、以下で「環境に差分が無い」ことを確認して Terraform 管理の運用を引き継げます。
-
-```bash
-# 認証（顧客の管理者アカウントで）
-gcloud auth login
-gcloud auth application-default login
-
-# SSoT(xlsx) から派生コードを再生成し、現環境との差分を確認
-make generate
-make plan          # 差分が出なければ、現環境と IaC が一致＝引き継ぎ可能
-```
-
-> `make generate` は `gcp-foundations.xlsx` から `terraform/4_projects/<project>/` 等の派生コードを再生成します（GCP には接続しません）。`make plan` の成功には「2. GCP 権限の移譲」（TF 実行 SA へのインパーソネーション権限・tfstate バケットへのアクセス）が前提です。
-
-顧客が自身の Git ホスティング（GitHub / GitLab 等）で管理を始める場合は、展開したディレクトリで `git init` → 初回コミット → push してください（`git archive` は履歴を含まないため）。
+顧客（運用担当者）が受け取り後に行う認証・権限取得・差分確認（`make generate` → `make plan`）・Git 管理開始の手順は、納品物に同梱される **[運用引き継ぎ・セットアップ手順](./operational_takeover.md)** にまとめてある。引き渡し時はこれを案内する。
 
 ______________________________________________________________________
 
 ## 2. GCP 権限の移譲 (IAM)
 
-Terraform の実行基盤（Layer 0: Bootstrap）で作成されたリソースの管理権限を顧客の管理者に移譲します。
+Terraform 実行基盤（Layer 0: Bootstrap）で作成したリソースの管理権限を顧客の管理者へ移譲する（引き渡し側の作業）。
 
-### ステップ 1: 顧客管理者への権限付与
-
-GCP コンソールを使用して、顧客の管理者ユーザー（または Google グループ）に対し、以下のロールを付与します。
-
-- 組織レベル: **組織管理者** (`roles/resourcemanager.organizationAdmin`)
-- `*-tfstate` プロジェクトレベル: **オーナー** (`roles/owner`)
-
-### ステップ 2: 構築者の権限剥奪
-
-移譲が完了し、顧客自身でコンソールアクセスや `make deploy` が実行できることを確認した後、構築者自身のアカウントの IAM バインディングを削除します。
+1. **顧客への権限付与**: 顧客の管理者ユーザー（または Google グループ）へ運用に必要なロールを付与する。付与するロールは [運用引き継ぎ・セットアップ手順「1.2 運用担当者に必要な権限」](./operational_takeover.md) を参照。
+1. **構築者の権限剥奪**: 顧客自身でコンソールアクセスや `make deploy` を実行できることを確認した後、構築者自身のアカウントの IAM バインディングを削除する。
 
 ______________________________________________________________________
 
@@ -87,87 +65,15 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 4. CI/CDパイプライン（GitHub Actions）の有効化案内
+## 4. CI/CD パイプライン（GitHub Actions）の有効化
 
-本テンプレートには、インフラの変更漏れ（ドリフト）を防ぐための自動検知機能や、Pull Request時の自動Plan機能が標準搭載されています。
-顧客が自身の環境でこれらを有効化し、IaCの自動運用を開始できるよう、以下のセットアップ手順を案内してください。
-
-### ① Workload Identity Federation (WIF) の構築
-
-GitHub Actions が GCP 環境へ安全に（サービスアカウントキーなしで）アクセスするために、GCP 上に WIF プールとプロバイダを構築します。以下の手順を案内してください。
-
-```bash
-# プロジェクトIDは tfstate バケットが存在するプロジェクト（*-tfstate-xxxx）
-PROJECT_ID="<MGMT_PROJECT_ID>"
-POOL_ID="github-actions-pool"
-PROVIDER_ID="github-provider"
-GITHUB_ORG="<顧客のGitHub組織名またはユーザー名>"
-
-# WIF プールの作成
-gcloud iam workload-identity-pools create "${POOL_ID}" \
-  --project="${PROJECT_ID}" \
-  --location="global" \
-  --display-name="GitHub Actions Pool"
-
-# WIF プロバイダの作成
-gcloud iam workload-identity-pools providers create-oidc "${PROVIDER_ID}" \
-  --project="${PROJECT_ID}" \
-  --location="global" \
-  --workload-identity-pool="${POOL_ID}" \
-  --display-name="GitHub Provider" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-condition="assertion.repository_owner=='${GITHUB_ORG}'"
-
-# プロバイダの完全なID（後続ステップで必要）
-gcloud iam workload-identity-pools providers describe "${PROVIDER_ID}" \
-  --project="${PROJECT_ID}" \
-  --location="global" \
-  --workload-identity-pool="${POOL_ID}" \
-  --format="value(name)"
-# 出力例: projects/123456789/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
-
-# Terraform 実行用 SA に WIF からのトークン発行を許可
-SA_EMAIL="<TF_SERVICE_ACCOUNT_EMAIL>"  # common.tfvars に記録済み
-POOL_RESOURCE_NAME="projects/$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')/locations/global/workloadIdentityPools/${POOL_ID}"
-
-gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
-  --project="${PROJECT_ID}" \
-  --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/${POOL_RESOURCE_NAME}/attribute.repository/${GITHUB_ORG}/<リポジトリ名>"
-```
-
-### ② ワークフローのコメントアウト解除
-
-顧客環境の `.github/workflows/` 配下にある以下の YAML ファイルについて、`Authenticate to Google Cloud` ステップのコメントアウト（`#`）を外し、①で取得した WIF プロバイダ完全IDと、Terraform 実行用サービスアカウントのメールアドレスを設定します。
-
-- `drift-detection.yml` — `secrets.GCP_WIF_PROVIDER` と `secrets.TF_SERVICE_ACCOUNT_EMAIL` を参照するよう記載済み
-- `main-apply.yml`
-- `pr-plan.yml` — ハードコードされたサンプル値が記載されているため、Secrets 参照形式（`${{ secrets.GCP_WIF_PROVIDER }}`）に書き換えること
-
-### ③ GitHub Secrets の登録
-
-顧客の GitHub リポジトリの `Settings > Secrets and variables > Actions` にて、以下の環境変数を登録するよう案内します。
-（※これらは構築時に使用した `terraform/common.tfvars` に記録されている値に相当します）
-
-- `GCP_WIF_PROVIDER`: ①で取得した WIF プロバイダの完全ID
-- `GCS_BACKEND_BUCKET`: tfstate保存用バケット名
-- `TF_SERVICE_ACCOUNT_EMAIL`: Terraform実行用サービスアカウントのメールアドレス
-- `ORGANIZATION_DOMAIN`: 組織ドメイン（例: example.com）
-- `BILLING_ACCOUNT_ID`: 請求先アカウントID
-- `PROJECT_ID_PREFIX`: プロジェクトIDのプレフィックス
-- `ENABLE_VPC`, `ENABLE_VPC_SC` などの各種フラグ (true/false)
+ドリフト自動検知や PR 時の自動 Plan を行う GitHub Actions の有効化手順（WIF 構築・ワークフロー設定・GitHub Secrets 登録）は、納品物に同梱される **[運用引き継ぎ・セットアップ手順「2. CI/CD パイプライン（GitHub Actions）の有効化」](./operational_takeover.md)** に記載。引き渡し時はこれを顧客へ案内する。
 
 ______________________________________________________________________
 
 ## 5. 後任者によるセットアップ
 
-リポジトリを受け取った後任の開発者は、そのままでは Terraform を実行できません（環境依存の設定ファイルが Git 管理外のため）。
-受け取り後の環境復元手順については、以下のガイドを必ず参照してください。
-
-- **[後任者・リカバリガイド (Recovery & Succession)](./recovery_and_succession.md)**
-
-このガイドには、不足している `tfvars` や `backend` 設定の復元方法、権限の借用手順などが記載されています。
+リポジトリを受け取った運用担当者のセットアップ（認証・権限取得・設定ファイル復元）は、納品物に同梱される **[運用引き継ぎ・セットアップ手順](./operational_takeover.md)** および **[後任者・リカバリガイド (Recovery & Succession)](./recovery_and_succession.md)** を参照。
 
 ______________________________________________________________________
 
