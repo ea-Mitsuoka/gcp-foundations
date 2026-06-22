@@ -5,7 +5,8 @@ set -e
 # Repository Handover Script
 # 元リポジトリ（.git・作業ツリー）には一切手を加えず、納品成果物だけを delivery/ に出力する。
 #   delivery/<明細書>.xlsx : make delivery-doc が生成（本スクリプトの前段）
-#   delivery/<repo>.zip    : 不要ファイルを除外し、git init/commit 済みツリーの git archive
+#   delivery/<repo>.zip    : 不要ファイルを除外し、Initial commit 1 つだけの Git リポジトリ
+#                            （.git 同梱）を zip 化したもの
 # 破壊的処理はすべて一時ステージング(mktemp)上で行うため、元の .git は保持される。
 #
 # 顧客は zip 展開後、同梱のソース設定（common.tfvars / common.tfbackend / domain.env /
@@ -98,13 +99,18 @@ if [ -f "README.md" ]; then
   mv README.md.tmp README.md
 fi
 
-echo ">>> Creating a fresh Git history and exporting the archive..."
+echo ">>> Creating a clean single-commit repository for the customer..."
 git init -q
 git add .
 git commit -q -m "Initial commit: GCP Foundations base architecture"
+# 納品対象外（.gitignore 済み）の物理ファイルを作業ツリーから除去し、
+# 追跡ファイル + .git（Initial commit 1 つだけの履歴）だけを残す。
+git clean -fdXq
 
 ARCHIVE_NAME="gcp-foundations_$(date +%Y%m%d).zip"
-git archive --format=zip -o "${DELIVERY_DIR}/${ARCHIVE_NAME}" HEAD
+# .git を含めて zip 化する。顧客は展開後そのまま「Initial commit 1 つだけ」の
+# クリーンな Git リポジトリとして履歴確認・ブランチ作成・push を開始できる。
+zip -rqX "${DELIVERY_DIR}/${ARCHIVE_NAME}" . -x '*.DS_Store'
 
 cd "$ROOT_DIR"
 echo "=========================================================="
