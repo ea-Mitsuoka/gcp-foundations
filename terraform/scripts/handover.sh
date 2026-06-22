@@ -69,6 +69,10 @@ docs/operations/delivery_document_generation.md
 docs/operations/spreadsheet_session_guide.md
 docs/operations/handover_procedure.md
 
+# テンプレートのテストスイート（QA 用のテストコード・フィクスチャ。顧客の環境再現・運用には不要）。
+# ※ terraform モジュールのテスト(terraform/**/*.tftest.hcl)はコード側にあり対象外。
+tests/
+
 # handover.sh 自身は納品リポジトリに含めない（顧客が引き渡し処理を再実行できないように）。
 # Makefile の `make delivery` は handover-wrap.sh 経由で呼ばれ、handover.sh が無ければ
 # エラーで停止する。
