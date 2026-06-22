@@ -137,6 +137,15 @@ def test_derive_mgmt_projects_ids_match_terraform():
     assert "ex-vpc-host-prod" not in ids
 
 
+def test_monitoring_sheet_includes_central_monitoring(generated):
+    """集中モニタリング（スコーピングPJ・メトリクススコープ・監視対象）が記載されること。"""
+    text = _all_text(generated["8.監視・予算"])
+    assert "集中モニタリング設定" in text
+    assert "ex-monitoring" in text                  # スコーピングプロジェクト（prefix=ex）
+    assert "metricsScopes/ex-monitoring" in text    # メトリクススコープ
+    assert "my-app" in text                         # central_monitoring=true の監視対象
+
+
 def test_bigquery_sheet_lists_log_sink_and_asset_inventory(generated):
     text = _all_text(generated["7.BigQuery リソース"])
     assert "audit_logs" in text          # log_sinks の BigQuery 宛先データセット

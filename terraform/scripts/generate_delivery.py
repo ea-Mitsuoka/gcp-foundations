@@ -288,7 +288,7 @@ def build_toc(wb):
         ("5", "組織ポリシー設定一覧"),
         ("6", "ログ集約シンク設定"),
         ("7", "BigQuery リソース"),
-        ("8", "監視・予算（アラート／通知／予算）"),
+        ("8", "監視・予算（集中モニタリング／アラート／通知／予算）"),
         ("9", "ネットワーク（Shared VPC／VPC-SC）"),
         ("10", "タグ・ラベル"),
         ("11", "Google グループ・IAM"),
@@ -508,8 +508,40 @@ def build_monitoring(wb, ctx):
     ws = wb.create_sheet("8.監視・予算")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [24, 30, 36])
+    tv = ctx["tfvars"]
+    prefix = tv.get("project_id_prefix", "") or "<prefix>"
+    monitoring_project = f"{prefix}-monitoring"
 
-    row = section_title(ws, 2, "8-1. アラート定義", 3)
+    # 8-1. 集中モニタリング設定（スコーピングプロジェクト・メトリクススコープ・ダッシュボード）
+    row = section_title(ws, 2, "8-1. 集中モニタリング設定", 3)
+    pairs = [
+        ("スコーピングプロジェクト", f"{monitoring_project}（admin フォルダ配下）"),
+        ("メトリクススコープ", f"locations/global/metricsScopes/{monitoring_project}"),
+        ("監視対象の登録方式", "各プロジェクトの central_monitoring=true により自動登録"
+                          "（google_monitoring_monitored_project）"),
+        ("API ヘルスダッシュボード", "監視対象プロジェクトに対し作成（3_dashboards レイヤー／"
+                              "Consumed API・Gemini API 中心・全14タイル）"),
+    ]
+    row = kv_table(ws, row, pairs, label_w=2)
+
+    row = section_title(ws, row, "監視対象プロジェクト（メトリクススコープ登録）", 3)
+    records = [{
+        "プロジェクト": str(p.get("resource_name") or ""),
+        "既存ID(取り込み)": str(p.get("existing_project_id") or ""),
+        "ダッシュボード": "API ヘルス（3_dashboards）",
+    } for p in ctx["monitoring_targets"]]
+    row = table(ws, row, ["プロジェクト", "既存ID(取り込み)", "API ヘルスダッシュボード"], records,
+                col_keys=["プロジェクト", "既存ID(取り込み)", "ダッシュボード"])
+    c = ws.cell(row=row, column=1,
+                value="※ central_monitoring=true のプロジェクトを集中モニタリングのメトリクススコープへ登録。"
+                      "API ヘルスダッシュボードは 3_dashboards レイヤーの monitored_project_ids に指定した"
+                      "プロジェクトに作成され、Gemini API 等の Consumed API を可視化する。")
+    c.font = F_NOTE
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=3)
+    row += 1
+
+    # 8-2. アラート定義
+    row = section_title(ws, row, "8-2. アラート定義", 3)
     records = [{
         "アラート名": str(a.get("alert_display_name") or a.get("alert_name") or ""),
         "条件(metric filter)": str(a.get("metric_filter") or ""),
@@ -518,7 +550,7 @@ def build_monitoring(wb, ctx):
     row = table(ws, row, ["アラート名", "条件(metric filter)", "説明"], records,
                 col_keys=["アラート名", "条件(metric filter)", "説明"])
 
-    row = section_title(ws, row, "8-2. 通知先", 3)
+    row = section_title(ws, row, "8-3. 通知先", 3)
     records = [{
         "アラート名": str(n.get("alert_name") or ""),
         "通知先メール": str(n.get("user_email") or ""),
@@ -527,7 +559,7 @@ def build_monitoring(wb, ctx):
     row = table(ws, row, ["アラート名", "通知先メール", "受信可否"], records,
                 col_keys=["アラート名", "通知先メール", "受信"])
 
-    row = section_title(ws, row, "8-3. 予算アラート", 3)
+    row = section_title(ws, row, "8-4. 予算アラート", 3)
     records = []
     for p in ctx["budget_projects"]:
         records.append({
