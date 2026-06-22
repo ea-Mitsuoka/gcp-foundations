@@ -15,7 +15,7 @@ help:
 	@echo "  make plan      - Run the global deployment script in plan-only mode"
 	@echo "  make deploy    - Run the global deployment script"
 	@echo "  make destroy   - (DANGEROUS) Destroy all resources. Requires 'allow_resource_destruction=true' in common.tfvars"
-	@echo "  make delivery  - Generate the delivery document, then prepare repository for handover (reset Git history)"
+	@echo "  make delivery  - (構築ベンダー専用) 明細書生成＋納品アーカイブ(zip)を delivery/ に出力（元の .git は非破壊）"
 	@echo "  make delivery-doc - Generate only the delivery document (構築設定明細書) under delivery/"
 	@echo "  make test-mode - Toggle test mode (random prefix & skip management projects)"
 	@echo "  make prune     - Remove orphan 4_projects/ directories not defined in SSoT (Excel)"
@@ -91,8 +91,8 @@ destroy:
 %:
 	@:
 
-delivery: delivery-doc
-	bash terraform/scripts/handover.sh
+delivery:
+	@bash terraform/scripts/handover-wrap.sh
 
 delivery-doc:
 	uv run terraform/scripts/generate_delivery.py

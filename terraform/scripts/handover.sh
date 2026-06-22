@@ -67,6 +67,11 @@ docs/design/generator_philosophy.md
 docs/operations/module_maintenance.md
 docs/operations/delivery_document_generation.md
 docs/operations/spreadsheet_session_guide.md
+
+# handover.sh 自身は納品リポジトリに含めない（顧客が引き渡し処理を再実行できないように）。
+# Makefile の `make delivery` は handover-wrap.sh 経由で呼ばれ、handover.sh が無ければ
+# エラーで停止する。
+terraform/scripts/handover.sh
 EOF
 
 echo ">>> Creating a fresh Git history and exporting the archive..."
