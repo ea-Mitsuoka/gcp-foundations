@@ -311,7 +311,7 @@ def build_summary(wb, meta, ctx):
         ("Cloud Identity 認証", "Cloud Identity による組織アカウント／ID 認証基盤の整備", "完了"),
         ("請求先アカウントのリンク", "対象プロジェクトと請求先アカウントの紐付け", "完了"),
         ("管理フォルダ構成", "admin／network 等の管理用フォルダ階層の構築",
-         "完了" if ctx["folders"] else "—"),
+         "完了" if ctx["structural_folders"] else "—"),
         ("管理プロジェクト構築", "ログ集約・モニタリング用の管理プロジェクト作成",
          "完了" if ctx["mgmt_projects"] else "—"),
         ("組織ポリシー設定", "セキュア・バイ・デフォルトの組織ポリシー適用",
@@ -358,29 +358,49 @@ def build_overview(wb, meta, ctx):
     ]
     row = kv_table(ws, row, pairs, label_w=2)
 
-    row = section_title(ws, row, "管理プロジェクト一覧", 4)
-    records = [{"用途": p[0], "プロジェクト ID（規約）": p[1], "説明": p[2]}
+    row = section_title(ws, row, "管理プロジェクト一覧（基盤標準）", 4)
+    records = [{"用途": p[0], "プロジェクト ID（規約）": p[1], "配置先フォルダ": p[2], "説明": p[3]}
                for p in ctx["mgmt_projects"]]
-    table(ws, row, ["用途", "プロジェクト ID（規約）", "説明"], records,
-          col_keys=["用途", "プロジェクト ID（規約）", "説明"])
+    table(ws, row, ["用途", "プロジェクト ID（規約）", "配置先フォルダ", "説明"], records,
+          col_keys=["用途", "プロジェクト ID（規約）", "配置先フォルダ", "説明"])
 
 
 def build_folders(wb, ctx):
     ws = wb.create_sheet("3.フォルダ構成")
     ws.sheet_view.showGridLines = False
-    _set_widths(ws, [30, 30])
-    row = section_title(ws, 2, "3. フォルダ構成", 2)
-    records = [{"フォルダ名": f["resource_name"], "親": f["parent_name"]}
-               for f in ctx["folders"]]
-    table(ws, row, ["フォルダ名", "親（フォルダ／組織）"], records,
-          col_keys=["フォルダ名", "親"])
+    _set_widths(ws, [16, 24, 22, 40])
+    row = section_title(ws, 2, "3. フォルダ構成", 4)
+    records = []
+    for f in ctx["structural_folders"]:
+        records.append({"区分": "基盤標準(L0)", "フォルダ名": f["resource_name"],
+                        "親": f["parent_name"], "用途": f["purpose"]})
+    for f in ctx["folders"]:
+        records.append({"区分": "SSoT定義", "フォルダ名": f["resource_name"],
+                        "親": f["parent_name"], "用途": ""})
+    row = table(ws, row, ["区分", "フォルダ名", "親（フォルダ／組織）", "用途"], records,
+                col_keys=["区分", "フォルダ名", "親", "用途"])
+    c = ws.cell(row=row, column=1,
+                value="※ admin／network は基盤標準フォルダ（terraform/0_bootstrap で組織直下に常時作成）。"
+                      "admin に管理プロジェクト（logsink／monitoring）、network に Shared VPC ホストを配置。"
+                      "それ以外は SSoT(gcp-foundations.xlsx) の resources シート(resource_type=folder)で定義。")
+    c.font = F_NOTE
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
 
 
 def build_projects(wb, ctx):
     ws = wb.create_sheet("4.プロジェクト一覧")
     ws.sheet_view.showGridLines = False
     _set_widths(ws, [22, 18, 10, 26, 12, 12, 14, 14])
-    row = section_title(ws, 2, "4. プロジェクト一覧", 8)
+
+    # 4-1. 管理プロジェクト（基盤標準・SSoT 外。1_core/base で作成）
+    row = section_title(ws, 2, "4-1. 管理プロジェクト（基盤標準）", 8)
+    mgmt_records = [{"用途": m[0], "プロジェクト ID（規約）": m[1],
+                     "配置先フォルダ": m[2], "説明": m[3]} for m in ctx["mgmt_projects"]]
+    row = table(ws, row, ["用途", "プロジェクト ID（規約）", "配置先フォルダ", "説明"], mgmt_records,
+                col_keys=["用途", "プロジェクト ID（規約）", "配置先フォルダ", "説明"])
+
+    # 4-2. アプリケーションプロジェクト（SSoT の resources シート由来）
+    row = section_title(ws, row, "4-2. アプリケーションプロジェクト（SSoT）", 8)
     records = []
     for p in ctx["projects"]:
         records.append({
@@ -761,15 +781,29 @@ def build_cost_notes(wb, ctx):
 # ------------------------------------------------------------------------------
 # メイン
 # ------------------------------------------------------------------------------
+def derive_structural_folders():
+    """L0 Bootstrap で組織直下に常に作成される基盤標準フォルダ（SSoT には存在しない）。
+    terraform/0_bootstrap/main.tf の google_folder.admin / google_folder.network に対応。"""
+    return [
+        {"resource_name": "admin", "parent_name": "組織直下",
+         "purpose": "管理系プロジェクト（logsink / monitoring）の配置先"},
+        {"resource_name": "network", "parent_name": "組織直下",
+         "purpose": "ネットワーク基盤（Shared VPC ホスト）の配置先"},
+    ]
+
+
 def derive_mgmt_projects(prefix, tfvars):
+    """基盤標準で作成される管理プロジェクト（SSoT 外）。
+    1_core/base/{logsink,monitoring,vpc-host} に対応し、配置先フォルダも併記する。
+    返り値 [(用途, プロジェクトID, 配置先フォルダ, 説明), ...]。"""
     prefix = prefix or "<prefix>"
     items = [
-        ("中央ログ集約", f"{prefix}-logsink", "監査ログ等を集約・保管する管理プロジェクト"),
-        ("中央モニタリング", f"{prefix}-monitoring", "各プロジェクトを監視対象とするモニタリング管理プロジェクト"),
+        ("中央ログ集約", f"{prefix}-logsink", "admin", "監査ログ等を集約・保管する管理プロジェクト"),
+        ("中央モニタリング", f"{prefix}-monitoring", "admin", "各プロジェクトを監視対象とするモニタリング管理プロジェクト"),
     ]
     if str(tfvars.get("enable_vpc_host_projects", "false")).lower() == "true":
-        items.append(("共有VPCホスト(本番)", f"{prefix}-vpc-host-prod", "本番系 Shared VPC ホストプロジェクト"))
-        items.append(("共有VPCホスト(開発)", f"{prefix}-vpc-host-dev", "開発系 Shared VPC ホストプロジェクト"))
+        items.append(("共有VPCホスト(本番)", f"{prefix}-vpc-prod", "network", "本番系 Shared VPC ホストプロジェクト"))
+        items.append(("共有VPCホスト(開発)", f"{prefix}-vpc-dev", "network", "開発系 Shared VPC ホストプロジェクト"))
     return items
 
 
@@ -815,6 +849,7 @@ def main():
     ctx = {
         "tfvars": tfvars,
         "resources": resources,
+        "structural_folders": derive_structural_folders(),
         "folders": folders,
         "projects": projects,
         "adopted_projects": adopted,
