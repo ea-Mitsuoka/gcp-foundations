@@ -92,6 +92,7 @@ TARGET_DIRS=(
   "terraform/1_core/services/monitoring/scoping"
   "terraform/1_core/services/monitoring/1_notification_channels"
   "terraform/1_core/services/monitoring/2_alert_policies/logsink_log_alerts"
+  "terraform/1_core/services/monitoring/3_dashboards"
   "terraform/1_core/services/vpc-host"
   "terraform/2_organization"
   "terraform/3_folders"
