@@ -173,6 +173,19 @@
             "yAxis": { "label": "requests/sec", "scale": "LINEAR" }
           }
         }
+      },
+      {
+        "xPos": 0, "yPos": 20, "width": 12, "height": 4,
+        "widget": {
+          "title": "Gemini API token 系 quota 使用量",
+          "xyChart": {
+            "dataSets": [ { "timeSeriesQuery": { "timeSeriesFilter": {
+              "filter": "resource.type=\"consumer_quota\" AND metric.type=\"serviceruntime.googleapis.com/quota/rate/net_usage\" AND resource.labels.project_id=\"${project_id}\" AND resource.labels.service=\"generativelanguage.googleapis.com\"",
+              "aggregation": { "alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM", "groupByFields": ["resource.label.quota_metric"] }
+            } }, "plotType": "STACKED_BAR" } ],
+            "yAxis": { "label": "usage / 5min", "scale": "LINEAR" }
+          }
+        }
       }
     ]
   }
