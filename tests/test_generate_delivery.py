@@ -113,6 +113,30 @@ def test_all_expected_sheets_present(generated):
     assert expected.issubset(set(generated.sheetnames))
 
 
+def test_folders_sheet_includes_structural_folders(generated):
+    """基盤標準フォルダ admin/network は SSoT 未定義でも必ず出力されること。"""
+    text = _all_text(generated["3.フォルダ構成"])
+    assert "admin" in text
+    assert "network" in text      # network は SSoT に無いが L0 で常時作成される
+    assert "基盤標準" in text     # 区分が明示されること
+
+
+def test_projects_sheet_includes_management_projects(generated):
+    """管理プロジェクト（logsink/monitoring）は SSoT 外でもプロジェクト一覧に出ること。"""
+    text = _all_text(generated["4.プロジェクト一覧"])
+    assert "ex-logsink" in text       # prefix=ex
+    assert "ex-monitoring" in text
+
+
+def test_derive_mgmt_projects_ids_match_terraform():
+    """管理プロジェクトIDが terraform 実体（-vpc-prod/-vpc-dev）と一致すること。"""
+    ids = [i[1] for i in gd.derive_mgmt_projects("ex", {"enable_vpc_host_projects": "true"})]
+    assert "ex-logsink" in ids and "ex-monitoring" in ids
+    assert "ex-vpc-prod" in ids and "ex-vpc-dev" in ids
+    # 旧誤記の -vpc-host-* が混入しないこと
+    assert "ex-vpc-host-prod" not in ids
+
+
 def test_bigquery_sheet_lists_log_sink_and_asset_inventory(generated):
     text = _all_text(generated["7.BigQuery リソース"])
     assert "audit_logs" in text          # log_sinks の BigQuery 宛先データセット
