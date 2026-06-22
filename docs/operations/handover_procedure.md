@@ -15,7 +15,7 @@ make delivery
 内部処理：
 
 1. `terraform/scripts/generate_delivery.py` が構築設定明細書を `delivery/GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx` として生成します（前段。詳細は「6. 納品物（構築設定明細書）の自動生成」）。
-1. `terraform/scripts/handover.sh` が作業ツリーを一時領域へコピーし、`.gitignore` を納品用に調整したうえで `git init` → `commit` → `git archive` を実行し、`delivery/gcp-foundations_<YYYYMMDD>.zip` を出力します。**元の `.git` は保持されます。**
+1. `terraform/scripts/handover.sh` が作業ツリーを一時領域へコピーし、`.gitignore` を納品用に調整 → `git init` → `commit` → 不要ファイルを除去（`git clean`）→ `.git` 込みで zip 化し、**Initial commit が 1 つだけのクリーンなリポジトリ** `delivery/gcp-foundations_<YYYYMMDD>.zip` を出力します。**元の `.git` は保持されます。**
 
 > 旧版のように `.git` を削除して履歴を作り直すことはしません（誤実行による事故防止）。**本番の作業リポジトリでそのまま実行して問題ありません。**
 
