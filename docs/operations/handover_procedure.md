@@ -4,23 +4,58 @@
 
 ______________________________________________________________________
 
-## 1. 納品用リポジトリの作成 (Git 履歴のリセット)
+## 1. 納品成果物の作成 (make delivery)
 
-構築中の試行錯誤の履歴や、一時情報を消去するため、Git 履歴をリセットして真っ新な状態で顧客に渡します。
-
-以下のコマンドを実行してください。
+`make delivery` を実行すると、**元リポジトリ（`.git`・作業ツリー）には一切手を加えず**、一時コピー上でクリーンな Git ツリーを作成し、`delivery/` 配下に納品成果物を出力します。
 
 ```bash
 make delivery
 ```
 
-このコマンドは内部的に、まず `terraform/scripts/generate_delivery.py`（納品物の生成）を実行し、続いて `terraform/scripts/handover.sh` を実行して以下の処理を行います：
+内部処理：
 
-1. 納品物（構築設定明細書）を `delivery/` 配下に生成します（後述の「6. 納品物（構築設定明細書）の自動生成」を参照）。
-1. `.git` フォルダを削除し、全ての履歴を消去します。
-1. `git init` を行い、現在の最新状態で `Initial commit` を作成し直します（生成した納品物も同梱されます）。
+1. `terraform/scripts/generate_delivery.py` が構築設定明細書を `delivery/GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx` として生成します（前段。詳細は「6. 納品物（構築設定明細書）の自動生成」）。
+1. `terraform/scripts/handover.sh` が作業ツリーを一時領域へコピーし、`.gitignore` を納品用に調整したうえで `git init` → `commit` → `git archive` を実行し、`delivery/gcp-foundations_<YYYYMMDD>.zip` を出力します。**元の `.git` は保持されます。**
 
-実行完了後、新しく作成されたリポジトリを顧客指定の Git ホスティングサービス（GitHub, GitLab など）へ Push してください。
+> 旧版のように `.git` を削除して履歴を作り直すことはしません（誤実行による事故防止）。**本番の作業リポジトリでそのまま実行して問題ありません。**
+
+顧客へは `delivery/` 配下の**2ファイル**を提供します（zip に明細書 xlsx は含まれません。別ファイルとして渡します）：
+
+- `GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx`（構築設定明細書）
+- `gcp-foundations_<YYYYMMDD>.zip`（IaC 一式。下記方針でファイルを取捨選択済み）
+
+### 納品 zip に含まれるもの／含まれないもの
+
+**含む（顧客が環境を再現・運用するために必要）:**
+
+- IaC テンプレート一式、自動生成コード（`auto_*.tf`）
+- 環境固有のソース設定：`terraform/common.tfvars`、`terraform/common.tfbackend`、`domain.env`、`gcp-foundations.xlsx`
+- 運用ドキュメント：`docs/setup/`、`docs/operations/`（一部除く）、`docs/reference/`、`docs/design/`（architecture / data-dictionary / iam_management_scope）
+
+**含まない（社内限定・顧客の運用には不要）:**
+
+- `docs/development/`、`docs/tests/`、`docs/ea-design/`、`docs/migration/`
+- `docs/design/todo.md`、`docs/design/generator_philosophy.md`
+- `docs/operations/module_maintenance.md`、`delivery_document_generation.md`、`spreadsheet_session_guide.md`
+- `tfstate`、ローカルキャッシュ（`.terraform/` 等）、`.venv`、構築設定明細書（xlsx は zip とは別に提供）
+
+### 顧客側での受け取り後の確認（運用引き継ぎ）
+
+顧客は zip 展開後、以下で「環境に差分が無い」ことを確認して Terraform 管理の運用を引き継げます。
+
+```bash
+# 認証（顧客の管理者アカウントで）
+gcloud auth login
+gcloud auth application-default login
+
+# SSoT(xlsx) から派生コードを再生成し、現環境との差分を確認
+make generate
+make plan          # 差分が出なければ、現環境と IaC が一致＝引き継ぎ可能
+```
+
+> `make generate` は `gcp-foundations.xlsx` から `terraform/4_projects/<project>/` 等の派生コードを再生成します（GCP には接続しません）。`make plan` の成功には「2. GCP 権限の移譲」（TF 実行 SA へのインパーソネーション権限・tfstate バケットへのアクセス）が前提です。
+
+顧客が自身の Git ホスティング（GitHub / GitLab 等）で管理を始める場合は、展開したディレクトリで `git init` → 初回コミット → push してください（`git archive` は履歴を含まないため）。
 
 ______________________________________________________________________
 
@@ -45,9 +80,10 @@ ______________________________________________________________________
 
 引き渡し時に以下のものが揃っていることを確認してください。
 
-1. **IaC リポジトリ**: 履歴がリセットされた最新のコード。
-1. **SSoT (Excel)**: `gcp-foundations.xlsx`。現在の環境と一致していること。
-1. **ドキュメント**: 本 `docs/` ディレクトリ配下のマニュアル一式。
+1. **IaC 一式 (zip)**: `gcp-foundations_<YYYYMMDD>.zip`。社内限定ドキュメント・tfstate・キャッシュを除外済み。
+1. **構築設定明細書**: `GCP基盤構築_設定明細書_<YYYYMMDD>.xlsx`（zip とは別ファイル）。
+1. **SSoT (Excel)**: `gcp-foundations.xlsx`（zip に同梱）。現在の環境と一致していること。
+1. **ドキュメント**: zip 内 `docs/` の運用マニュアル一式（社内限定分は除外済み）。
 
 ______________________________________________________________________
 
