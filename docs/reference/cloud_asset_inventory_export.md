@@ -124,34 +124,64 @@ WHERE
 QUALIFY ROW_NUMBER() OVER (PARTITION BY resource_name ORDER BY event_time DESC) = 1;
 ```
 
-### 3.4 【フォレンジック】「誰が変更したか」を Audit Logs と結合して追跡
+### 3.4 【フォレンジック】「誰が変更したか」を特定する（CAI → Audit Logs の2段階）
 
-「不審な権限が追加されている」と CAI で発覚した際に、ログ集約基盤の Cloud Audit Logs と突き合わせて「その設定を行った人物（犯人）」を特定します。
+「不審な権限が追加されている」と CAI で気づいた際に、設定した人物（犯人）を特定します。
+
+> **⚠️ 2つのデータを1本の JOIN で自動相関させることはできません。**
+> CAI のリソース名はプロジェクト**番号**（`//.../projects/123456789`）、Audit Logs はプロジェクト**ID**（`projects/my-project-id`）を持ち、共通キーがありません。また CAI は「現在の状態」のため、過去の SetIamPolicy イベントと時刻相関できません（結合すると現在のバインディング × 全イベントの直積になります）。
+> そこで **「不審メンバー」と「発生時刻」を手がかりに 2 段階**で特定します。
+
+#### ステップ1（CAI）: 不審メンバーが「どのリソースに・いつ現れたか」を特定
+
+棚卸し（3.2 / 3.3）で見つけた不審メンバーを起点に、対象リソースと出現時刻を割り出します。
 
 ```sql
--- 注: audit_logsデータセット名は環境に合わせて変更してください
 SELECT
-  audit.timestamp AS event_time,
-  audit.protopayload_auditlog.authenticationInfo.principalEmail AS changed_by_who, -- 操作実行者
-  cai.resource_name AS target_resource,
-  binding.role AS granted_role,
-  member AS granted_to_whom
+  resource_name,
+  binding.role,
+  member,
+  MIN(event_time) AS first_seen,   -- いつ初めて出現したか
+  MAX(event_time) AS last_seen
 FROM
-  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity` AS audit
-JOIN
-  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy` AS cai
-  -- Audit Logのラベルと、CAIのリソースIDを結合
-  ON audit.resource.labels.project_id = SPLIT(cai.resource_name, '/')[ARRAY_LENGTH(SPLIT(cai.resource_name, '/')) - 1]
-CROSS JOIN
-  UNNEST(cai.policy_bindings) AS binding
-CROSS JOIN
+  `[YOUR_PROJECT_ID].asset_inventory.v_iam_policy`,
+  UNNEST(policy_bindings) AS binding,
   UNNEST(binding.members) AS member
 WHERE
+  member = 'user:suspicious@example.com'   -- 調査対象の不審メンバー
+GROUP BY resource_name, binding.role, member
+ORDER BY first_seen;
+```
+
+#### ステップ2（Audit Logs）: その変更を行った人物（犯人）を特定
+
+SetIamPolicy 監査ログには、**増分の変更内容**が `servicedata_v1_iam.policyDelta.bindingDeltas`（`action`=ADD/REMOVE・`role`・`member`）として記録されています。これを不審メンバーで絞れば、ID↔番号問題を回避して犯人を一意に特定できます。
+
+```sql
+SELECT
+  audit.timestamp                                               AS event_time,
+  audit.protopayload_auditlog.authenticationInfo.principalEmail AS changed_by_who,  -- 犯人（操作実行者）
+  audit.protopayload_auditlog.resourceName                      AS target_resource, -- 例: organizations/123、projects/my-id
+  delta.action                                                  AS action,          -- ADD / REMOVE
+  delta.role                                                    AS granted_role,
+  delta.member                                                  AS granted_to_whom,
+  audit.protopayload_auditlog.requestMetadata.callerIp          AS caller_ip
+FROM
+  `[YOUR_PROJECT_ID].audit_logs.cloudaudit_googleapis_com_activity` AS audit,
+  UNNEST(audit.protopayload_auditlog.servicedata_v1_iam.policyDelta.bindingDeltas) AS delta
+WHERE
   audit.protopayload_auditlog.methodName = 'SetIamPolicy'
-  AND audit.timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) -- 直近7日間
+  AND delta.action = 'ADD'
+  AND delta.member = 'user:suspicious@example.com'   -- ステップ1の不審メンバー
+  AND audit.timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
 ORDER BY
   audit.timestamp DESC;
 ```
+
+> **ポイント**
+> - `bindingDeltas` は「その操作で**増減した差分**」なので、ロール付与の犯人特定にはこれが最適です（全文ポリシーが必要なら `requestJson` / `responseJson` に JSON 文字列で入っています）。
+> - 対象リソースが分かっていれば、`AND audit.protopayload_auditlog.resourceName = 'projects/<対象ID>'` と、ステップ1の `first_seen` 前後の時間窓を加えるとさらに確実です。
+> - 役割分担：**CAI＝気づくきっかけ（現況・棚卸し）／ Audit Logs＝犯人の特定（操作の記録）**。
 
 ### 3.5 【履歴】特定リソースの IAM 変更タイムライン
 
@@ -300,7 +330,7 @@ ______________________________________________________________________
 | 自社ドメイン外への付与はないか | `asset_inventory` | 3.3 |
 | いつ権限構成が変わったか（履歴） | `asset_inventory` | 3.5 |
 | 誰が・いつ・何を操作したか | `audit_logs` | 4.1 / 4.2 |
-| 誰が IAM を変更したか（犯人特定） | `audit_logs`（必要に応じ `asset_inventory` と結合） | 4.3 / 3.4 |
+| 誰が IAM を変更したか（犯人特定） | `asset_inventory` で気づき → `audit_logs` で特定（2段階。結合不可） | 3.4 / 4.3 |
 | 組織ポリシー DryRun 違反の有無 | `audit_logs` | 4.4 |
 | 失敗・拒否された操作 | `audit_logs` | 4.5 |
 
