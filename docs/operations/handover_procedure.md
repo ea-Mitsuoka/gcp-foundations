@@ -43,6 +43,19 @@ make delivery
 
 顧客（運用担当者）が受け取り後に行う認証・権限取得・差分確認（`make generate` → `make plan`）・Git 管理開始の手順は、納品物に同梱される **[運用引き継ぎ・セットアップ手順](./operational_takeover.md)** にまとめてある。引き渡し時はこれを案内する。
 
+### 引き渡し前チェック：削除保護（allow_resource_destruction）
+
+通常は **削除保護を有効（`allow_resource_destruction = false`）にした状態で引き渡す**のが安全です。引き渡し前に実環境へ適用してから納品します。
+
+```bash
+# common.tfvars を allow_resource_destruction = false に変更したうえで
+make generate     # deletion_protection = true を全リソースに反映
+make deploy       # 実環境に削除保護を適用（顧客の初回 make plan の差分も防止）
+make delivery     # 保護 ON の状態の common.tfvars をそのまま同梱
+```
+
+> `make delivery` は、`common.tfvars` が `allow_resource_destruction = true`（保護 OFF）のままだと**警告して続行可否を対話確認**します（`handover-wrap.sh` による非破壊チェック。apply はしません）。意図的に保護 OFF で渡す場合のみ続行してください。非対話実行（CI 等）で続行するには `DELIVERY_ALLOW_DESTRUCTION_ACK=1` を指定します。
+
 ______________________________________________________________________
 
 ## 2. GCP 権限の移譲 (IAM)
