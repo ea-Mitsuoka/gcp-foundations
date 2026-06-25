@@ -66,6 +66,12 @@ variable "budget_alert_emails" {
   default     = []
 }
 
+variable "budget_threshold_percents" {
+  description = "Budget alert threshold percentages (global; e.g. [0.5, 0.9, 1.0] = 50%/90%/100%). common.tfvars で上書き可能。"
+  type        = list(number)
+  default     = [0.5, 0.9, 1.0]
+}
+
 variable "org_tags" {
   description = "The list of organization tags (key/value format)."
   type        = list(string)
