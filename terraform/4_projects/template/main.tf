@@ -26,6 +26,7 @@ module "baseline" {
   deletion_protection             = var.deletion_protection && var.allow_resource_destruction != true
   budget_amount                   = var.budget_amount
   budget_alert_emails             = var.budget_alert_emails
+  budget_threshold_percents       = var.budget_threshold_percents
   billing_account_id              = var.billing_account_id
   mgmt_project_id                 = var.mgmt_project_id
   existing_project_id             = var.existing_project_id
