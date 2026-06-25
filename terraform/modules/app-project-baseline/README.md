@@ -3,7 +3,7 @@
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement_google) | ~> 6.48.0 |
 | <a name="requirement_google-beta"></a> [google-beta](#requirement_google-beta) | ~> 6.48.0 |
@@ -11,20 +11,20 @@
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_google"></a> [google](#provider_google) | ~> 6.48.0 |
+| ---- | ------- |
+| <a name="provider_google"></a> [google](#provider_google) | 6.48.0 |
 | <a name="provider_terraform"></a> [terraform](#provider_terraform) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_project"></a> [project](#module_project) | ../project-factory | n/a |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google_access_context_manager_service_perimeter_resource.service_perimeter_resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/access_context_manager_service_perimeter_resource) | resource |
 | [google_compute_shared_vpc_service_project.service_project](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_shared_vpc_service_project) | resource |
 | [google_compute_subnetwork_iam_member.subnet_user](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_subnetwork_iam_member) | resource |
@@ -41,11 +41,12 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_app_name"></a> [app_name](#input_app_name) | The name of the application. | `string` | n/a | yes |
 | <a name="input_billing_account_id"></a> [billing_account_id](#input_billing_account_id) | The billing account ID. | `string` | `null` | no |
 | <a name="input_budget_alert_emails"></a> [budget_alert_emails](#input_budget_alert_emails) | The list of emails to receive budget alerts. | `list(string)` | `[]` | no |
 | <a name="input_budget_amount"></a> [budget_amount](#input_budget_amount) | The budget amount for the project. | `number` | `0` | no |
+| <a name="input_budget_threshold_percents"></a> [budget_threshold_percents](#input_budget_threshold_percents) | Budget alert threshold percentages (e.g. [0.5, 0.9, 1.0] = 50%/90%/100%). | `list(number)` | <pre>[<br/>  0.5,<br/>  0.9,<br/>  1<br/>]</pre> | no |
 | <a name="input_central_logging"></a> [central_logging](#input_central_logging) | Whether to enable central logging. | `bool` | `true` | no |
 | <a name="input_central_monitoring"></a> [central_monitoring](#input_central_monitoring) | Whether to enable central monitoring. | `bool` | `true` | no |
 | <a name="input_deletion_protection"></a> [deletion_protection](#input_deletion_protection) | Whether to enable deletion protection. | `bool` | `true` | no |
@@ -70,7 +71,7 @@
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_project_id"></a> [project_id](#output_project_id) | The ID of the created project. |
 | <a name="output_project_number"></a> [project_number](#output_project_number) | The numeric ID of the created project. |
 
