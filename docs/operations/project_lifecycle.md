@@ -174,3 +174,45 @@ GCP 上の実体を解体する場合は、**Excel から行を消す前に**以
    必要に応じて Google Cloud コンソールからプロジェクトの「シャットダウン」を手動で実行してください。
 
 > **警告**: 単なる `terraform destroy` コマンドは現在のステートに含まれる**すべてのリソース**を削除対象とします。一歩間違えると組織全体の基盤が消失する可能性があるため、本基盤では原則として使用を禁止します。
+
+______________________________________________________________________
+
+## 4. テンプレート変更を既存プロジェクトへ反映（再スキャフォールド）
+
+`make generate` は、各プロジェクトの**構造ファイル（`main.tf` / `variables.tf` など）を「初回作成時のみ」テンプレート（`terraform/4_projects/template/`）からコピー**します（scaffold-once）。毎回更新されるのは `terraform.tfvars` と `auto_global_vars.tf` だけです。
+
+そのため、**テンプレート側に新しい変数の受け渡し（例: `budget_threshold_percents`）が追加されても、既存プロジェクトの `main.tf` / `variables.tf` には自動反映されません**。既存プロジェクトでその新機能（例: 予算アラート閾値の上書き）を有効にするには、構造ファイルを作り直す「再スキャフォールド」が必要です。
+
+### いつ必要か
+
+- テンプレート（`4_projects/template/`）が更新され、その新しい変数・配線を**既存**プロジェクトにも効かせたいとき。
+- 例: `common.tfvars` に `budget_threshold_percents = [0.25, 0.5, 0.9, 1.0]` を設定したのに、既存プロジェクトの予算アラートが 3 段階のまま変わらない。
+
+> 新規追加するプロジェクトはテンプレートが最新のため再スキャフォールド不要です。これは**既存**プロジェクトにのみ必要な作業です。
+
+### 手順
+
+```bash
+# 1. 反映したいグローバル設定を common.tfvars に記入（例）
+#    budget_threshold_percents = [0.25, 0.5, 0.9, 1.0]
+
+# 2. 対象プロジェクトの構造ファイルだけを削除して作り直す
+#    （<app_name> は対象プロジェクト名）
+rm terraform/4_projects/<app_name>/main.tf \
+   terraform/4_projects/<app_name>/variables.tf
+make generate     # 最新テンプレートから main.tf / variables.tf を再コピー＋tfvars/auto を再生成
+
+# 3. 差分確認 → 適用
+make plan         # 期待した変更（例: 予算 threshold_rules の増減）のみであることを確認
+make deploy
+```
+
+> ⚠️ 削除するのは **`main.tf` と `variables.tf` のみ**。`backend.tf`（tfstate バケットの prefix を保持）と `terraform.tfvars`（`make generate` が再生成）は**削除しないでください**。`terraform/4_projects/<app_name>/` は `.gitignore` 対象のため、これらはローカル操作のみでコミット不要です。
+
+### 確認
+
+```bash
+# テンプレートの配線が入ったか（例）
+grep budget_threshold_percents terraform/4_projects/<app_name>/main.tf
+# → "budget_threshold_percents = var.budget_threshold_percents" が表示されれば反映済み
+```
