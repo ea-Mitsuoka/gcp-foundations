@@ -3,14 +3,14 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement_google) | ~> 6.48.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider_google) | 6.48.0 |
 
 ## Modules
@@ -20,7 +20,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_billing_budget.budget](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/billing_budget) | resource |
 | [google_monitoring_notification_channel.budget_emails](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_notification_channel) | resource |
 | [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project) | resource |
@@ -28,7 +28,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_auto_create_network"></a> [auto_create_network](#input_auto_create_network) | If true, the default network will be created. Defaults to true. | `bool` | `true` | no |
 | <a name="input_billing_account"></a> [billing_account](#input_billing_account) | The billing account ID to associate the budget with. Required if budget_amount > 0. | `string` | `null` | no |
 | <a name="input_budget_alert_emails"></a> [budget_alert_emails](#input_budget_alert_emails) | List of additional email addresses to receive budget alerts. | `list(string)` | `[]` | no |
@@ -47,7 +47,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_project_id"></a> [project_id](#output_project_id) | The ID of the created project. |
 | <a name="output_project_name"></a> [project_name](#output_project_name) | The display name of the created project. |
 | <a name="output_project_number"></a> [project_number](#output_project_number) | The numeric ID of the created project. |
