@@ -280,6 +280,7 @@ enable_tags                     = ${ENABLE_TAGS}
 enable_simplified_admin_groups  = ${ENABLE_SIMPLIFIED_GROUPS}
 enable_group_iam                = ${ENABLE_GROUP_IAM}
 allow_resource_destruction      = true  # 構築・検証フェーズは true を推奨。本番化後は false に変更してください。
+budget_threshold_percents       = [0.5, 0.9, 1.0]  # 予算アラート閾値（割合）。変更後は make generate && make deploy。例 [0.25, 0.5, 0.9, 1.0]
 EOF
 
 cat <<EOF > "${REPO_ROOT}/terraform/common.tfbackend"
