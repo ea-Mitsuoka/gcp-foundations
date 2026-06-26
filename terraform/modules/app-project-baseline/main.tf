@@ -65,11 +65,12 @@ module "project" {
     monitoring = tostring(var.central_monitoring)
     logging    = tostring(var.central_logging)
   })
-  deletion_protection   = var.deletion_protection
-  budget_amount         = var.budget_amount
-  budget_alert_emails   = var.budget_alert_emails
-  billing_account       = var.billing_account_id
-  monitoring_project_id = var.mgmt_project_id
+  deletion_protection       = var.deletion_protection
+  budget_amount             = var.budget_amount
+  budget_alert_emails       = var.budget_alert_emails
+  budget_threshold_percents = var.budget_threshold_percents
+  billing_account           = var.billing_account_id
+  monitoring_project_id     = var.mgmt_project_id
 }
 
 

@@ -118,6 +118,12 @@ variable "budget_alert_emails" {
   description = "The list of emails to receive budget alerts."
 }
 
+variable "budget_threshold_percents" {
+  type        = list(number)
+  default     = [0.5, 0.9, 1.0]
+  description = "Budget alert threshold percentages (e.g. [0.5, 0.9, 1.0] = 50%/90%/100%)."
+}
+
 variable "billing_account_id" {
   type        = string
   default     = null

@@ -61,6 +61,12 @@ variable "budget_alert_emails" {
   default     = []
 }
 
+variable "budget_threshold_percents" {
+  type        = list(number)
+  description = "Budget alert threshold percentages (e.g. [0.5, 0.9, 1.0] = 50%/90%/100%)."
+  default     = [0.5, 0.9, 1.0]
+}
+
 # --- 既存プロジェクト採用(adopt)モード ---
 variable "create_project" {
   type        = bool
