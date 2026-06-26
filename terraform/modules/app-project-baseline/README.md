@@ -46,6 +46,7 @@
 | <a name="input_billing_account_id"></a> [billing_account_id](#input_billing_account_id) | The billing account ID. | `string` | `null` | no |
 | <a name="input_budget_alert_emails"></a> [budget_alert_emails](#input_budget_alert_emails) | The list of emails to receive budget alerts. | `list(string)` | `[]` | no |
 | <a name="input_budget_amount"></a> [budget_amount](#input_budget_amount) | The budget amount for the project. | `number` | `0` | no |
+| <a name="input_budget_threshold_percents"></a> [budget_threshold_percents](#input_budget_threshold_percents) | Budget alert threshold percentages (e.g. [0.5, 0.9, 1.0] = 50%/90%/100%). | `list(number)` | <pre>[<br/>  0.5,<br/>  0.9,<br/>  1<br/>]</pre> | no |
 | <a name="input_central_logging"></a> [central_logging](#input_central_logging) | Whether to enable central logging. | `bool` | `true` | no |
 | <a name="input_central_monitoring"></a> [central_monitoring](#input_central_monitoring) | Whether to enable central monitoring. | `bool` | `true` | no |
 | <a name="input_deletion_protection"></a> [deletion_protection](#input_deletion_protection) | Whether to enable deletion protection. | `bool` | `true` | no |

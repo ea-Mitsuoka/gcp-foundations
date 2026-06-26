@@ -33,6 +33,7 @@ No modules.
 | <a name="input_billing_account"></a> [billing_account](#input_billing_account) | The billing account ID to associate the budget with. Required if budget_amount > 0. | `string` | `null` | no |
 | <a name="input_budget_alert_emails"></a> [budget_alert_emails](#input_budget_alert_emails) | List of additional email addresses to receive budget alerts. | `list(string)` | `[]` | no |
 | <a name="input_budget_amount"></a> [budget_amount](#input_budget_amount) | The monthly budget amount for the project. If 0, no budget alert is created. | `number` | `0` | no |
+| <a name="input_budget_threshold_percents"></a> [budget_threshold_percents](#input_budget_threshold_percents) | Budget alert threshold percentages (e.g. [0.5, 0.9, 1.0] = 50%/90%/100%). | `list(number)` | <pre>[<br/>  0.5,<br/>  0.9,<br/>  1<br/>]</pre> | no |
 | <a name="input_create_project"></a> [create_project](#input_create_project) | true(既定)は新規作成フロー。false の場合は既存プロジェクトの採用(adopt)モードとなり、project_id_override の既存IDを採用する（実体は terraform import で state に取り込む）。 | `bool` | `true` | no |
 | <a name="input_deletion_protection"></a> [deletion_protection](#input_deletion_protection) | Whether or not to protect the project from deletion. Internally mapped to google_project's deletion_policy (PREVENT/DELETE). Default is true. | `bool` | `true` | no |
 | <a name="input_folder_id"></a> [folder_id](#input_folder_id) | The folder ID to create the project in. If null, project will be created at the organization level. | `string` | `null` | no |
