@@ -48,7 +48,7 @@ jobs:
 
       # NOTE: GCP Workload Identity Federation is required for passwordless authentication.
       # Uncomment the following step after registering GCP_WIF_PROVIDER and TF_SERVICE_ACCOUNT_EMAIL in GitHub Secrets.
-      # See docs/operations/handover_procedure.md for setup instructions.
+      # See docs/operations/operational_takeover.md for setup instructions.
       # - name: Authenticate to Google Cloud
       #   uses: google-github-actions/auth@v2
       #   with:

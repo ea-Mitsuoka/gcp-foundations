@@ -94,25 +94,42 @@ gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
   --member="principalSet://iam.googleapis.com/${POOL_RESOURCE_NAME}/attribute.repository/${GITHUB_ORG}/<リポジトリ名>"
 ```
 
-### ② ワークフローのコメントアウト解除
+### ② ワークフローの認証ステップを有効化
 
-`.github/workflows/` 配下の以下の YAML について、`Authenticate to Google Cloud` ステップのコメントアウト（`#`）を外し、①で取得した WIF プロバイダ完全 ID と Terraform 実行用サービスアカウントのメールアドレスを設定します。
+`.github/workflows/` の以下 3 つの YAML で、コメントアウトされている `Authenticate to Google Cloud` ステップ（先頭 `#` の行）を有効化します。いずれも既に `secrets.GCP_WIF_PROVIDER` / `secrets.TF_SERVICE_ACCOUNT_EMAIL` を参照する形になっているので、**コメントを外すだけ**です（書き換え不要）。
 
-- `drift-detection.yml` — `secrets.GCP_WIF_PROVIDER` と `secrets.TF_SERVICE_ACCOUNT_EMAIL` を参照するよう記載済み
-- `main-apply.yml`
-- `pr-plan.yml` — ハードコードされたサンプル値が記載されているため、Secrets 参照形式（`${{ secrets.GCP_WIF_PROVIDER }}`）に書き換えること
+- `pr-plan.yml`（PR 時の `terraform plan`）
+- `main-apply.yml`（main マージ時の `terraform apply`）
+- `drift-detection.yml`（週次のドリフト検知）
 
 ### ③ GitHub Secrets の登録
 
-GitHub リポジトリの `Settings > Secrets and variables > Actions` にて、以下を登録します（値は `terraform/common.tfvars` に記録されている内容に相当します）。
+GitHub リポジトリの `Settings > Secrets and variables > Actions > Secrets` に以下を登録します。このテンプレートは Actions の **Variables は使用せず、Secrets のみ**です（値は `terraform/common.tfvars` 等に記録した内容に対応）。
+
+**WIF / 認証:**
 
 - `GCP_WIF_PROVIDER`: ①で取得した WIF プロバイダの完全 ID
-- `GCS_BACKEND_BUCKET`: tfstate 保存用バケット名
 - `TF_SERVICE_ACCOUNT_EMAIL`: Terraform 実行用サービスアカウントのメールアドレス
+
+**基盤の基本設定:**
+
+- `GCS_BACKEND_BUCKET`: tfstate 保存用バケット名
 - `ORGANIZATION_DOMAIN`: 組織ドメイン（例: example.com）
 - `BILLING_ACCOUNT_ID`: 請求先アカウント ID
+- `GCP_REGION`: 既定リージョン（例: asia-northeast1）
 - `PROJECT_ID_PREFIX`: プロジェクト ID のプレフィックス
-- `ENABLE_VPC`, `ENABLE_VPC_SC` などの各種フラグ (true/false)
+
+**機能フラグ（`true` / `false`。common.tfvars と同じ値）:**
+
+- `ENABLE_VPC`: Shared VPC / VPC ホストプロジェクト
+- `ENABLE_VPC_SC`: VPC Service Controls
+- `ENABLE_ORG_POLICIES`: 組織ポリシー
+- `ENABLE_TAGS`: 組織タグ
+- `ENABLE_SIMPLIFIED_ADMIN_GROUPS`: 管理者グループの集約モード
+
+> いずれの Secret も未設定時はワークフロー側の既定（ダミー値）で動作するため、**lint / validate / test / OPA などの CI は Secrets 無しでも通ります**。GCP へ実接続する plan / apply / drift（②で有効化したステップ）には上記の登録が必須です。
+
+> **GitHub Environment**: `main-apply.yml` は `environment: production` を使用します。apply に承認者（required reviewers）やブランチ保護を掛けたい場合は `Settings > Environments` で `production` を作成・設定してください（未作成でも初回実行時に自動作成されます）。
 
 ______________________________________________________________________
 
