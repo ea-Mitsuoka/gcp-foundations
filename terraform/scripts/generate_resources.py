@@ -694,6 +694,23 @@ labels = {{
 """
         with open(os.path.join(project_dir, 'terraform.tfvars'), 'w') as f: f.write(tfvars_content)
 
+    # --- 監視ダッシュボード: central_monitoring=true のプロジェクトを 3_dashboards へ自動注入 ---
+    # ダッシュボードのフィルタは実 GCP プロジェクトID（採用時は existing_project_id、
+    # 新規は <prefix>-<app_name>）で限定するため、その実IDを列挙する。
+    monitored_ids = []
+    for proj in projects:
+        if not is_true(proj.get('central_monitoring')):
+            continue
+        app_name = str(proj.get('resource_name') or '').strip()
+        if not app_name:
+            continue
+        pid = str(proj.get('existing_project_id') or '').strip() or f"{project_id_prefix}-{app_name}"
+        monitored_ids.append(pid)
+    dashboards_dir = os.path.join(os.path.dirname(__file__), '../1_core/services/monitoring/3_dashboards')
+    if os.path.isdir(dashboards_dir):
+        with open(os.path.join(dashboards_dir, 'terraform.tfvars'), 'w') as f:
+            f.write("# Auto-generated file. Do not edit manually.\n")
+            f.write(f"monitored_project_ids = {json.dumps(monitored_ids)}\n")
 
     # --- Silence Undeclared Variable Warnings ---
     global_keys = [
@@ -701,7 +718,7 @@ labels = {{
         "gcp_region", "project_id_prefix", "enable_vpc_host_projects",
         "enable_shared_vpc", "enable_vpc_sc", "enable_org_policies", "enable_simplified_admin_groups",
         "enable_group_iam", "allow_resource_destruction", "enable_tags", "billing_account_id",
-        "budget_threshold_percents"
+        "budget_threshold_percents", "focus_services"
     ]
     for root, dirs, files in os.walk(os.path.join(os.path.dirname(__file__), '../')):
         if any(f.endswith('.tf') for f in files) and '.terraform' not in root and 'modules' not in root:
