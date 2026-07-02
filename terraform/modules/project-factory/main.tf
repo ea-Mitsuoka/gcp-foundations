@@ -24,8 +24,11 @@ resource "google_project" "this" {
   #     採用時の属性差分は import → plan レビュー → apply で吸収する運用（migration ガイド参照）。
   lifecycle {
     ignore_changes = [
-      # billing_account属性への変更をTerraformの管理対象外にする
-      # billing_account, # 【検証中】Terraformに課金リンクを強制させるためコメントアウト
+      # 課金リンク(billing_account)は「作成時のみ設定」し、以後 TF は移動・解除しない。
+      # これにより (1) billing_account=null（manual/手動運用）で既存リンクを解除しない、
+      # (2) 採用(adopt)した既存プロジェクトの課金を勝手に付け替えない、を安全に実現する。
+      # トレードオフ: 課金リンクのドリフトは TF では強制・検知しない（billing admin が別管理）。
+      billing_account,
     ]
   }
 }

@@ -227,13 +227,13 @@ def generate_resources():
         wb = Workbook()
         ws = wb.active
         ws.title = "resources"
-        headers = ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"]
+        headers = ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags", "billing_account"]
         ws.append(headers)
         wb.save(xlsx_path)
 
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     required_sheets = {
-        "resources": ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags"],
+        "resources": ["resource_type", "parent_name", "resource_name", "environment", "existing_project_id", "owner", "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc", "central_monitoring", "central_logging", "org_tags", "billing_account"],
         "tag_definitions": ["tag_key", "allowed_values", "description"],
         "vpc_sc_perimeters": ["perimeter_name", "title", "restricted_services", "dry_run"],
         "vpc_sc_access_levels": ["access_level_name", "ip_subnetworks", "members"],
@@ -668,12 +668,19 @@ def generate_resources():
         env, _ = resolve_environment(proj.get('environment'))
         shared_vpc_env = resolve_shared_vpc_env(env, proj.get('shared_vpc'))
 
+        # 課金アカウント(billing_account 列): 空欄→ 新規は module 側で global にリンク、
+        # adopt(既存ID指定)は既存リンクを尊重して "manual"（TF は課金を管理しない）。
+        # "manual" 明示 → TF 非管理。"<id>" → 指定アカウントにリンク。
+        bill_col = str(proj.get('billing_account') or '').strip()
+        billing_account_val = 'manual' if (bill_col == '' and existing_pid) else bill_col
+
         # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
 app_name            = "{app_name}"
 existing_project_id = "{existing_pid}"
+billing_account     = "{billing_account_val}"
 environment         = "{env}"
 folder_id           = {folder_id_val}
 shared_vpc_env      = "{shared_vpc_env}"
