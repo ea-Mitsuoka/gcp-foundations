@@ -26,7 +26,7 @@ def create_template():
                 "resource_type", "parent_name", "resource_name", "environment",
                 "existing_project_id", "owner",
                 "budget_amount", "budget_alert_emails", "shared_vpc", "vpc_sc",
-                "central_monitoring", "central_logging", "org_tags"
+                "central_monitoring", "central_logging", "org_tags", "billing_account"
             ],
             "validations": [
                 {"cols": "A", "formula": '"folder,project"'},          # resource_type

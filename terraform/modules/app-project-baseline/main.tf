@@ -48,6 +48,18 @@ resource "terraform_data" "variable_validation" {
   }
 }
 
+locals {
+  # per-project billing_account の解決:
+  #   "manual" → null（Terraform は課金リンクを管理しない。手動運用/既存リンク前提）
+  #   ""(空欄) → グローバル billing_account_id にリンク
+  #   "<id>"   → 指定した課金アカウントにリンク
+  # 注: project-factory 側で billing_account に ignore_changes を設定済みのため、課金リンクは
+  #     「作成時のみ」有効。採用(adopt)した既存プロジェクトの課金は付け替え・解除されない。
+  effective_billing_account = var.billing_account == "manual" ? null : (
+    var.billing_account != "" ? var.billing_account : var.billing_account_id
+  )
+}
+
 module "project" {
   source = "../project-factory"
 
@@ -69,7 +81,7 @@ module "project" {
   budget_amount             = var.budget_amount
   budget_alert_emails       = var.budget_alert_emails
   budget_threshold_percents = var.budget_threshold_percents
-  billing_account           = var.billing_account_id
+  billing_account           = local.effective_billing_account
   monitoring_project_id     = var.mgmt_project_id
 }
 

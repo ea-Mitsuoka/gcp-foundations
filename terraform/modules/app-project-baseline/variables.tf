@@ -127,7 +127,13 @@ variable "budget_threshold_percents" {
 variable "billing_account_id" {
   type        = string
   default     = null
-  description = "The billing account ID."
+  description = "The global (default) billing account ID."
+}
+
+variable "billing_account" {
+  type        = string
+  default     = ""
+  description = "Per-project billing account override. \"\"=use global billing_account_id, \"manual\"=Terraform does not manage the billing link (manual/existing link), \"<id>\"=link to that account."
 }
 
 variable "mgmt_project_id" {

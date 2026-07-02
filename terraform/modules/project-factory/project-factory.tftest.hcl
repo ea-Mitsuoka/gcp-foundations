@@ -62,3 +62,46 @@ run "create_project_folder_level" {
     error_message = "Organization ID should be null when folder_id is provided"
   }
 }
+
+# billing_account = null（manual/手動運用）: Terraform は課金リンクを設定せず、
+# 予算(google_billing_budget)も作らない。
+run "manual_billing_unmanaged_and_no_budget" {
+  command = plan
+
+  variables {
+    billing_account = null
+    budget_amount   = 50000
+  }
+
+  assert {
+    condition     = google_project.this.billing_account == null
+    error_message = "billing_account should be null when unmanaged (manual)"
+  }
+
+  assert {
+    condition     = length(google_billing_budget.budget) == 0
+    error_message = "No budget should be created when billing_account is null"
+  }
+}
+
+# billing_account に具体ID指定 + 予算あり: 課金リンクと予算が作られる。
+run "explicit_billing_links_and_budget" {
+  command = plan
+
+  variables {
+    billing_account       = "012345-6789AB-CDEF01"
+    monitoring_project_id = "mgmt-proj"
+    budget_amount         = 50000
+    budget_alert_emails   = ["finance@example.com"]
+  }
+
+  assert {
+    condition     = google_project.this.billing_account == "012345-6789AB-CDEF01"
+    error_message = "billing_account should be linked to the specified account"
+  }
+
+  assert {
+    condition     = length(google_billing_budget.budget) == 1
+    error_message = "A budget should be created when billing_account and budget_amount are set"
+  }
+}

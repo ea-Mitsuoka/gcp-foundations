@@ -66,6 +66,12 @@ variable "budget_alert_emails" {
   default     = []
 }
 
+variable "billing_account" {
+  description = "課金アカウントの個別指定。空欄=グローバル(billing_account_id)、\"manual\"=Terraform は課金リンクを管理しない（手動/既存リンク前提）、\"<id>\"=指定アカウントにリンク。SSoT の billing_account 列由来。"
+  type        = string
+  default     = ""
+}
+
 variable "budget_threshold_percents" {
   description = "Budget alert threshold percentages (global; e.g. [0.5, 0.9, 1.0] = 50%/90%/100%). common.tfvars で上書き可能。"
   type        = list(number)
