@@ -72,6 +72,13 @@ if [[ "$ALLOW_DESTROY" == "true" && "$PLAN_ONLY" == "false" && "$TF_IN_AUTOMATIO
 fi
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# 課金リンクの事前検証 (billing_account = "manual" のプロジェクト)
+# manual は Terraform が課金を管理しないため、未リンクだと後続の API 有効化等が
+# 失敗する。apply 前にここで検出して停止する（plan-only 時は警告のみ）。
+# ------------------------------------------------------------------------------
+bash "${ROOT_DIR}/terraform/scripts/check_billing_links.sh" "$PLAN_ONLY"
+
 echo ""
 echo "=========================================================="
 echo " Step 2: Deploying Terraform layers in dependency order"

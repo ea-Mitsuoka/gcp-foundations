@@ -80,8 +80,50 @@ ______________________________________________________________________
 
 ### 課金アカウントのリンク
 
-GCP の仕様上、プロジェクト作成後に課金アカウントがリンクされていないと、API の有効化やリソースの作成（GCS バケットなど）が制限されます。
-本基盤では L4 プロジェクトの課金リンクおよび API 有効化を自動化していません。プロジェクト作成後、管理者が手動で課金アカウントをリンクし、必要な API を現場の IaC 等で有効化してください。詳細については、**[トラブルシューティング・ガイド](./troubleshooting.md)** を参照してください。
+GCP の仕様上、プロジェクト作成後に課金アカウントがリンクされていないと、API の有効化やリソースの作成（GCS バケットなど）が制限されます。本基盤の多くの処理（API 有効化・予算アラート・各種リソース）は「課金リンク済み」を前提としています。
+
+#### 課金リンクの3モード（`billing_account` 列）
+
+`gcp-foundations.xlsx` の `resources` シート `billing_account` 列で、プロジェクトごとに挙動を指定できます（詳細は [スプレッドシート仕様](../setup/spreadsheet_format.md) を参照）。
+
+| 指定値 | 挙動 | 予算アラート |
+| :--- | :--- | :--- |
+| **空欄** | グローバル `billing_account_id` にリンク（採用(adopt)プロジェクトで空欄なら既存リンクを尊重し `manual` 扱い） | 作成される |
+| **`manual`** | **Terraform は課金を管理しない**（手動リンク／既存リンク前提） | 作成されない |
+| **`<課金アカウントID>`** | 指定アカウントにリンク | 作成される |
+
+> 課金リンクは **作成時のみ**設定されます（project-factory 側で `ignore_changes = [billing_account]`）。既存プロジェクトの課金を Terraform が付け替え・解除することはありません。
+
+#### `manual` の場合の手動リンク手順
+
+`billing_account = manual` のプロジェクトは Terraform が課金をリンクしないため、**管理者が手動で**課金アカウントを紐付ける必要があります。
+
+```bash
+# 課金アカウントをリンク
+gcloud billing projects link <PROJECT_ID> \
+  --billing-account=<BILLING_ACCOUNT_ID>      # 例: 012345-6789AB-CDEF01
+
+# 確認（billingEnabled: True であればOK）
+gcloud billing projects describe <PROJECT_ID>
+```
+
+コンソールの場合: **お支払い → アカウント管理 →「プロジェクトをリンク」**、またはプロジェクトの **お支払い** 画面から。
+
+**必要な権限（実行者に付与）:**
+
+- 課金アカウント側: `roles/billing.user`（または `roles/billing.admin`）
+- プロジェクト側: `roles/owner` もしくは `roles/resourcemanager.projectBillingManager`
+
+**タイミングの注意:**
+
+- **採用(adopt)した既存プロジェクト**（多くの `manual` はこれ）: すでにリンク済みのことが多く、その場合は**何もしなくてOK**。Terraform は課金に干渉しません。
+- **新規プロジェクトで手動リンクしたい場合**: 新規作成は「プロジェクト作成 → 即 API 有効化」が同一 apply 内で走るため、**課金未リンクだと API 有効化で失敗**します（鶏卵問題）。この場合は ①先に対象プロジェクトだけ作成して手動リンク → その後 `make deploy` で残りを適用、もしくは ②`manual` を使わず `billing_account` にアカウントIDを指定（Terraform が作成時にリンク）する方が確実です。
+
+#### apply 前の自動ガード
+
+`make deploy`（`deploy_all.sh`）は `make generate` 後・apply 前に、`billing_account = manual` の全プロジェクトについて課金リンクの有無を検証します（`terraform/scripts/check_billing_links.sh`）。未リンクを検出した場合は **apply を実行せず停止**し、手動リンク用のコマンドを表示します。CI／認証情報なしの環境ではスキップされ、`make plan`（plan-only）では停止せず警告に留まります。
+
+その他のトラブルシューティングは **[トラブルシューティング・ガイド](./troubleshooting.md)** を参照してください。
 
 ### プロジェクトの削除
 
