@@ -466,7 +466,6 @@ def generate_resources():
         for k, v in tag_value_map.items(): f.write(f'    "{k}" = {v}\n')
         f.write('  }\n}\n\n')
 
-    # --- ▼ 変更: マジックを排除したクリーンなCSV出力 ---
     def export_sheet_to_csv(sheet_name, output_path):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -674,7 +673,6 @@ def generate_resources():
         bill_col = str(proj.get('billing_account') or '').strip()
         billing_account_val = 'manual' if (bill_col == '' and existing_pid) else bill_col
 
-        # --- ▼ 変更: ownerのマジック置換を排除（純粋な値を出力） ---
         tfvars_content = f"""# Auto-generated file. Do not edit manually.
 organization_domain = "{domain}"
 mgmt_project_id     = "{mgmt_project_id}"
